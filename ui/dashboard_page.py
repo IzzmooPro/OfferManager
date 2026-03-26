@@ -124,7 +124,7 @@ class DashboardPage(QWidget):
 
         # Durum filtre dropdown butonu
         self.filter_btn = QPushButton("Durum: Tümü  ▾")
-        self.filter_btn.setObjectName("secondary")
+        self.filter_btn.setObjectName("filter_btn")
         self.filter_btn.setMinimumHeight(32)
         self.filter_btn.setFixedWidth(180)
         self.filter_btn.clicked.connect(self._show_filter_menu)
@@ -210,31 +210,34 @@ class DashboardPage(QWidget):
             if self._active_filter != "Tümü":
                 all_offers = [o for o in all_offers
                               if (o.get("status") or "Beklemede") == self._active_filter]
-            self._offers = all_offers
-            self.table.setRowCount(len(self._offers))
-            for row, o in enumerate(self._offers):
-                sym    = SYM_MAP.get(o.get("currency", "EUR"), "€")
-                status = o.get("status") or "Beklemede"
-                cfg    = STATUS_CONFIG.get(status, STATUS_CONFIG["Beklemede"])
-                self.table.setRowHeight(row, 34)
-                for col, val in enumerate([
-                    o.get("offer_no", ""),
-                    o.get("company_name") or "",
-                    o.get("date", ""),
-                    o.get("currency", ""),
-                ]):
-                    self.table.setItem(row, col, QTableWidgetItem(val))
-                ti = QTableWidgetItem(f"{o.get('total_amount', 0):,.2f} {sym}")
-                ti.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-                self.table.setItem(row, 4, ti)
-                # Durum badge — renkli arka plan
-                si = QTableWidgetItem(f"  {status}")
-                si.setTextAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-                si.setForeground(QBrush(QColor(cfg["fg"])))
-                si.setBackground(QBrush(QColor(cfg["bg"])))
-                self.table.setItem(row, 5, si)
+            self._fill_table(all_offers)
         except Exception as e:
             logger.error("Dashboard yenileme hatası: %s", e, exc_info=True)
+
+    def _fill_table(self, offers: list):
+        self._offers = offers
+        self.table.setRowCount(len(self._offers))
+        for row, o in enumerate(self._offers):
+            sym    = SYM_MAP.get(o.get("currency", "EUR"), "€")
+            status = o.get("status") or "Beklemede"
+            cfg    = STATUS_CONFIG.get(status, STATUS_CONFIG["Beklemede"])
+            self.table.setRowHeight(row, 34)
+            for col, val in enumerate([
+                o.get("offer_no", ""),
+                o.get("company_name") or "",
+                o.get("date", ""),
+                o.get("currency", ""),
+            ]):
+                self.table.setItem(row, col, QTableWidgetItem(val))
+            ti = QTableWidgetItem(f"{o.get('total_amount', 0):,.2f} {sym}")
+            ti.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            self.table.setItem(row, 4, ti)
+            # Durum badge — renkli arka plan
+            si = QTableWidgetItem(f"  {status}")
+            si.setTextAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+            si.setForeground(QBrush(QColor(cfg["fg"])))
+            si.setBackground(QBrush(QColor(cfg["bg"])))
+            self.table.setItem(row, 5, si)
 
     def on_enter(self):
         try:
@@ -246,9 +249,21 @@ class DashboardPage(QWidget):
             self.card_p.set_value(self.svc_p.count())
             self.card_c.set_value(self.svc_c.count())
             self.card_offers.set_values(counts)
+            # Tabloyu aynı veriyle doldur — ikinci DB sorgusu gereksiz
+            kw = self.search.text()
+            if kw:
+                kw_l = kw.lower()
+                filtered = [o for o in all_o
+                            if kw_l in (o.get("offer_no") or "").lower()
+                            or kw_l in (o.get("company_name") or "").lower()]
+            else:
+                filtered = all_o
+            if self._active_filter != "Tümü":
+                filtered = [o for o in filtered
+                            if (o.get("status") or "Beklemede") == self._active_filter]
+            self._fill_table(filtered)
         except Exception as e:
-            logger.error("Dashboard istatistik hatası: %s", e, exc_info=True)
-        self._load(self.search.text())
+            logger.error("Dashboard yenileme hatası: %s", e, exc_info=True)
 
     # ── Yardımcılar ──────────────────────────────────────────────────────────
 
@@ -314,19 +329,7 @@ class DashboardPage(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Hata", f"Durum güncellenemedi:\n{e}")
 
-    # ── Müşteri Geçmişi ──────────────────────────────────────────────────────
-    def _show_customer_history(self):
-        from ui.customer_history_dialog import CustomerHistoryDialog
-        dlg = CustomerHistoryDialog(self)
-        dlg.exec()
-
     # ── Export ────────────────────────────────────────────────────────────────
-    def _export_excel(self):
-        self._do_export("excel")
-
-    def _export_csv(self):
-        self._do_export("csv")
-
     def _do_export(self, fmt: str):
         offers = self._offers
         if not offers:

@@ -180,8 +180,7 @@ class CustomersPage(QWidget):
 
         # Müşteriye ait teklif sayısını kontrol et — veri bütünlüğü uyarısı
         try:
-            offers = self.offer_svc.get_all()
-            related = [o for o in offers if o.get("customer_id") == c.id]
+            related = self.offer_svc.get_by_customer(c.id)
         except Exception:
             related = []
 

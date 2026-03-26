@@ -141,54 +141,6 @@ QPushButton#nav_card:checked {{
     border: 1.5px solid rgba(255,255,255,0.10);
 }}
 
-/* ── Sidebar alt sekme çubuğu ── */
-QFrame#sidebar_tab_bar {{
-    background: {t['bg_sidebar_header']};
-    border-top: 1px solid {t['border']};
-    border-radius: 0;
-}}
-
-QPushButton#sidebar_tab {{
-    background: transparent;
-    color: {t['text_sidebar']};
-    border: none;
-    border-right: 1px solid {t['border']};
-    border-radius: 0;
-    font-size: 8pt;
-    font-weight: 500;
-    padding: 0 10px;
-    text-align: center;
-}}
-QPushButton#sidebar_tab:hover {{
-    background: {t['bg_sidebar_hover']};
-    color: {t['text_primary']};
-    border-bottom: 2px solid {t['header_divider']};
-}}
-QPushButton#sidebar_tab:pressed {{
-    background: {t['accent_blue']};
-    color: #ffffff;
-}}
-
-QPushButton#sidebar_tab_right {{
-    background: transparent;
-    color: {t['text_sidebar']};
-    border: none;
-    border-radius: 0;
-    font-size: 8pt;
-    font-weight: 500;
-    padding: 0 10px;
-    text-align: center;
-}}
-QPushButton#sidebar_tab_right:hover {{
-    background: {t['bg_sidebar_hover']};
-    color: {t['text_primary']};
-    border-bottom: 2px solid {t['accent_blue']};
-}}
-QPushButton#sidebar_tab_right:pressed {{
-    background: {t['accent_blue']};
-    color: #ffffff;
-}}
-
 /* ══════════════════════════════════════════════════════
    KARTLAR
 ══════════════════════════════════════════════════════ */

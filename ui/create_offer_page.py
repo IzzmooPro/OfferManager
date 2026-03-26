@@ -134,8 +134,8 @@ class ProductSelectDialog(QDialog):
         sel_lbl.setStyleSheet("color:#0f3460;font-size:8pt;")
         self.table.itemSelectionChanged.connect(
             lambda: sel_lbl.setText(
-                f"{len(self.table.selectedItems() and self.table.selectionModel().selectedRows() or [])} "
-                f"satır seçili" if self.table.selectionModel().selectedRows() else ""
+                f"{len(self.table.selectionModel().selectedRows())} satır seçili"
+                if self.table.selectionModel().selectedRows() else ""
             )
         )
         layout.addWidget(sel_lbl)
@@ -916,10 +916,9 @@ class CreateOfferPage(QWidget):
         if not data: return
 
         # ── Kayıt konumunu kullanıcıya sor (varsayılan: Masaüstü) ──────────
-        from pathlib import Path as _Path
-        desktop = _Path.home() / "Desktop"
+        desktop = Path.home() / "Desktop"
         if not desktop.exists():
-            desktop = _Path.home()
+            desktop = Path.home()
         default_file = str(desktop / f"{self._offer_no}.pdf")
         out_path, _ = QFileDialog.getSaveFileName(
             self, "PDF Kaydet", default_file,
