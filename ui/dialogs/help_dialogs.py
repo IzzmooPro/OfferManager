@@ -3,15 +3,15 @@ Yardım pencereleri:
   - HowToUseDialog  : Nasıl Kullanılır
   - AboutDialog     : Hakkında
 """
-import logging, threading, urllib.request, json
+import logging
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QWidget, QFrame, QTabWidget, QMessageBox
 )
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt
 logger = logging.getLogger("help")
 from core.constants import APP_VERSION
-from ui.utils.updater import is_newer_version
+from ui.utils.updater import UpdateChecker, UpdateDialog
 
 # ── Uygulama sabitleri ────────────────────────────────────────────────────────
 GITHUB_REPO  = "IzzmooPro/offer_management_system"
@@ -337,21 +337,6 @@ class HowToUseDialog(QDialog):
 
 # ── Güncelleme denetleyici (arka plan thread) ─────────────────────────────────
 
-class _UpdateChecker(QThread):
-    finished = Signal(str, str)   # (latest_version, error_msg)
-
-    def run(self):
-        try:
-            url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
-            req = urllib.request.Request(url, headers={"User-Agent": f"TeklifApp/{APP_VERSION}"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data   = json.loads(resp.read())
-                latest = data.get("tag_name", "").strip()
-            self.finished.emit(latest, "")
-        except Exception as e:
-            self.finished.emit("", str(e))
-
-
 # ── Hakkında ─────────────────────────────────────────────────────────────────
 
 class AboutDialog(QDialog):
@@ -448,28 +433,28 @@ class AboutDialog(QDialog):
     def _check_update(self):
         self.update_btn.setEnabled(False)
         self.update_btn.setText("Kontrol ediliyor…")
-        self._checker = _UpdateChecker()
-        self._checker.finished.connect(self._on_update_result)
+        # Açılıştaki kontrolle AYNI mekanizma — tek kaynak (ui/utils/updater)
+        self._checker = UpdateChecker()
+        self._checker.update_available.connect(self._on_update_available)
+        self._checker.no_update.connect(self._on_no_update)
+        self._checker.check_failed.connect(self._on_check_failed)
         self._checker.start()
 
-    def _on_update_result(self, latest: str, error: str):
+    def _reset_update_btn(self):
         self.update_btn.setEnabled(True)
         self.update_btn.setText("Güncelleme Kontrol Et")
-        if error:
-            QMessageBox.warning(self, "Bağlantı Hatası",
-                                f"Güncelleme kontrol edilemedi:\n{error}")
-        elif not latest:
-            QMessageBox.information(self, "Bilgi",
-                                    "GitHub'da henüz yayınlanmış sürüm bulunamadı.")
-        elif not is_newer_version(latest, APP_VERSION):
-            QMessageBox.information(self, "Güncel",
-                                    f"Uygulama güncel  ({APP_VERSION}) ✓")
-        else:
-            reply = QMessageBox.question(
-                self, "Güncelleme Mevcut",
-                f"Yeni sürüm mevcut: {latest}\nMevcut sürümünüz: {APP_VERSION}\n\n"
-                f"GitHub'a gitmek ister misiniz?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            if reply == QMessageBox.StandardButton.Yes:
-                import webbrowser
-                webbrowser.open(f"{GITHUB_URL}/releases/latest")
+
+    def _on_update_available(self, version: str, download_url: str):
+        self._reset_update_btn()
+        # Açılıştaki ile aynı indir-kur diyaloğu (installer indirir ve çalıştırır)
+        UpdateDialog(version, download_url, self).exec()
+
+    def _on_no_update(self):
+        self._reset_update_btn()
+        QMessageBox.information(self, "Güncel",
+                                f"Uygulama güncel  ({APP_VERSION}) ✓")
+
+    def _on_check_failed(self, error: str):
+        self._reset_update_btn()
+        QMessageBox.warning(self, "Bağlantı Hatası",
+                            f"Güncelleme kontrol edilemedi:\n{error}")

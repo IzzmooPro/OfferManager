@@ -2,6 +2,17 @@
 
 ---
 
+## [v3.2] — 2026-07-09
+
+### Düzeltmeler / İç
+- **Güncelleme mantığı tek yere indirildi:** Hakkında penceresindeki
+  "Güncelleme Kontrol Et" butonu artık tarayıcıya yönlendirmek yerine
+  açılıştakiyle **aynı** uygulama-içi indir-kur diyaloğunu kullanır
+  (tek kaynak: `ui/utils/updater`). Tekrar eden `_UpdateChecker` sınıfı
+  ve ölü import'lar kaldırıldı.
+
+---
+
 ## [v3.1] — 2026-07-09
 
 Bakım sürümü. Arayüzde değişiklik yok; öncelikli amaç GitHub üzerinden
