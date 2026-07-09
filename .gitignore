@@ -35,8 +35,9 @@ docs/PROJE_GECMISI.md
 docs/README.md
 docs/ROADMAP.md
 
-# Yerel yayın/iş akışı notu (GitHub'a gitmez)
+# Yerel yayın/iş akışı notu + sorun-çözüm defteri (GitHub'a gitmez)
 GITHUB_IS_AKISI_LOCAL.md
+SORUN_COZUM_NOTLARI.md
 
 # Claude Code çalışma verisi (oturum, worktree)
 .claude/

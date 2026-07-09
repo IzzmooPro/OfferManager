@@ -2,6 +2,21 @@
 
 ---
 
+## [v3.5] — 2026-07-09
+
+### Düzeltmeler
+- **Açılışta "Failed to load Python DLL (python314.dll)" hatası giderildi:**
+  paketleme tek-dosya (onefile) modundan klasörlü (onedir) moda geçirildi.
+  Program artık her açılışta kendini Temp'e açmıyor; antivirüs/Temp
+  temizliği kaynaklı açılış hataları kökten ortadan kalktı.
+- **Kaldırma sırasındaki "PathRedir: Not initialized" iç hatası giderildi:**
+  Inno Setup 7 önizleme sürümünün, [Code] bölümü olmayan kurulumlardaki
+  bilinen hatası — kurulum betiğine zararsız bir [Code] bölümü eklenerek
+  atlatıldı (resmi 7.0.1 sürüm notundaki bug).
+- Kurulumda "Masaüstü kısayolu oluştur" seçeneği artık varsayılan İŞARETLİ.
+
+---
+
 ## [v3.4] — 2026-07-09
 
 ### İç / Bakım
