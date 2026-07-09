@@ -2,6 +2,15 @@
 
 ---
 
+## [v3.4] — 2026-07-09
+
+### İç / Bakım
+- GitHub deposu **OfferManager** olarak yeniden adlandırıldı. Koddaki güncelleme
+  kontrolü ve bağlantı referansları yeni adrese güncellendi. Eski kurulumlar
+  güncellemeyi GitHub'ın otomatik yönlendirmesiyle sorunsuz almaya devam eder.
+
+---
+
 ## [v3.3] — 2026-07-09
 
 Bakım sürümü — güncelleme akışının (indir → UAC → kur) uçtan uca canlı

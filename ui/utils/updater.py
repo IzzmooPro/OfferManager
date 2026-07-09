@@ -24,7 +24,7 @@ from PySide6.QtCore import QThread, Signal, Qt
 logger = logging.getLogger("updater")
 
 from core.constants import APP_VERSION
-GITHUB_REPO = "IzzmooPro/offer_management_system"
+GITHUB_REPO = "IzzmooPro/OfferManager"
 GITHUB_URL  = f"https://github.com/{GITHUB_REPO}"
 
 

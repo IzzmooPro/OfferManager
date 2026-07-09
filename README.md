@@ -8,15 +8,15 @@
 
 <br>
 
-[![Release](https://img.shields.io/github/v/release/IzzmooPro/offer_management_system?color=2ea44f&label=s%C3%BCr%C3%BCm)](https://github.com/IzzmooPro/offer_management_system/releases/latest)
+[![Release](https://img.shields.io/github/v/release/IzzmooPro/OfferManager?color=2ea44f&label=s%C3%BCr%C3%BCm)](https://github.com/IzzmooPro/OfferManager/releases/latest)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
 ![UI](https://img.shields.io/badge/UI-Qt%20%2F%20PySide6-41CD52?logo=qt&logoColor=white)
-![Downloads](https://img.shields.io/github/downloads/IzzmooPro/offer_management_system/total?color=orange&label=indirme)
+![Downloads](https://img.shields.io/github/downloads/IzzmooPro/OfferManager/total?color=orange&label=indirme)
 
 <br>
 
-### ⬇️ [İndir / Download — Son Sürüm / Latest Release](https://github.com/IzzmooPro/offer_management_system/releases/latest)
+### ⬇️ [İndir / Download — Son Sürüm / Latest Release](https://github.com/IzzmooPro/OfferManager/releases/latest)
 
 **🇹🇷 [Türkçe](#-türkçe)  ·  🇬🇧 [English](#-english)**
 
@@ -46,7 +46,7 @@
 
 ### 🚀 Kurulum
 
-1. [**Son Sürümü indirin**](https://github.com/IzzmooPro/offer_management_system/releases/latest) → `TeklifYonetim_Setup_v<sürüm>.exe`
+1. [**Son Sürümü indirin**](https://github.com/IzzmooPro/OfferManager/releases/latest) → `TeklifYonetim_Setup_v<sürüm>.exe`
 2. Kurulumu çalıştırın, program açılsın. Hepsi bu! 🎉
 
 ### 🔄 Güncellemeler Nasıl Çalışır?
@@ -99,7 +99,7 @@ Save your products and customers, build a professional quotation with a 3-step w
 
 ### 🚀 Installation
 
-1. [**Download the latest release**](https://github.com/IzzmooPro/offer_management_system/releases/latest) → `TeklifYonetim_Setup_v<version>.exe`
+1. [**Download the latest release**](https://github.com/IzzmooPro/OfferManager/releases/latest) → `TeklifYonetim_Setup_v<version>.exe`
 2. Run the installer and launch the app. That's it! 🎉
 
 ### 🔄 How Updates Work

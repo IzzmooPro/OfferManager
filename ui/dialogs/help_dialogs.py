@@ -14,7 +14,7 @@ from core.constants import APP_VERSION
 from ui.utils.updater import UpdateChecker, UpdateDialog
 
 # ── Uygulama sabitleri ────────────────────────────────────────────────────────
-GITHUB_REPO  = "IzzmooPro/offer_management_system"
+GITHUB_REPO  = "IzzmooPro/OfferManager"
 GITHUB_URL   = f"https://github.com/{GITHUB_REPO}"
 CONTACT_MAIL = "IzzmooPro@gmail.com"
 
