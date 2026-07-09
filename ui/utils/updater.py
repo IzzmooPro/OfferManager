@@ -232,10 +232,11 @@ class UpdateDialog(QDialog):
             self._finish()
             return
 
-        import subprocess
-        # Kurulumu başlat (normal sihirbaz). Program kapanınca installer
-        # mevcut sürümün üzerine kurar ve /Run adımıyla yeniden açar.
-        subprocess.Popen([installer_path], shell=True)
+        # Kurulumu başlat. os.startfile → ShellExecute "open"; Inno kurulumunun
+        # yönetici manifestini görüp UAC yükseltmesini tetikler. (subprocess/
+        # CreateProcess manifestli kurulumu YÜKSELTEMEZ ve başlatamaz.)
+        # Program kapanınca installer üzerine kurar ve /Run ile yeniden açar.
+        os.startfile(installer_path)
 
         logger.info("Kurulum başlatıldı (%s), program kapatılıyor.", installer_path)
         self._finish()

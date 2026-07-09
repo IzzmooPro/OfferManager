@@ -10,6 +10,10 @@
   açılıştakiyle **aynı** uygulama-içi indir-kur diyaloğunu kullanır
   (tek kaynak: `ui/utils/updater`). Tekrar eden `_UpdateChecker` sınıfı
   ve ölü import'lar kaldırıldı.
+- **Güncelleme kurulum başlatma düzeltmesi:** İndirilen kurulum artık
+  `os.startfile` (ShellExecute) ile başlatılır; Inno kurulumunun yönetici
+  manifesti UAC yükseltmesini tetikler. Önceki `subprocess`/CreateProcess
+  yolu manifestli kurulumu yükseltemiyor ve başlatamıyordu.
 
 ---
 
