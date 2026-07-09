@@ -2,6 +2,18 @@
 
 ---
 
+## [v3.1] — 2026-07-09
+
+Bakım sürümü. Arayüzde değişiklik yok; öncelikli amaç GitHub üzerinden
+otomatik güncelleme akışının (indir → kur) uçtan uca doğrulanması.
+
+### İç / Bakım
+- Depo ve paketleme düzeni "dport" mantığına göre ayrıldı: kaynak + README
+  GitHub'da, paketleme (spec/iss/bat) yerel; README kök dizine taşındı
+- installer-tabanlı güncelleme mantığı (Inno kurulumu üzerine yazar) doğrulandı
+
+---
+
 ## [v3.0] — 2026-07-09
 
 Büyük sürüm: altyapı sağlamlaştırma, UX derinleştirme, yeni iş özellikleri,
