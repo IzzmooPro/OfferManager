@@ -25,6 +25,11 @@ assets/
 # Kaynaktan çalıştırma/kurulum yardımcısı (Python indirir) — YEREL kalır
 scripts/bootstrap.ps1
 
+# Vitrin görselleri ve demo veri üreticileri — GitHub'da gerekmez (yerelde kalır)
+screenshots/
+scripts/seed_demo_data.py
+scripts/seed_pdf_test_data.py
+
 # Yerel yayın/iş akışı notu (GitHub'a gitmez)
 GITHUB_IS_AKISI_LOCAL.md
 
