@@ -2,6 +2,16 @@
 
 ---
 
+## [v3.6] — 2026-07-09
+
+### Düzeltmeler
+- **Güncelleme sırasındaki "uygulamayı kapatın" uyarısı kaldırıldı:**
+  Kurulum aracı artık çalışan uygulamayı kendisi nazikçe kapatıyor
+  (Restart Manager). Güncelleme daha akıcı; kullanıcının programı elle
+  kapatması gerekmiyor.
+
+---
+
 ## [v3.5] — 2026-07-09
 
 ### Düzeltmeler

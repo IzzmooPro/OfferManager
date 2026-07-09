@@ -223,11 +223,11 @@ class UpdateDialog(QDialog):
         """
         İndirilen Inno Setup kurulumunu çalıştırır ve programı kapatır.
 
-        Kurulum, .iss'teki CloseApplications + AppMutex sayesinde çalışan
-        uygulamayı kendisi kapatıp mevcut kurulumun üzerine yazar ve
-        yeniden başlatır. Bu yüzden EXE'yi elle "taşımaya" gerek yoktur —
-        ki zaten Program Files'ta yetki gerektirir ve installer bunu
-        yönetici izniyle düzgün yapar.
+        Kurulum, .iss'teki CloseApplications=yes (Restart Manager) sayesinde
+        çalışan uygulamayı kendisi nazikçe kapatıp mevcut kurulumun üzerine
+        yazar ve yeniden başlatır. (AppMutex bilerek kaldırıldı — çalışan
+        uygulama için manuel "kapatın" uyarısı çıkarıyordu.) EXE'yi elle
+        "taşımaya" gerek yoktur; installer yönetici iznini kendisi ister.
         """
         if not getattr(sys, "frozen", False):
             # Kaynak (Python) modda — tarayıcıya yönlendir
