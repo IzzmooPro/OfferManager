@@ -2,6 +2,13 @@
 
 ---
 
+## [v3.3] — 2026-07-09
+
+Bakım sürümü — güncelleme akışının (indir → UAC → kur) uçtan uca canlı
+doğrulanması. Kullanıcı arayüzünde değişiklik yok.
+
+---
+
 ## [v3.2] — 2026-07-09
 
 ### Düzeltmeler / İç
