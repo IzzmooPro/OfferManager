@@ -3,55 +3,121 @@ Ayarlar sayfası — sekmeli düzen: Şirket | Yetkililer | Logo & İmza
 """
 import shutil, logging
 from pathlib import Path
-from ui._section_card import make_section_card
+from ui.widgets._section_card import make_section_card
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit,
     QFileDialog, QMessageBox, QScrollArea, QFrame,
     QTabWidget, QPlainTextEdit
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QPixmap, QPainter, QColor, QPen, QPainterPath, QFont
+
+
+class _PreviewBox(QWidget):
+    """Logo/imza önizleme kutusu — paintEvent ile tema uyumlu arka plan."""
+    def __init__(self, text="", parent=None):
+        super().__init__(parent)
+        self._text = text
+        self._pix = None
+
+    def setText(self, t):
+        self._text = t
+        # Yalnızca gerçek bir yer tutucu metin verildiğinde görseli temizle.
+        # Boş metin ("") görseli SİLMEMELİ — setPixmap sonrası çağrılabiliyor.
+        if t:
+            self._pix = None
+        self.update()
+
+    def setPixmap(self, pix):
+        self._pix = pix if pix and not pix.isNull() else None
+        if self._pix:
+            self._text = ""
+        self.update()
+
+    def text(self):
+        return self._text
+
+    def paintEvent(self, event):
+        from ui.utils.theme_manager import get_theme
+        ct = get_theme()
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = self.rect().adjusted(1, 1, -1, -1)
+        path = QPainterPath()
+        path.addRoundedRect(float(r.x()), float(r.y()),
+                            float(r.width()), float(r.height()), 6.0, 6.0)
+        p.fillPath(path, QColor(ct['bg_input']))
+        p.setPen(QPen(QColor(ct['border_input']), 1.0, Qt.PenStyle.DashLine))
+        p.drawPath(path)
+        if self._pix:
+            pw, ph = self._pix.width(), self._pix.height()
+            x = (self.width() - pw) // 2
+            y = (self.height() - ph) // 2
+            p.drawPixmap(x, y, self._pix)
+        elif self._text:
+            p.setPen(QColor(ct['text_muted']))
+            p.setFont(QFont("Segoe UI", 9))
+            p.drawText(r, int(Qt.AlignmentFlag.AlignCenter), self._text)
+        p.end()
 
 logger = logging.getLogger("settings")
-from app_paths import (
+from core.credential_store import get_smtp_password, set_smtp_password, keyring_available
+from core.config import load_company_config, save_company_config
+from core.app_paths import (
     LOGO_PATH,
     SIG1_PATH,
     SIG2_PATH,
-    CFG_PATH,
+    SIG3_PATH,
+    SIG4_PATH,
+    DEFAULT_LOGO_PATH,
+    LOGO_DISABLED_PATH,
 )
 
+SIG_PATHS = (SIG1_PATH, SIG2_PATH, SIG3_PATH, SIG4_PATH)
 
-def load_company_config() -> dict:
-    d = {
-        "name": "", "address": "", "tel": "", "fax": "", "mail": "", "web": "",
-        "offer_prefix": "SNS",
-        "sales_person1_name": "", "sales_person1_title": "", "sales_person1_email": "",
-        "sales_person2_name": "", "sales_person2_title": "", "sales_person2_email": "",
-        # PDF sabit metinler (PDF'deki görünüm sırasına göre)
-        "pdf_giris_metni": "Firmamızdan talep etmiş olduğunuz malzemeler ile ilgili teklifimizi tetkiklerinize sunar, değerli siparişlerinizi bekleriz.",
-        "pdf_iskonto":     "Firmanıza iskonto uygulanmış olup, fiyatlar NET tir.",
-        "pdf_teslim_yeri": "Büromuz veya Kargo bedeli karşı taraf ödemeli şartiyla Kargo şirketi ile.",
-        "pdf_kur_notu":    "•Verilen döviz fiyatlar Fatura tarihindeki T.C.M.B. Efektif Satış Kuru üzerinden TL.'sına çevrilecektir.",
-        "pdf_kdv_notu":    "•Fiyatlarımıza K.D.V. dahil değildir.",
-        "pdf_onay_metni":  "Yukarıda teklif edilen malzemeleri belirttiğiniz özellik ve şartlarda satın almayı kabul ediyoruz.",
-        "pdf_teslim_notu": "NOT : Teklifimiz de belirtilen teslim süreleri teklifin yazıldığı andaki güncel stoklara göre verilmiştir. Sipariş anında stok durumuna göre teslim süreleri değişebilir.",
-        "pdf_iptal_notu":  "Siparişlerin yazılı olarak maille veya fax yoluyla geçilmesine müteakip siparişlerin iptali ve ürünlerin iadesi kabul edilmemektedir.",
-    }
-    if CFG_PATH.exists():
+
+class SmtpTestWorker(QThread):
+    """SMTP bağlantısını arka planda test eder — UI donmaz."""
+    result = Signal(bool, str)   # (başarılı, mesaj)
+
+    def __init__(self, cfg: dict):
+        super().__init__()
+        self.cfg = cfg
+
+    def run(self):
+        import smtplib, ssl as _ssl
+        from core.credential_store import normalize_smtp_password
+        server = self.cfg.get("smtp_server", "").strip()
+        port_s = self.cfg.get("smtp_port",   "465").strip()
+        user   = self.cfg.get("smtp_user",   "").strip()
+        pwd    = normalize_smtp_password(self.cfg.get("smtp_password", ""))
+
+        if not server or not user or not pwd:
+            self.result.emit(False, "Sunucu, e-posta ve şifre alanları boş bırakılamaz.")
+            return
+
+        port = int(port_s) if port_s.isdigit() else 465
         try:
-            for line in CFG_PATH.read_text(encoding="utf-8").splitlines():
-                if "=" in line:
-                    k, _, v = line.partition("=")
-                    d[k.strip()] = v.strip()
-        except Exception:
-            pass
-    return d
-
-
-def save_company_config(data: dict):
-    CFG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CFG_PATH.write_text("\n".join(f"{k}={v}" for k, v in data.items()), encoding="utf-8")
+            if port == 465:
+                ctx = _ssl.create_default_context()
+                with smtplib.SMTP_SSL(server, port, context=ctx, timeout=10) as smtp:
+                    smtp.login(user, pwd)
+            else:
+                with smtplib.SMTP(server, port, timeout=10) as smtp:
+                    smtp.ehlo()
+                    smtp.starttls()
+                    smtp.login(user, pwd)
+            self.result.emit(True, f"Bağlantı başarılı!  ({server}:{port})")
+        except smtplib.SMTPAuthenticationError:
+            self.result.emit(False,
+                "Kimlik doğrulama başarısız.\n"
+                "Gmail kullanıyorsanız 'Uygulama Şifresi (App Password)' oluşturun.")
+        except TimeoutError:
+            self.result.emit(False,
+                f"Bağlantı zaman aşımı (10 sn).\nSunucu adresi ve portu kontrol edin.")
+        except Exception as e:
+            self.result.emit(False, str(e))
 
 
 def _inp(ph="", tip="", w=None) -> QLineEdit:
@@ -76,6 +142,7 @@ class SettingsPage(QWidget):
         self._loaded_prefix = "SNS"
         self._build_ui()
         self._load()
+        self._snapshot = self._current_values()
 
     def _build_ui(self):
         root = QVBoxLayout(self)
@@ -87,9 +154,19 @@ class SettingsPage(QWidget):
         hdr.setObjectName("toolbar")
         hdr.setFixedHeight(64)
         hl = QHBoxLayout(hdr)
-        hl.setContentsMargins(24, 12, 32, 12)
+        hl.setContentsMargins(16, 12, 16, 12)
         t = QLabel("Ayarlar")
+        t.setStyleSheet("font-size:14pt;font-weight:700;")
         hl.addWidget(t); hl.addStretch()
+
+        reset_btn = QPushButton("Varsayılana Dön")
+        reset_btn.setObjectName("secondary")
+        reset_btn.setFixedHeight(40)
+        reset_btn.setToolTip("Şirket bilgileri ve PDF metinlerini fabrika ayarlarına sıfırlar")
+        reset_btn.clicked.connect(self._reset_to_defaults)
+        hl.addWidget(reset_btn)
+        hl.addSpacing(8)
+
         self.save_btn = QPushButton("Kaydet")
         self.save_btn.setObjectName("primary")
         self.save_btn.setFixedHeight(40)
@@ -107,6 +184,7 @@ class SettingsPage(QWidget):
         self.tabs.addTab(self._tab_company(),   "Şirket")
         self.tabs.addTab(self._tab_persons(),   "Yetkililer")
         self.tabs.addTab(self._tab_visuals(),   "Logo ve İmza")
+        self.tabs.addTab(self._tab_email(),     "E-Posta Ayarları")
         self.tabs.addTab(self._tab_pdf_texts(), "PDF Ayarları")
 
     # ══════════════════════════════════════════════════════════════════════
@@ -118,12 +196,12 @@ class SettingsPage(QWidget):
         box, g = make_section_card("Şirket Bilgileri")
         g.setColumnStretch(1, 1); g.setColumnStretch(3, 1)
 
-        self.f_name    = _inp("Şirketin tam unvanı")
-        self.f_address = _inp("Açık adres")
-        self.f_tel     = _inp("0 xxx xxx xx xx")
-        self.f_fax     = _inp("0 xxx xxx xx xx")
-        self.f_mail    = _inp("info@sirket.com.tr")
-        self.f_web     = _inp("www.sirket.com.tr")
+        self.f_name    = _inp("")
+        self.f_address = _inp("")
+        self.f_tel     = _inp("")
+        self.f_fax     = _inp("")
+        self.f_mail    = _inp("")
+        self.f_web     = _inp("")
 
         g.addWidget(_lbl("Şirket Adı:"),  0, 0); g.addWidget(self.f_name,    0, 1, 1, 3)
         g.addWidget(_lbl("Adres:"),        1, 0); g.addWidget(self.f_address,  1, 1, 1, 3)
@@ -133,46 +211,93 @@ class SettingsPage(QWidget):
         g.addWidget(_lbl("Web:"),          3, 2); g.addWidget(self.f_web,      3, 3)
         lay.addWidget(box)
 
-        no_box, ng = make_section_card("Teklif Numarası")
-        self.f_prefix = _inp("SNS",
-            "Teklif numarası başı — Örnek: SNS → SNS-000001", w=160)
-        note = QLabel("Format:  PREFIX-000001")
-        note.setStyleSheet("color:#888;")
-        ng.addWidget(_lbl("Prefix:"), 0, 0)
-        ng.addWidget(self.f_prefix,   0, 1)
-        ng.addWidget(note,            1, 1)
-        lay.addWidget(no_box)
         lay.addStretch()
         return page
 
     # ══════════════════════════════════════════════════════════════════════
     # SEKME 2 — Yetkili Bilgileri
     # ══════════════════════════════════════════════════════════════════════
+    MAX_PERSONS = 4
+
     def _tab_persons(self) -> QWidget:
         page, lay = self._scrolled_page()
 
-        for attrs, title in [
-            (("f_s1_name", "f_s1_title", "f_s1_email"), "1. Yetkili"),
-            (("f_s2_name", "f_s2_title", "f_s2_email"), "2. Yetkili"),
-        ]:
-            box, g = make_section_card(title)
+        self._person_cards = []
+        for i in range(1, self.MAX_PERSONS + 1):
+            box, g = make_section_card(f"{i}. Yetkili")
             g.setColumnStretch(1, 1); g.setColumnStretch(3, 1)
             name_f  = _inp("Ad Soyad")
             title_f = _inp("Unvan / Görev")
             email_f = _inp("ad.soyad@sirket.com.tr")
-            setattr(self, attrs[0], name_f)
-            setattr(self, attrs[1], title_f)
-            setattr(self, attrs[2], email_f)
+            setattr(self, f"f_s{i}_name",  name_f)
+            setattr(self, f"f_s{i}_title", title_f)
+            setattr(self, f"f_s{i}_email", email_f)
             g.addWidget(_lbl("Ad Soyad:"), 0, 0); g.addWidget(name_f,  0, 1)
             g.addWidget(_lbl("Unvan:"),    0, 2); g.addWidget(title_f, 0, 3)
             g.addWidget(_lbl("E-Posta:"),  1, 0); g.addWidget(email_f, 1, 1, 1, 3)
+            if i >= 2:
+                btn_rm = QPushButton("Bu Yetkiliyi Kaldır")
+                btn_rm.setObjectName("danger")
+                btn_rm.clicked.connect(lambda _, idx=i: self._remove_person(idx))
+                g.addWidget(btn_rm, 2, 3,
+                            alignment=Qt.AlignmentFlag.AlignRight)
             lay.addWidget(box)
+            self._person_cards.append(box)
 
-        note = QLabel("Bu bilgiler PDF teklifin imza alanında görünür.")
-        note.setStyleSheet("color:#888;")
+        add_row = QHBoxLayout()
+        btn_add = QPushButton("+ Yetkili Ekle")
+        btn_add.setObjectName("secondary")
+        btn_add.setToolTip(f"En fazla {self.MAX_PERSONS} yetkili eklenebilir.")
+        btn_add.clicked.connect(self._add_person)
+        add_row.addWidget(btn_add); add_row.addStretch()
+        lay.addLayout(add_row)
+
+        note = QLabel("Bu bilgiler PDF teklifin imza alanında sırayla görünür — "
+                      "1. Yetkili ↔ İmza 1, 2. Yetkili ↔ İmza 2 (Logo ve İmza sekmesi).")
+        note.setObjectName("hint_label")
         lay.addWidget(note)
         lay.addStretch()
         return page
+
+    def _person_has_data(self, i: int) -> bool:
+        return any(getattr(self, f"f_s{i}_{k}").text().strip()
+                   for k in ("name", "title", "email"))
+
+    def _sync_person_cards(self):
+        """1. kart hep görünür; 2-4 dolu ise veya elle eklendiyse görünür."""
+        for i in range(2, self.MAX_PERSONS + 1):
+            card = self._person_cards[i - 1]
+            if self._person_has_data(i):
+                card.setVisible(True)
+            elif not getattr(card, "_user_added", False):
+                card.setVisible(False)
+
+    def _add_person(self):
+        for i in range(2, self.MAX_PERSONS + 1):
+            card = self._person_cards[i - 1]
+            if not card.isVisible():
+                card._user_added = True
+                card.setVisible(True)
+                getattr(self, f"f_s{i}_name").setFocus()
+                return
+        QMessageBox.warning(
+            self, "Sınır",
+            f"En fazla {self.MAX_PERSONS} yetkili eklenebilir.")
+
+    def _remove_person(self, i: int):
+        for k in ("name", "title", "email"):
+            getattr(self, f"f_s{i}_{k}").clear()
+        card = self._person_cards[i - 1]
+        card._user_added = False
+        card.setVisible(False)
+
+    def _person_values(self) -> dict:
+        vals = {}
+        for i in range(1, self.MAX_PERSONS + 1):
+            vals[f"sales_person{i}_name"]  = getattr(self, f"f_s{i}_name").text().strip()
+            vals[f"sales_person{i}_title"] = getattr(self, f"f_s{i}_title").text().strip()
+            vals[f"sales_person{i}_email"] = getattr(self, f"f_s{i}_email").text().strip()
+        return vals
 
     # ══════════════════════════════════════════════════════════════════════
     # SEKME 3 — Logo & İmza Görselleri
@@ -189,7 +314,7 @@ class SettingsPage(QWidget):
 
         logo_hdr = QFrame(logo_card)
         logo_hdr.setFixedHeight(44)
-        logo_hdr.setStyleSheet("background:transparent;")
+        logo_hdr.setObjectName("transparent_frame")
         logo_hl = QHBoxLayout(logo_hdr)
         logo_hl.setContentsMargins(16, 0, 16, 0)
         logo_title = QLabel("Logo  (PDF sol üst köşe)")
@@ -206,7 +331,7 @@ class SettingsPage(QWidget):
         logo_vbox.addWidget(logo_sep)
 
         logo_body = QFrame(logo_card)
-        logo_body.setStyleSheet("background:transparent;")
+        logo_body.setObjectName("transparent_frame")
         logo_row = QHBoxLayout(logo_body)
         logo_row.setContentsMargins(16, 16, 16, 16)
         logo_row.setSpacing(24)
@@ -215,7 +340,7 @@ class SettingsPage(QWidget):
         logo_row.addWidget(self.logo_preview)
 
         logo_btn_frame = QFrame(logo_body)
-        logo_btn_frame.setStyleSheet("background:transparent;")
+        logo_btn_frame.setObjectName("transparent_frame")
         logo_btn_col = QVBoxLayout(logo_btn_frame)
         logo_btn_col.setContentsMargins(0, 0, 0, 0)
         logo_btn_col.setSpacing(8)
@@ -224,16 +349,15 @@ class SettingsPage(QWidget):
         self.b_logo = QPushButton(logo_btn_frame)
         self.b_logo.setObjectName("secondary")
         self.b_logo.setFixedSize(120, 34)
-        self._sync_img_btn(self.b_logo, LOGO_PATH)
+        self._sync_logo_btn()
         logo_hint = QLabel("PNG / JPG\nÖnerilen: 230 × 50 px", logo_btn_frame)
-        logo_hint.setStyleSheet("color:#999;font-size:9pt;")
+        logo_hint.setObjectName("hint_label")
 
         logo_btn_col.addWidget(self.b_logo)
         logo_btn_col.addSpacing(4)
         logo_btn_col.addWidget(logo_hint)
 
-        self.b_logo.clicked.connect(lambda: self._toggle_img(
-            LOGO_PATH, self.logo_preview, "Logo Yok\n(Yükleyin)", self.b_logo))
+        self.b_logo.clicked.connect(self._toggle_logo)
 
         logo_row.addWidget(logo_btn_frame)
         logo_row.addStretch()
@@ -249,7 +373,7 @@ class SettingsPage(QWidget):
 
         sig_hdr = QFrame(sig_card)
         sig_hdr.setFixedHeight(44)
-        sig_hdr.setStyleSheet("background:transparent;")
+        sig_hdr.setObjectName("transparent_frame")
         sig_hl = QHBoxLayout(sig_hdr)
         sig_hl.setContentsMargins(16, 0, 16, 0)
         sig_title = QLabel("İmza Görselleri  (PDF imza alanı, önerilen: 200 × 80 px)")
@@ -266,17 +390,18 @@ class SettingsPage(QWidget):
         sig_vbox.addWidget(sig_sep)
 
         sig_body = QFrame(sig_card)
-        sig_body.setStyleSheet("background:transparent;")
-        sig_row = QHBoxLayout(sig_body)
+        sig_body.setObjectName("transparent_frame")
+        from PySide6.QtWidgets import QGridLayout
+        sig_row = QGridLayout(sig_body)
         sig_row.setContentsMargins(16, 16, 16, 16)
-        sig_row.setSpacing(40)
+        sig_row.setHorizontalSpacing(40)
+        sig_row.setVerticalSpacing(16)
 
-        for path, attr, btn_attr, placeholder in [
-            (SIG1_PATH, "sig1_preview", "b_sig1", "İmza 1 Yok"),
-            (SIG2_PATH, "sig2_preview", "b_sig2", "İmza 2 Yok"),
-        ]:
+        _sig_defs = [(SIG_PATHS[i - 1], f"sig{i}_preview", f"b_sig{i}",
+                      f"İmza {i} Yok") for i in range(1, 5)]
+        for _idx, (path, attr, btn_attr, placeholder) in enumerate(_sig_defs):
             cell_frame = QFrame(sig_body)
-            cell_frame.setStyleSheet("background:transparent;")
+            cell_frame.setObjectName("transparent_frame")
             cell_col = QVBoxLayout(cell_frame)
             cell_col.setContentsMargins(0, 0, 0, 0)
             cell_col.setSpacing(8)
@@ -286,7 +411,7 @@ class SettingsPage(QWidget):
             cell_col.addWidget(prev)
 
             btn_frame = QFrame(cell_frame)
-            btn_frame.setStyleSheet("background:transparent;")
+            btn_frame.setObjectName("transparent_frame")
             btn_row = QHBoxLayout(btn_frame)
             btn_row.setContentsMargins(0, 0, 0, 0)
             btn_row.setSpacing(8)
@@ -302,9 +427,9 @@ class SettingsPage(QWidget):
             btn_row.addStretch()
 
             cell_col.addWidget(btn_frame)
-            sig_row.addWidget(cell_frame)
+            sig_row.addWidget(cell_frame, _idx // 2, _idx % 2)
 
-        sig_row.addStretch()
+        sig_row.setColumnStretch(2, 1)
         sig_vbox.addWidget(sig_body)
         lay.addWidget(sig_card)
 
@@ -312,54 +437,146 @@ class SettingsPage(QWidget):
         return page
 
     # ══════════════════════════════════════════════════════════════════════
-    # SEKME 4 — PDF Ayarları (sabit metinler)
+    # SEKME 4 — E-Posta Ayarları
+    # ══════════════════════════════════════════════════════════════════════
+    def _tab_email(self) -> QWidget:
+        page, lay = self._scrolled_page()
+
+        box, g = make_section_card("SMTP Sunucu Ayarları")
+        g.setColumnStretch(1, 1); g.setColumnStretch(3, 1)
+
+        self.f_smtp_server = _inp("Örn: smtp.gmail.com")
+        self.f_smtp_port   = _inp("Örn: 465 (SSL) veya 587 (TLS)")
+        self.f_smtp_user   = _inp("E-Posta Adresiniz")
+        self.f_smtp_pass   = _inp("Şifre veya Uygulama Şifresi")
+        self.f_smtp_pass.setEchoMode(QLineEdit.EchoMode.Password)
+
+        pwd_row = QHBoxLayout()
+        pwd_row.setSpacing(4)
+        pwd_row.addWidget(self.f_smtp_pass, 1)
+        self._btn_toggle_pwd = QPushButton("Göster")
+        self._btn_toggle_pwd.setObjectName("secondary")
+        self._btn_toggle_pwd.setFixedHeight(34)
+        self._btn_toggle_pwd.setMinimumWidth(72)
+        self._btn_toggle_pwd.setToolTip("Şifreyi göster/gizle")
+        self._btn_toggle_pwd.setCheckable(True)
+        self._btn_toggle_pwd.toggled.connect(self._toggle_password_visibility)
+        pwd_row.addWidget(self._btn_toggle_pwd)
+        pwd_widget = QWidget()
+        pwd_widget.setLayout(pwd_row)
+
+        g.addWidget(_lbl("Sunucu:"),  0, 0); g.addWidget(self.f_smtp_server, 0, 1)
+        g.addWidget(_lbl("Port:"),    0, 2); g.addWidget(self.f_smtp_port,   0, 3)
+        g.addWidget(_lbl("E-Posta:"), 1, 0); g.addWidget(self.f_smtp_user,   1, 1, 1, 3)
+        g.addWidget(_lbl("Şifre:"),   2, 0); g.addWidget(pwd_widget,         2, 1, 1, 3)
+
+        note = QLabel("Gmail veya Outlook gibi servisler üzerinden otomatik PDF yollayabilmek için SMTP ayarlarını girin.\nGüvenlik açısından 'Uygulama Şifresi (App Password)' oluşturarak kullanmanız önerilir.")
+        note.setObjectName("hint_label")
+        note.setWordWrap(True)
+        g.addWidget(note, 3, 1, 1, 3)
+
+        # ── SMTP Test Butonu ──────────────────────────────────────────────
+        self.b_smtp_test = QPushButton("Bağlantıyı Test Et")
+        self.b_smtp_test.setObjectName("secondary")
+        self.b_smtp_test.setFixedHeight(44)
+        self.b_smtp_test.setMinimumWidth(180)
+        self.b_smtp_test.clicked.connect(self._test_smtp)
+
+        self.lbl_smtp_result = QLabel("")
+        self.lbl_smtp_result.setWordWrap(True)
+        self.lbl_smtp_result.setMinimumHeight(20)
+
+        g.addWidget(self.b_smtp_test,     4, 1, 1, 1)
+        g.addWidget(self.lbl_smtp_result, 5, 1, 1, 3)
+
+        lay.addWidget(box)
+        lay.addStretch()
+        return page
+
+    # ══════════════════════════════════════════════════════════════════════
+    # SEKME 5 — PDF Ayarları (sabit metinler)
     # ══════════════════════════════════════════════════════════════════════
     def _tab_pdf_texts(self) -> QWidget:
         page, lay = self._scrolled_page()
 
+        # ── Teklif Numarası — diğer PDF ayar satırlarıyla aynı kalıp ──────
+        no_frame = QFrame()
+        no_frame.setObjectName("section_card")
+        nl = QVBoxLayout(no_frame)
+        nl.setContentsMargins(14, 8, 14, 8)
+        nl.setSpacing(4)
+
+        no_header = QHBoxLayout()
+        no_header.setSpacing(8)
+        no_title = QLabel("Teklif Numarası Öneki (Prefix)")
+        no_title.setStyleSheet("font-weight:700; font-size:9pt;")
+        no_title.setToolTip("Teklif numarası başı — Örnek: SNS → SNS-000001")
+        no_header.addWidget(no_title)
+        no_header.addStretch()
+        no_note = QLabel("Format:  PREFIX-000001")
+        no_note.setObjectName("hint_label")
+        no_header.addWidget(no_note)
+        nl.addLayout(no_header)
+
+        self.f_prefix = _inp("SNS",
+            "Teklif numarası başı — Örnek: SNS → SNS-000001")
+        nl.addWidget(self.f_prefix)
+        lay.addWidget(no_frame)
+
         # PDF'deki görünüm sırasına göre: yukarıdan aşağıya
         fields = [
-            ("pdf_giris_metni",  "① Giriş Metni",
+            ("pdf_giris_metni",  "Giriş Metni",
              "Müşteri bilgilerinden hemen sonra görünen açılış paragrafı."),
-            ("pdf_iskonto",      "② İskonto  (Şartlar tablosu)",
+            ("pdf_iskonto",      "İskonto — Şartlar tablosu",
              "Ürün tablosunun üstündeki şartlar bölümü — iskonto satırı."),
-            ("pdf_teslim_yeri",  "③ Teslim Yeri  (Şartlar tablosu)",
+            ("pdf_teslim_yeri",  "Teslim Yeri — Şartlar tablosu",
              "Ürün tablosunun üstündeki şartlar bölümü — teslim yeri satırı."),
-            ("pdf_kur_notu",     "④ Döviz Kur Notu  (İmza alanı üstü)",
+            ("pdf_kur_notu",     "Döviz Kur Notu — İmza alanı üstü",
              "İmza alanı üstünde, döviz kuruna dair uyarı metni."),
-            ("pdf_kdv_notu",     "⑤ KDV Notu  (İmza alanı üstü)",
+            ("pdf_kdv_notu",     "KDV Notu — İmza alanı üstü",
              "İmza alanı üstünde, KDV'ye dair uyarı metni."),
-            ("pdf_onay_metni",   "⑥ Müşteri Onay Metni  (İmza alanı altı)",
+            ("pdf_onay_metni",   "Müşteri Onay Metni — İmza alanı altı",
              "İmza alanı altında, müşterinin onayladığını belirten metin."),
-            ("pdf_teslim_notu",  "⑦ Teslim Süresi Notu  (Alt bilgi — kırmızı)",
+            ("pdf_teslim_notu",  "Teslim Süresi Notu — Alt bilgi",
              "PDF'nin en altındaki kırmızı uyarı notu."),
-            ("pdf_iptal_notu",   "⑧ İptal / İade Notu  (Alt bilgi)",
+            ("pdf_iptal_notu",   "İptal / İade Notu — Alt bilgi",
              "PDF'nin en altındaki iptal/iade koşulu metni."),
         ]
 
+        from PySide6.QtWidgets import QCheckBox
+        self._pdf_toggles = {}
+
         for attr, title, hint in fields:
-            box, g = make_section_card(title)
-            g.setColumnStretch(0, 1)
+            row_frame = QFrame()
+            row_frame.setObjectName("section_card")
+            rl = QVBoxLayout(row_frame)
+            rl.setContentsMargins(14, 8, 14, 8)
+            rl.setSpacing(4)
+
+            header = QHBoxLayout()
+            header.setSpacing(8)
+            title_lbl = QLabel(title)
+            title_lbl.setStyleSheet("font-weight:700; font-size:9pt;")
+            title_lbl.setToolTip(hint)
+            header.addWidget(title_lbl)
+            header.addStretch()
+            chk = QCheckBox("PDF'de göster")
+            chk.setChecked(True)
+            chk.setToolTip("Kapalıysa bu metin PDF'de görünmez.")
+            self._pdf_toggles[attr] = chk
+            header.addWidget(chk)
+            rl.addLayout(header)
 
             te = QPlainTextEdit()
-            te.setMinimumHeight(48)
-            te.setMaximumHeight(62)
+            te.setMinimumHeight(36)
+            te.setMaximumHeight(44)
             te.setPlaceholderText(hint)
             te.setToolTip(hint)
+            chk.toggled.connect(lambda checked, w=te: w.setEnabled(checked))
             setattr(self, attr, te)
+            rl.addWidget(te)
 
-            hint_lbl = QLabel(hint)
-            hint_lbl.setStyleSheet("color:#999;font-size:8pt;")
-            hint_lbl.setWordWrap(True)
-
-            g.addWidget(te,       0, 0)
-            g.addWidget(hint_lbl, 1, 0)
-            lay.addWidget(box)
-
-        note = QLabel("Bu metinler PDF teklifin ilgili bölümlerinde otomatik görünür.\nDeğişiklikler kaydedilince sonraki PDF'lere yansır.")
-        note.setStyleSheet("color:#888;font-size:9pt;")
-        note.setWordWrap(True)
-        lay.addWidget(note)
+            lay.addWidget(row_frame)
         lay.addStretch()
         return page
 
@@ -378,14 +595,11 @@ class SettingsPage(QWidget):
         lay.setContentsMargins(16, 20, 16, 16); lay.setSpacing(20)
         return page, lay
 
-    def _make_preview(self, text, w, h) -> QLabel:
-        lbl = QLabel(text)
-        lbl.setFixedSize(w, h)
-        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl.setStyleSheet(
-            "border:1px dashed #bbb;border-radius:6px;"
-            "color:#999;background:#fafafa;")
-        return lbl
+    def _make_preview(self, text, w, h):
+        box = _PreviewBox(text)
+        box.setFixedSize(w, h)
+        box._inner_label = box
+        return box
 
     def _upload(self, dest: Path, preview: QLabel, placeholder: str):
         path, _ = QFileDialog.getOpenFileName(
@@ -399,15 +613,15 @@ class SettingsPage(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Hata", f"Yüklenemedi:\n{e}")
 
-    def _remove(self, dest: Path, preview: QLabel, placeholder: str):
+    def _remove(self, dest: Path, preview, placeholder: str):
         try:
             if dest.exists():
                 dest.unlink()
         except Exception as e:
             QMessageBox.warning(self, "Hata", f"Görsel kaldırılamadı:\n{e}")
             return
-        preview.setPixmap(QPixmap())
-        preview.setText(placeholder)
+        self._preview_label(preview).setPixmap(QPixmap())
+        self._preview_label(preview).setText(placeholder)
         QMessageBox.information(self, "Kaldırıldı", "Görsel kaldırıldı.")
 
     def _toggle_img(self, dest: Path, preview: QLabel, placeholder: str, btn: QPushButton):
@@ -422,27 +636,79 @@ class SettingsPage(QWidget):
         """Dosya durumuna göre buton metnini günceller."""
         btn.setText("Kaldır" if dest.exists() else "Yükle")
 
-    def _set_preview(self, lbl: QLabel, path: Path):
+    def _toggle_logo(self):
+        """Logo için özel toggle: varsayılan logo desteği + kaldırma işaret dosyası."""
+        logo_active = not LOGO_DISABLED_PATH.exists() and (
+            LOGO_PATH.exists() or DEFAULT_LOGO_PATH.exists())
+        if logo_active:
+            # Aktif → kaldır (disabled marker oluştur, özel logo varsa sil)
+            if LOGO_PATH.exists():
+                try:
+                    LOGO_PATH.unlink()
+                except Exception as e:
+                    QMessageBox.warning(self, "Hata", f"Logo kaldırılamadı:\n{e}")
+                    return
+            try:
+                LOGO_DISABLED_PATH.touch()
+            except OSError as e:
+                logger.warning("Logo disabled marker oluşturulamadı: %s", e)
+            self._preview_label(self.logo_preview).setPixmap(QPixmap())
+            self._preview_label(self.logo_preview).setText("Logo Yok\n(Yükleyin)")
+            QMessageBox.information(self, "Kaldırıldı", "Logo PDF'den kaldırıldı.")
+        else:
+            # Kaldırılmış → yükle (disabled marker'ı da temizle)
+            self._upload(LOGO_PATH, self.logo_preview, "Logo Yok\n(Yükleyin)")
+            if LOGO_PATH.exists() and LOGO_DISABLED_PATH.exists():
+                try:
+                    LOGO_DISABLED_PATH.unlink()
+                except OSError as e:
+                    logger.warning("Logo disabled marker silinemedi: %s", e)
+        self._sync_logo_btn()
+
+    def _sync_logo_btn(self):
+        """Logo butonunun metnini mevcut duruma göre günceller."""
+        logo_active = not LOGO_DISABLED_PATH.exists() and (
+            LOGO_PATH.exists() or DEFAULT_LOGO_PATH.exists())
+        self.b_logo.setText("Kaldır" if logo_active else "Yükle")
+
+    def _set_preview(self, container, path: Path):
+        lbl = getattr(container, '_inner_label', container)
         if path.exists():
             pix = QPixmap(str(path))
-            lbl.setPixmap(pix.scaled(
-                lbl.width() - 4, lbl.height() - 4,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation))
-            lbl.setText("")
+            if not pix.isNull():
+                w = container.width()  or container.minimumWidth()  or 236
+                h = container.height() or container.minimumHeight() or 106
+                lbl.setPixmap(pix.scaled(
+                    max(1, w - 4), max(1, h - 4),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation))
+            else:
+                lbl.setPixmap(QPixmap())
         else:
             lbl.setPixmap(QPixmap())
 
+    def _preview_label(self, container):
+        return getattr(container, '_inner_label', container)
+
     def _refresh_previews(self):
-        self._set_preview(self.logo_preview, LOGO_PATH)
-        self._set_preview(self.sig1_preview, SIG1_PATH)
-        self._set_preview(self.sig2_preview, SIG2_PATH)
-        if not LOGO_PATH.exists(): self.logo_preview.setText("Logo Yok\n(Yükleyin)")
-        if not SIG1_PATH.exists(): self.sig1_preview.setText("İmza 1 Yok")
-        if not SIG2_PATH.exists(): self.sig2_preview.setText("İmza 2 Yok")
-        self._sync_img_btn(self.b_logo, LOGO_PATH)
-        self._sync_img_btn(self.b_sig1, SIG1_PATH)
-        self._sync_img_btn(self.b_sig2, SIG2_PATH)
+        # Logo: özel logo > varsayılan logo > yok
+        if LOGO_DISABLED_PATH.exists():
+            self._preview_label(self.logo_preview).setPixmap(QPixmap())
+            self._preview_label(self.logo_preview).setText("Logo Yok\n(Yükleyin)")
+        elif LOGO_PATH.exists():
+            self._set_preview(self.logo_preview, LOGO_PATH)
+        elif DEFAULT_LOGO_PATH.exists():
+            self._set_preview(self.logo_preview, DEFAULT_LOGO_PATH)
+        else:
+            self._preview_label(self.logo_preview).setText("Logo Yok\n(Yükleyin)")
+        self._sync_logo_btn()
+
+        for i, sig_path in enumerate(SIG_PATHS, 1):
+            prev = getattr(self, f"sig{i}_preview")
+            self._set_preview(prev, sig_path)
+            if not sig_path.exists():
+                self._preview_label(prev).setText(f"İmza {i} Yok")
+            self._sync_img_btn(getattr(self, f"b_sig{i}"), sig_path)
 
     # ── Veri ─────────────────────────────────────────────────────────────
 
@@ -456,22 +722,37 @@ class SettingsPage(QWidget):
         self.f_mail.setText(cfg.get("mail", ""))
         self.f_web.setText(cfg.get("web", ""))
         self.f_prefix.setText(cfg.get("offer_prefix", "SNS"))
-        self.f_s1_name.setText(cfg.get("sales_person1_name", ""))
-        self.f_s1_title.setText(cfg.get("sales_person1_title", ""))
-        self.f_s1_email.setText(cfg.get("sales_person1_email", ""))
-        self.f_s2_name.setText(cfg.get("sales_person2_name", ""))
-        self.f_s2_title.setText(cfg.get("sales_person2_title", ""))
-        self.f_s2_email.setText(cfg.get("sales_person2_email", ""))
+        for i in range(1, self.MAX_PERSONS + 1):
+            getattr(self, f"f_s{i}_name").setText(cfg.get(f"sales_person{i}_name", ""))
+            getattr(self, f"f_s{i}_title").setText(cfg.get(f"sales_person{i}_title", ""))
+            getattr(self, f"f_s{i}_email").setText(cfg.get(f"sales_person{i}_email", ""))
+        self._sync_person_cards()
+        self.f_smtp_server.setText(cfg.get("smtp_server", ""))
+        self.f_smtp_port.setText(cfg.get("smtp_port", "465"))
+        self.f_smtp_user.setText(cfg.get("smtp_user", ""))
+        # Şifre: önce güvenli depodan oku
+        smtp_pw = get_smtp_password()
+        # Eski sürümlerde cfg'ye kaydedilmişse bir kez keyring'e taşı
+        if not smtp_pw and cfg.get("smtp_password"):
+            smtp_pw = cfg["smtp_password"]
+            set_smtp_password(smtp_pw)
+            logger.info("SMTP şifresi keyring'e taşındı.")
+        self.f_smtp_pass.setText(smtp_pw)
         # PDF metinleri (PDF sırasına göre)
         for key in ("pdf_giris_metni", "pdf_iskonto", "pdf_teslim_yeri",
                     "pdf_kur_notu", "pdf_kdv_notu", "pdf_onay_metni",
                     "pdf_teslim_notu", "pdf_iptal_notu"):
             getattr(self, key).setPlainText(cfg.get(key, ""))
+            if key in self._pdf_toggles:
+                enabled = cfg.get(f"{key}_enabled", "1") != "0"
+                self._pdf_toggles[key].setChecked(enabled)
+                getattr(self, key).setEnabled(enabled)
         self._refresh_previews()
 
     def _save(self):
         new_prefix = self.f_prefix.text().strip() or "SNS"
-        save_company_config({
+        try:
+            save_company_config({
             "name":    self.f_name.text().strip(),
             "address": self.f_address.text().strip(),
             "tel":     self.f_tel.text().strip(),
@@ -479,12 +760,10 @@ class SettingsPage(QWidget):
             "mail":    self.f_mail.text().strip(),
             "web":     self.f_web.text().strip(),
             "offer_prefix": new_prefix,
-            "sales_person1_name":  self.f_s1_name.text().strip(),
-            "sales_person1_title": self.f_s1_title.text().strip(),
-            "sales_person1_email": self.f_s1_email.text().strip(),
-            "sales_person2_name":  self.f_s2_name.text().strip(),
-            "sales_person2_title": self.f_s2_title.text().strip(),
-            "sales_person2_email": self.f_s2_email.text().strip(),
+            **self._person_values(),
+            "smtp_server":         self.f_smtp_server.text().strip(),
+            "smtp_port":           self.f_smtp_port.text().strip(),
+            "smtp_user":           self.f_smtp_user.text().strip(),
             # PDF sabit metinler (PDF sırasına göre)
             "pdf_giris_metni": self.pdf_giris_metni.toPlainText().strip(),
             "pdf_iskonto":     self.pdf_iskonto.toPlainText().strip(),
@@ -494,14 +773,123 @@ class SettingsPage(QWidget):
             "pdf_onay_metni":  self.pdf_onay_metni.toPlainText().strip(),
             "pdf_teslim_notu": self.pdf_teslim_notu.toPlainText().strip(),
             "pdf_iptal_notu":  self.pdf_iptal_notu.toPlainText().strip(),
+            # PDF görünürlük toggle'ları
+            **{f"{k}_enabled": "1" if chk.isChecked() else "0"
+               for k, chk in self._pdf_toggles.items()},
         })
+        except Exception as e:
+            QMessageBox.critical(self, "Kaydetme Hatası", f"Ayarlar kaydedilemedi:\n{e}")
+            return
+        # SMTP şifresini güvenli depoya kaydet
+        set_smtp_password(self.f_smtp_pass.text().strip())
         msg = "Ayarlar kaydedildi.\nBundan sonra oluşturulan PDF tekliflere yansır."
         if self._loaded_prefix and self._loaded_prefix != new_prefix:
-            msg += (f"\n\n⚠️  Teklif Öneki '{self._loaded_prefix}' → '{new_prefix}' olarak değiştirildi."
+            msg += (f"\n\nDikkat: Teklif Öneki '{self._loaded_prefix}' → '{new_prefix}' olarak değiştirildi."
                     "\nMevcut tekliflerin numaraları değişmez, yalnızca yeni tekliflere uygulanır.")
         self._loaded_prefix = new_prefix
+        self._snapshot = self._current_values()
         QMessageBox.information(self, "Kaydedildi", msg)
 
     def on_enter(self):
-        # Sadece görselleri yenile — yazılan ama kaydedilmemiş alanları sıfırlama
+        # Snapshot burada YENİLENMEZ — kaydedilmemiş değişiklikler
+        # sayfadan çıkıp dönünce de "kirli" sayılmaya devam etmeli.
         self._refresh_previews()
+
+    def _toggle_password_visibility(self, checked: bool):
+        self.f_smtp_pass.setEchoMode(
+            QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password)
+        self._btn_toggle_pwd.setText("Gizle" if checked else "Göster")
+
+    def _current_values(self) -> dict:
+        """Tüm form alanlarının mevcut değerlerini dict olarak döndür."""
+        vals = {
+            "name": self.f_name.text().strip(),
+            "address": self.f_address.text().strip(),
+            "tel": self.f_tel.text().strip(),
+            "fax": self.f_fax.text().strip(),
+            "mail": self.f_mail.text().strip(),
+            "web": self.f_web.text().strip(),
+            "offer_prefix": self.f_prefix.text().strip(),
+            **self._person_values(),
+            "smtp_server": self.f_smtp_server.text().strip(),
+            "smtp_port": self.f_smtp_port.text().strip(),
+            "smtp_user": self.f_smtp_user.text().strip(),
+            "smtp_pass": self.f_smtp_pass.text().strip(),
+        }
+        for key in ("pdf_giris_metni", "pdf_iskonto", "pdf_teslim_yeri",
+                    "pdf_kur_notu", "pdf_kdv_notu", "pdf_onay_metni",
+                    "pdf_teslim_notu", "pdf_iptal_notu"):
+            vals[key] = getattr(self, key).toPlainText().strip()
+        return vals
+
+    def is_dirty(self) -> bool:
+        """Kaydedilmemiş değişiklik var mı?"""
+        if not hasattr(self, '_snapshot'):
+            return False
+        return self._current_values() != self._snapshot
+
+    def _reset_to_defaults(self):
+        """Tüm ayarları fabrika değerlerine döndür."""
+        from core.config import _DEFAULTS
+        ans = QMessageBox.question(
+            self, "Varsayılana Dön",
+            "Tüm şirket bilgileri ve PDF metinleri varsayılan değerlere sıfırlansın mı?\n\n"
+            "Logo, imza ve SMTP ayarları etkilenmez.\n"
+            "Bu işlem geri alınamaz.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if ans != QMessageBox.StandardButton.Yes:
+            return
+        self.f_name.setText(_DEFAULTS.get("name", ""))
+        self.f_address.setText(_DEFAULTS.get("address", ""))
+        self.f_tel.setText(_DEFAULTS.get("tel", ""))
+        self.f_fax.setText(_DEFAULTS.get("fax", ""))
+        self.f_mail.setText(_DEFAULTS.get("mail", ""))
+        self.f_web.setText(_DEFAULTS.get("web", ""))
+        self.f_prefix.setText(_DEFAULTS.get("offer_prefix", "SNS"))
+        for key in ("pdf_giris_metni", "pdf_iskonto", "pdf_teslim_yeri",
+                    "pdf_kur_notu", "pdf_kdv_notu", "pdf_onay_metni",
+                    "pdf_teslim_notu", "pdf_iptal_notu"):
+            getattr(self, key).setPlainText(_DEFAULTS.get(key, ""))
+            if key in self._pdf_toggles:
+                self._pdf_toggles[key].setChecked(True)
+                getattr(self, key).setEnabled(True)
+
+    # ── SMTP Test ─────────────────────────────────────────────────────────────
+    def _test_smtp(self):
+        """Mevcut SMTP ayarlarını arka planda test eder."""
+        from core.credential_store import get_smtp_password
+        cfg = {
+            "smtp_server":   self.f_smtp_server.text().strip(),
+            "smtp_port":     self.f_smtp_port.text().strip(),
+            "smtp_user":     self.f_smtp_user.text().strip(),
+            "smtp_password": self.f_smtp_pass.text().strip() or get_smtp_password(),
+        }
+        if not cfg["smtp_server"] or not cfg["smtp_user"]:
+            from ui.utils.theme_manager import get_theme
+            self.lbl_smtp_result.setStyleSheet(f"color:{get_theme()['accent_red']};")
+            self.lbl_smtp_result.setText("Sunucu ve e-posta adresi girilmeli.")
+            return
+
+        self.b_smtp_test.setEnabled(False)
+        self.b_smtp_test.setText("Test ediliyor…")
+        from ui.utils.theme_manager import get_theme
+        self.lbl_smtp_result.setStyleSheet(f"color:{get_theme()['text_muted']};")
+        self.lbl_smtp_result.setText("Bağlanıyor…")
+
+        self._smtp_worker = SmtpTestWorker(cfg)
+        self._smtp_worker.result.connect(self._on_smtp_test_result)
+        self._smtp_worker.start()
+
+    def _on_smtp_test_result(self, success: bool, message: str):
+        from ui.utils.theme_manager import get_theme
+        t = get_theme()
+        self.b_smtp_test.setEnabled(True)
+        self.b_smtp_test.setText("Bağlantıyı Test Et")
+        if success:
+            self.lbl_smtp_result.setStyleSheet(f"color:{t['accent_green']};font-weight:600;")
+            self.lbl_smtp_result.setText(message)
+        else:
+            self.lbl_smtp_result.setStyleSheet(f"color:{t['accent_red']};")
+            self.lbl_smtp_result.setText(message)

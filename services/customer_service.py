@@ -1,7 +1,10 @@
 """Müşteri servis katmanı."""
+import logging
 from typing import List, Optional
 from database.db_manager import get_db
 from models.customer import Customer
+
+logger = logging.getLogger("customer_service")
 
 
 class CustomerService:
@@ -24,28 +27,30 @@ class CustomerService:
     def get_by_id(self, customer_id: int) -> Optional[Customer]:
         db = get_db()
         row = db.fetchone("SELECT * FROM customers WHERE id = ?", (customer_id,))
-        return Customer.from_row(row)
+        return Customer.from_row(row) if row else None
 
     def add(self, customer: Customer) -> int:
+        if not (customer.company_name or "").strip():
+            raise ValueError("Firma adı boş olamaz.")
         db = get_db()
         cursor = db.execute(
-            """INSERT INTO customers (company_name, contact_person, address, phone, email)
-               VALUES (?, ?, ?, ?, ?)""",
+            """INSERT INTO customers (company_name, contact_person, address, phone, email, notes)
+               VALUES (?, ?, ?, ?, ?, ?)""",
             (customer.company_name, customer.contact_person, customer.address,
-             customer.phone, customer.email)
+             customer.phone, customer.email, customer.notes)
         )
         return cursor.lastrowid
 
-    def update(self, customer: Customer):
+    def update(self, customer: Customer) -> None:
         db = get_db()
         db.execute(
             """UPDATE customers SET company_name=?, contact_person=?, address=?,
-               phone=?, email=? WHERE id=?""",
+               phone=?, email=?, notes=? WHERE id=?""",
             (customer.company_name, customer.contact_person, customer.address,
-             customer.phone, customer.email, customer.id)
+             customer.phone, customer.email, customer.notes, customer.id)
         )
 
-    def delete(self, customer_id: int):
+    def delete(self, customer_id: int) -> None:
         db = get_db()
         db.execute("DELETE FROM customers WHERE id=?", (customer_id,))
 

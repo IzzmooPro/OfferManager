@@ -10,6 +10,12 @@ build/
 dist/
 *.spec.bak
 
+# Kurulum çıktısı (Inno Setup)
+installer_output/
+
+# Claude Code çalışma verisi (oturum, worktree)
+.claude/
+
 # Veritabanı ve kullanıcı verisi
 *.db
 *.db-shm

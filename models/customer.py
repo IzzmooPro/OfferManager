@@ -12,6 +12,7 @@ class Customer:
     address: str = ""
     phone: str = ""
     email: str = ""
+    notes: str = ""
 
     @classmethod
     def from_row(cls, row):
@@ -25,4 +26,5 @@ class Customer:
             address=row["address"] or "",
             phone=row["phone"] or "",
             email=row["email"] or "",
+            notes=(row["notes"] if "notes" in row.keys() else "") or "",
         )

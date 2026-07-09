@@ -4,12 +4,15 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidgetItem, QLineEdit, QDialog,
     QFormLayout, QComboBox, QDoubleSpinBox, QMessageBox,
-    QTextEdit, QFrame
+    QTextEdit, QFrame, QHeaderView
 )
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, QEvent
 from services.product_service import ProductService
 from models.product import Product
-from ui._resizable_table import ResizableTable
+from ui.widgets._resizable_table import ResizableTable
+from ui.widgets._row_hover_delegate import RowHoverDelegate
+from core.constants import UNIT_LIST, CURRENCY_LIST
+from core.formatting import fmt_number
 
 logger = logging.getLogger("products")
 
@@ -19,6 +22,7 @@ class ProductDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Ürün Ekle" if not product else "Ürün Düzenle")
         self.setMinimumWidth(480)
+        self.setMaximumHeight(520)
         self.product  = product          # None = yeni ürün
         self._svc     = ProductService()
         self._build_ui()
@@ -42,7 +46,7 @@ class ProductDialog(QDialog):
 
         # ── Ürün Kodu ──
         self.code = QLineEdit(); self.code.setMinimumHeight(34)
-        self.code.setPlaceholderText("örn. MTR-001")
+        self.code.setPlaceholderText("")
 
         # Duplicate uyarısı — kod alanının altında
         self.code_warn = QLabel("")
@@ -80,7 +84,7 @@ class ProductDialog(QDialog):
 
         # ── Para Birimi ──
         self.currency = QComboBox()
-        self.currency.addItems(["EUR", "USD", "TL"])
+        self.currency.addItems(CURRENCY_LIST)
         self.currency.setMinimumHeight(34)
         form.addRow("Para Birimi:", self.currency)
 
@@ -95,21 +99,63 @@ class ProductDialog(QDialog):
 
         # ── Birim ──
         self.unit = QComboBox()
-        self.unit.addItems(["Adet","Kg","Metre","Litre","Paket","Kutu","Set","Takım"])
+        self.unit.addItems(UNIT_LIST)
         self.unit.setEditable(True)
         self.unit.setMinimumHeight(34)
         self.unit.setMinimumWidth(120)
         form.addRow("Birim:", self.unit)
 
+        # ── Kategori ──
+        cat_row = QHBoxLayout()
+        cat_row.setSpacing(6)
+        self.category_combo = QComboBox()
+        self.category_combo.setMinimumHeight(34)
+        self._load_categories()
+        cat_row.addWidget(self.category_combo, 1)
+        cat_manage_btn = QPushButton("+")
+        cat_manage_btn.setObjectName("icon_btn")
+        cat_manage_btn.setFixedSize(34, 34)
+        cat_manage_btn.setToolTip("Kategori ekle / düzenle / sil")
+        cat_manage_btn.clicked.connect(self._open_category_manager)
+        cat_row.addWidget(cat_manage_btn)
+        cat_wrap = QWidget()
+        cat_wrap.setLayout(cat_row)
+        form.addRow("Kategori:", cat_wrap)
+
         layout.addLayout(form)
+        layout.addStretch()
 
         btns = QHBoxLayout()
         ok = QPushButton("Kaydet");  ok.setObjectName("primary");   ok.clicked.connect(self._save)
         no = QPushButton("İptal");   no.setObjectName("secondary"); no.clicked.connect(self.reject)
-        btns.addWidget(no); btns.addWidget(ok)
+        btns.addStretch(); btns.addWidget(no); btns.addWidget(ok)
         layout.addLayout(btns)
 
     # ── Doldur ───────────────────────────────────────────────────────────────
+
+    def _load_categories(self):
+        from services.category_service import CategoryService
+        prev = self.category_combo.currentData()
+        self.category_combo.blockSignals(True)
+        self.category_combo.clear()
+        self.category_combo.addItem("— Kategorisiz —", None)
+        try:
+            for cat in CategoryService().get_all():
+                self.category_combo.addItem(cat.name, cat.id)
+        except (ImportError, Exception) as e:
+            logger.debug("Kategori yükleme atlandı: %s", e)
+        if prev is not None:
+            for i in range(self.category_combo.count()):
+                if self.category_combo.itemData(i) == prev:
+                    self.category_combo.setCurrentIndex(i)
+                    break
+        self.category_combo.blockSignals(False)
+
+    def _open_category_manager(self):
+        from ui.dialogs.category_dialog import CategoryManagerDialog
+        dlg = CategoryManagerDialog(self)
+        dlg.exec()
+        self._load_categories()
 
     def _fill(self, p):
         self.code.setText(p.product_code)
@@ -122,6 +168,11 @@ class ProductDialog(QDialog):
         u = self.unit.findText(p.unit)
         if u >= 0: self.unit.setCurrentIndex(u)
         else: self.unit.setCurrentText(p.unit)
+        if p.category_id is not None:
+            for i in range(self.category_combo.count()):
+                if self.category_combo.itemData(i) == p.category_id:
+                    self.category_combo.setCurrentIndex(i)
+                    break
 
     # ── Duplicate kontrolü ───────────────────────────────────────────────────
 
@@ -138,15 +189,16 @@ class ProductDialog(QDialog):
             existing = self._svc.get_by_code(code)
             if existing:
                 self.code_warn.setText(
-                    f"⚠️  '{existing.product_code}' kodu zaten kayıtlı: {existing.product_name}")
+                    f"'{existing.product_code}' kodu zaten kayıtlı: {existing.product_name}")
                 self.code_warn.setVisible(True)
                 # Kod alanını kırmızı border ile işaretle
                 self.code.setStyleSheet(
                     "QLineEdit { border: 1.5px solid #e94560; border-radius: 6px; "
-                    "padding: 7px 10px; }")
+                    "padding: 8px 12px; }")
             else:
                 self._hide_warn()
-        except Exception:
+        except (Exception) as e:
+            logger.debug("Ürün kodu kontrol hatası: %s", e)
             self._hide_warn()
 
     def _hide_warn(self):
@@ -174,8 +226,8 @@ class ProductDialog(QDialog):
                         QMessageBox.StandardButton.No)
                     if ans != QMessageBox.StandardButton.Yes:
                         return
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Duplicate kontrol hatası: %s", e)
 
         self.accept()
 
@@ -188,6 +240,7 @@ class ProductDialog(QDialog):
         p.currency     = self.currency.currentText()
         p.stock        = self.stock.value()
         p.unit         = self.unit.currentText()
+        p.category_id  = self.category_combo.currentData()
         return p
 
 
@@ -202,8 +255,8 @@ class ProductsPage(QWidget):
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 20, 16, 16)
-        layout.setSpacing(16)
+        layout.setContentsMargins(16, 14, 16, 12)
+        layout.setSpacing(10)
 
         header = QHBoxLayout()
         title = QLabel("Ürün Yönetimi")
@@ -218,11 +271,21 @@ class ProductsPage(QWidget):
         t = QHBoxLayout(toolbar); t.setContentsMargins(8, 4, 8, 4)
         self.search = QLineEdit()
         self.search.setPlaceholderText("Ürün kodu veya adıyla ara...")
-        self.search.textChanged.connect(lambda txt: self._load(txt))
+        self.search.textChanged.connect(lambda _: self._load_filtered())
         t.addWidget(self.search)
-        for lbl, slot in [("Düzenle", self._edit), ("Sil", self._delete)]:
-            b = QPushButton(lbl); b.setObjectName("action_btn")
-            b.setMinimumHeight(32); b.clicked.connect(slot)
+        # Kategori filtresi
+        self.cat_filter = QComboBox()
+        self.cat_filter.setMinimumHeight(32)
+        self.cat_filter.setMinimumWidth(150)
+        self._load_category_filter()
+        self.cat_filter.currentIndexChanged.connect(lambda _: self._load_filtered())
+        t.addWidget(self.cat_filter)
+        for lbl, slot, obj in [("Düzenle", self._edit, "tab_btn_edit"),
+                               ("Sil", self._delete, "tab_btn_delete")]:
+            b = QPushButton(lbl); b.setObjectName(obj)
+            b.setMinimumHeight(36); b.setMinimumWidth(82)
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.clicked.connect(slot)
             t.addWidget(b)
         layout.addWidget(toolbar)
 
@@ -241,23 +304,54 @@ class ProductsPage(QWidget):
         ])
         self.table.setEditTriggers(self.table.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(self.table.SelectionBehavior.SelectRows)
-        self.table.setAlternatingRowColors(True)
+        self.table.setAlternatingRowColors(False)
         self.table.verticalHeader().setVisible(False)
         self.table.doubleClicked.connect(self._edit)
         self.table.on_edit   = self._edit
         self.table.on_delete = self._delete
+
+        self._delegate = RowHoverDelegate(self)
+        for col in range(7):
+            self.table.setItemDelegateForColumn(col, self._delegate)
+        self.table.setMouseTracking(True)
+        self.table.viewport().setMouseTracking(True)
+        self.table.viewport().installEventFilter(self)
+
         layout.addWidget(self.table)
         self._load()
 
-    def _load(self, keyword=""):
-        logger.debug("Ürünler yükleniyor, anahtar='%s'", keyword)
+    def _load_category_filter(self):
+        """Kategori filtre combo'sunu doldurur."""
+        from services.category_service import CategoryService
+        self.cat_filter.blockSignals(True)
+        self.cat_filter.clear()
+        self.cat_filter.addItem("Tüm Kategoriler", -1)
+        self.cat_filter.addItem("Kategorisiz", None)
         try:
-            self._products = self.service.search(keyword) if keyword else self.service.get_all()
+            for cat in CategoryService().get_all():
+                self.cat_filter.addItem(cat.name, cat.id)
+        except Exception as e:
+            logger.debug("Kategori filtre yükleme atlandı: %s", e)
+        self.cat_filter.blockSignals(False)
+
+    def _load_filtered(self):
+        """Arama kutusu ve kategori filtresini birlikte uygular."""
+        keyword = self.search.text().strip()
+        cat_id = self.cat_filter.currentData() if hasattr(self, 'cat_filter') else -1
+        self._load(keyword, cat_id)
+
+    def _load(self, keyword="", category_id=-1):
+        logger.debug("Ürünler yükleniyor, anahtar='%s', kategori=%s", keyword, category_id)
+        try:
+            if keyword:
+                self._products = self.service.search(keyword, category_id)
+            else:
+                self._products = self.service.get_all(category_id)
             self.table.setRowCount(len(self._products))
             for row, p in enumerate(self._products):
                 self.table.setItem(row, 0, QTableWidgetItem(p.product_code))
                 self.table.setItem(row, 1, QTableWidgetItem(p.product_name))
-                pi = QTableWidgetItem(f"{p.price:,.2f}")
+                pi = QTableWidgetItem(fmt_number(p.price))
                 pi.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self.table.setItem(row, 2, pi)
                 self.table.setItem(row, 3, QTableWidgetItem(p.currency))
@@ -311,5 +405,20 @@ class ProductsPage(QWidget):
             except Exception as e:
                 QMessageBox.warning(self, "Hata", f"Ürün silinemedi:\n{e}")
 
+    def eventFilter(self, obj, event):
+        if obj is self.table.viewport():
+            t = event.type()
+            if t == QEvent.Type.MouseMove:
+                idx = self.table.indexAt(event.position().toPoint())
+                row = idx.row() if idx.isValid() else -1
+                if row != self._delegate._hovered_row:
+                    self._delegate.set_hovered_row(row)
+                    self.table.viewport().update()
+            elif t == QEvent.Type.Leave:
+                self._delegate.set_hovered_row(-1)
+                self.table.viewport().update()
+        return super().eventFilter(obj, event)
+
     def on_enter(self):
-        self._load(self.search.text())
+        self._load_category_filter()
+        self._load_filtered()

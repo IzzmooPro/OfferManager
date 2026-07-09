@@ -6,7 +6,10 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('assets', 'assets'), ('database/schema.sql', 'database')],
-    hiddenimports=[],
+    # keyring: Windows Credential Manager arka ucu dinamik yüklenir —
+    # açıkça belirtilmezse paketlenmiş EXE'de SMTP şifresi kaydedilemez
+    hiddenimports=['PySide6.QtPdf', 'PySide6.QtPdfWidgets',
+                   'keyring.backends.Windows'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -35,5 +38,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['ico.ico'],
+    icon=['assets\\ico.ico'],
+    version='version_info.txt',
 )
