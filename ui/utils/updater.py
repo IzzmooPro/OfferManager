@@ -243,7 +243,13 @@ class UpdateDialog(QDialog):
         os.startfile(installer_path)
 
         logger.info("Kurulum başlatıldı (%s), program kapatılıyor.", installer_path)
-        self._finish()
+        # Süreci KESİN sonlandır. QApplication.quit() bazen arka plandaki
+        # indirici/kontrolcü QThread yüzünden süreci asılı bırakıyor (dosya
+        # kilitleri serbest kalmıyor → installer uygulamayı kapatamıyordu).
+        # os._exit kilitleri anında bırakır. (Veriler her işlemde kaydedilir,
+        # installer veriye dokunmaz → güvenli.) Installer ayrı süreç, ölmez.
+        self.accept()
+        os._exit(0)
 
     def _on_download_failed(self, err: str):
         self._progress.setVisible(False)

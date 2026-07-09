@@ -2,6 +2,17 @@
 
 ---
 
+## [v3.7] — 2026-07-09
+
+### Düzeltmeler
+- **Güncelleme takılması giderildi:** Bazı durumlarda güncellenen program
+  düzgün kapanmayıp kurulum "uygulamaları kapatamadı" ekranında takılıyordu.
+  Kurulum artık çalışan uygulamayı en baştan kesin olarak kapatıyor; program
+  da güncelleme sırasında kendini temiz şekilde sonlandırıyor. Güncelleme
+  artık elle müdahale olmadan akıp gidiyor.
+
+---
+
 ## [v3.6] — 2026-07-09
 
 ### Düzeltmeler
