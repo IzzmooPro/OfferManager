@@ -13,6 +13,15 @@ dist/
 # Kurulum çıktısı (Inno Setup)
 installer_output/
 
+# Paketleme araçları — YEREL kalır, GitHub'a gitmez (spec, iss, build bat'ları, version_info)
+packaging/
+
+# Yerel yayın/iş akışı notu (GitHub'a gitmez)
+GITHUB_IS_AKISI_LOCAL.md
+
+# Kaynak tasarım dosyaları — runtime'da gerekmez (yüksek çözünürlük logo kaynağı/kopyası)
+assets/Sensoryum Ana LOGO*.png
+
 # Claude Code çalışma verisi (oturum, worktree)
 .claude/
 

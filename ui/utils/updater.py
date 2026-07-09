@@ -195,9 +195,9 @@ class UpdateDialog(QDialog):
         self._status.setVisible(True)
         self._status.setText("İndiriliyor…")
 
-        # Geçici dosya yolu
+        # Geçici dosya yolu — indirilen asset Inno Setup kurulumudur
         tmp_dir  = tempfile.mkdtemp(prefix="TeklifUpdate_")
-        tmp_exe  = os.path.join(tmp_dir, "TeklifYonetim_new.exe")
+        tmp_exe  = os.path.join(tmp_dir, "TeklifYonetim_Setup.exe")
 
         self._downloader = _Downloader(self._download_url, tmp_exe, self)
         self._downloader.progress.connect(self._progress.setValue)
@@ -215,10 +215,15 @@ class UpdateDialog(QDialog):
         except Exception as e:
             self._on_download_failed(str(e))
 
-    def _apply_update(self, new_exe: str):
+    def _apply_update(self, installer_path: str):
         """
-        Güncelleme batch scripti oluştur ve çalıştır.
-        Script: mevcut EXE'yi bekle → değiştir → yeniden başlat.
+        İndirilen Inno Setup kurulumunu çalıştırır ve programı kapatır.
+
+        Kurulum, .iss'teki CloseApplications + AppMutex sayesinde çalışan
+        uygulamayı kendisi kapatıp mevcut kurulumun üzerine yazar ve
+        yeniden başlatır. Bu yüzden EXE'yi elle "taşımaya" gerek yoktur —
+        ki zaten Program Files'ta yetki gerektirir ve installer bunu
+        yönetici izniyle düzgün yapar.
         """
         if not getattr(sys, "frozen", False):
             # Kaynak (Python) modda — tarayıcıya yönlendir
@@ -227,34 +232,12 @@ class UpdateDialog(QDialog):
             self._finish()
             return
 
-        current_exe = sys.executable
-        current_pid = os.getpid()
-        bat_path = os.path.join(tempfile.gettempdir(), "teklif_update.bat")
-
-        bat_content = (
-            "@echo off\n"
-            f'taskkill /PID {current_pid} /F >nul 2>&1\n'
-            "timeout /t 3 /nobreak >nul\n"
-            f'move /y "{new_exe}" "{current_exe}"\n'
-            "if errorlevel 1 (\n"
-            "  timeout /t 2 /nobreak >nul\n"
-            f'  move /y "{new_exe}" "{current_exe}"\n'
-            ")\n"
-            f'start "" "{current_exe}"\n'
-            "del /f /q \"%~f0\"\n"
-        )
-
-        with open(bat_path, "w", encoding="mbcs") as f:
-            f.write(bat_content)
-
         import subprocess
-        subprocess.Popen(
-            ["cmd", "/c", bat_path],
-            creationflags=subprocess.CREATE_NO_WINDOW
-            if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
-        )
+        # Kurulumu başlat (normal sihirbaz). Program kapanınca installer
+        # mevcut sürümün üzerine kurar ve /Run adımıyla yeniden açar.
+        subprocess.Popen([installer_path], shell=True)
 
-        logger.info("Güncelleme scripti başlatıldı, program kapatılıyor.")
+        logger.info("Kurulum başlatıldı (%s), program kapatılıyor.", installer_path)
         self._finish()
 
     def _on_download_failed(self, err: str):
