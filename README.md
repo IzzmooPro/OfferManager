@@ -45,15 +45,16 @@ Güncellemeler **zorla kurulmaz** — her adımda onay istenir. Güncelleme yaln
 
 Bu klasörler program dosyalarından ayrıdır; güncelleme ve yeniden kurulumdan etkilenmez.
 
-## Kaynak Koddan Çalıştırmak
+## Kaynaktan Çalıştırma / Geliştirme
 
-Python 3.12+ kuruluysa projeyi kaynak koddan çalıştırmak için:
+Programın kullanıma hazır hali yukarıdaki **Releases** bölümünden kurulum dosyasıyla dağıtılır. Kaynaktan çalıştırmak/geliştirmek için Python 3.12+ ve şu bağımlılıklar gerekir:
 
 ```
-Baslat.bat
+pip install -r requirements.txt
+python main.py
 ```
 
-Bu betik gerekli paketleri (PySide6, reportlab, Pillow, openpyxl, keyring) hazırlayıp programı açar. Elle kurulum için: `pip install -r requirements.txt`.
+Program eksik paketleri kendisi indirmez; eksik varsa hangi paketin gerektiğini bildirip durur.
 
 ## Geliştirici
 
@@ -83,4 +84,11 @@ On startup the app checks for a newer version and asks before downloading and in
 
 ## Run From Source
 
-With Python 3.12+ installed, run `Baslat.bat` (or `pip install -r requirements.txt` then `python main.py`).
+The ready-to-use program is distributed via **Releases** (installer). To run from source, install Python 3.12+ and the dependencies:
+
+```
+pip install -r requirements.txt
+python main.py
+```
+
+The app does not download missing packages by itself; if something is missing it reports which package is required and stops.

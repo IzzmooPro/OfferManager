@@ -16,6 +16,15 @@ installer_output/
 # Paketleme araçları — YEREL kalır, GitHub'a gitmez (spec, iss, build bat'ları, version_info)
 packaging/
 
+# .bat başlatıcılar — YEREL kalır (Baslat.bat vb.); GitHub yalnızca kaynak kod tutar
+*.bat
+
+# assets — programa gömülür (EXE'de), depoda tutulmuyor (yerelde derleme için gerekli)
+assets/
+
+# Kaynaktan çalıştırma/kurulum yardımcısı (Python indirir) — YEREL kalır
+scripts/bootstrap.ps1
+
 # Yerel yayın/iş akışı notu (GitHub'a gitmez)
 GITHUB_IS_AKISI_LOCAL.md
 

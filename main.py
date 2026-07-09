@@ -10,7 +10,6 @@ Başlangıç sırası:
 """
 import sys, os, traceback, logging, ctypes
 import importlib.util
-import subprocess
 from datetime import datetime
 from importlib import metadata
 from pathlib import Path
@@ -52,8 +51,13 @@ def _show_startup_error(message: str):
             pass
 
 
-def _ensure_runtime_dependencies():
-    """Kaynak modunda eksik/eski paketleri kur; paketlenmiş EXE'de işlem yapma."""
+def _check_runtime_dependencies():
+    """Kaynak modunda gerekli paketlerin VARLIĞINI doğrular.
+
+    Eksik/eski paket varsa kullanıcıyı bilgilendirip programı durdurur —
+    hiçbir şey İNDİRMEZ / KURMAZ. Paketlenmiş EXE'de her şey gömülü
+    olduğundan bu kontrol atlanır.
+    """
     if getattr(sys, "frozen", False):
         return
 
@@ -61,8 +65,7 @@ def _ensure_runtime_dependencies():
         required = ".".join(map(str, _MIN_PYTHON))
         current = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         raise RuntimeError(
-            f"Python {required} veya üzeri gerekiyor (mevcut: {current}).\n"
-            "Lütfen Baslat.bat dosyasını çalıştırın."
+            f"Python {required} veya üzeri gerekiyor (mevcut: {current})."
         )
 
     missing = []
@@ -80,47 +83,19 @@ def _ensure_runtime_dependencies():
         ):
             missing.append(f"{distribution_name}>={minimum_version}")
 
-    if not missing:
-        return
-
-    print("Teklif Yönetim Sistemi ilk çalıştırma hazırlığı")
-    print("Eksik yardımcı paketler kuruluyor:")
-    for package in missing:
-        print(f"  - {package}")
-
-    pip_check = subprocess.run(
-        [sys.executable, "-m", "pip", "--version"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if pip_check.returncode != 0:
-        subprocess.run(
-            [sys.executable, "-m", "ensurepip", "--upgrade"],
-            check=True,
+    if missing:
+        raise RuntimeError(
+            "Gerekli Python paketleri eksik veya eski:\n  - "
+            + "\n  - ".join(missing)
+            + "\n\nKurmak için proje klasöründe şu komutu çalıştırın:\n"
+            "    pip install -r requirements.txt"
         )
-
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--disable-pip-version-check",
-            *missing,
-        ],
-        check=True,
-    )
-    print("Yardımcı paketler hazır. Program başlatılıyor...\n")
 
 
 try:
-    _ensure_runtime_dependencies()
-except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
-    _show_startup_error(
-        "Gerekli bileşenler hazırlanamadı. İnternet bağlantısını ve disk "
-        f"izinlerini kontrol edip Baslat.bat dosyasını yeniden çalıştırın.\n\n{exc}"
-    )
+    _check_runtime_dependencies()
+except (OSError, RuntimeError) as exc:
+    _show_startup_error(str(exc))
     raise SystemExit(1)
 
 
