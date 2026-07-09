@@ -133,7 +133,9 @@ class UpdateDialog(QDialog):
         self._downloader   = None
 
         self.setWindowTitle("Güncelleme Mevcut")
-        self.setFixedSize(320, 200)
+        # Sabit boyut YOK — progress + durum satırı görününce metin ezilip
+        # okunmaz oluyordu. Genişlik sabit, yükseklik içeriğe göre büyür.
+        self.setFixedWidth(400)
         self.setWindowFlags(
             self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint
         )
@@ -150,6 +152,7 @@ class UpdateDialog(QDialog):
             f"Yeni sürüm   : {self._version}"
         )
         msg.setStyleSheet("font-size:10pt;")
+        msg.setWordWrap(True)
         layout.addWidget(msg)
 
         self._progress = QProgressBar()
@@ -194,6 +197,7 @@ class UpdateDialog(QDialog):
         self._progress.setValue(0)
         self._status.setVisible(True)
         self._status.setText("İndiriliyor…")
+        self.adjustSize()   # yeni görünen satırlar için pencereyi büyüt
 
         # Geçici dosya yolu — indirilen asset Inno Setup kurulumudur
         tmp_dir  = tempfile.mkdtemp(prefix="TeklifUpdate_")
