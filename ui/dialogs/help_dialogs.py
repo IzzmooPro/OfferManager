@@ -343,14 +343,14 @@ class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Hakkında")
-        self.setFixedSize(520, 480)
+        self.setFixedSize(480, 340)
         self._checker = None
         self._build_ui()
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(32, 28, 32, 20)
-        layout.setSpacing(10)
+        layout.setContentsMargins(24, 20, 24, 16)
+        layout.setSpacing(8)
 
         # ── Başlık ────────────────────────────────────────────────────────────
         title = QLabel("Teklif Yönetim Sistemi")
@@ -398,17 +398,8 @@ class AboutDialog(QDialog):
         _row("Teknoloji","Python 3.13 · PySide6 · SQLite · ReportLab")
         _row("Veri",     "Yerel — tüm veriler bilgisayarınızda saklanır")
 
-        layout.addWidget(_sep())
-
-        features = QLabel(
-            "<b>Özellikler:</b> 3 adımlı teklif sihirbazı, profesyonel PDF çıktısı, "
-            "ürün ve müşteri yönetimi, Excel/CSV içe aktarma, otomatik yedekleme, "
-            "açık/koyu tema desteği, teklif numarası özelleştirme (PREFIX-000001)"
-        )
-        features.setWordWrap(True)
-        features.setObjectName("hint_label")
-        layout.addWidget(features)
-
+        # NOT: "Özellikler" paragrafı bilinçli olarak YOK (kullanıcı isteği,
+        # kompaktlık) — özellik tanıtımı Yardım (F1) penceresinin işi.
         layout.addStretch()
         layout.addWidget(_sep())
 

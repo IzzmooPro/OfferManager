@@ -74,21 +74,22 @@ class ProductService:
         db = get_db()
         cursor = db.execute(
             """INSERT INTO products (product_code, product_name, description,
-               price, currency, stock, unit, category_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+               price, currency, stock, unit, category_id, cost_price)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (product.product_code, product.product_name, product.description,
              product.price, product.currency, product.stock, product.unit,
-             product.category_id))
+             product.category_id, product.cost_price))
         return cursor.lastrowid
 
     def update(self, product: Product) -> None:
         db = get_db()
         db.execute(
             """UPDATE products SET product_code=?, product_name=?, description=?,
-               price=?, currency=?, stock=?, unit=?, category_id=? WHERE id=?""",
+               price=?, currency=?, stock=?, unit=?, category_id=?, cost_price=?
+               WHERE id=?""",
             (product.product_code, product.product_name, product.description,
              product.price, product.currency, product.stock, product.unit,
-             product.category_id, product.id))
+             product.category_id, product.cost_price, product.id))
 
     def delete(self, product_id: int) -> None:
         db = get_db()

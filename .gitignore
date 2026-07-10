@@ -13,6 +13,9 @@ dist/
 # Kurulum çıktısı (Inno Setup)
 installer_output/
 
+# İçe aktarma test verisi — GERÇEK müşteri/ürün verisi içerir, GitHub'a ASLA gitmez
+Import_Test/
+
 # Paketleme araçları — YEREL kalır, GitHub'a gitmez (spec, iss, build bat'ları, version_info)
 packaging/
 
@@ -34,6 +37,7 @@ scripts/seed_pdf_test_data.py
 docs/PROJE_GECMISI.md
 docs/README.md
 docs/ROADMAP.md
+docs/YOL_HARITASI_KAR_ANALIZI.md
 
 # Yerel yayın/iş akışı notu + sorun-çözüm defteri (GitHub'a gitmez)
 GITHUB_IS_AKISI_LOCAL.md

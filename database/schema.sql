@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS products (
     stock REAL NOT NULL DEFAULT 0,
     unit TEXT NOT NULL DEFAULT 'Adet',
     category_id INTEGER DEFAULT NULL,
+    -- Alış fiyatı (maliyet) — yalnızca dahili kâr hesabı için; PDF/Excel
+    -- teklif çıktılarına ve müşteri görünümüne asla dahil edilmez.
+    cost_price REAL NOT NULL DEFAULT 0,
     FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE SET NULL
 );
 

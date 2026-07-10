@@ -370,19 +370,17 @@ class BackupDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Veri Yedekleme & Geri Yükleme")
-        self.setMinimumSize(580, 520)
+        self.setMinimumSize(540, 380)
         self._meta = _load_meta()
         self._build_ui()
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 14, 16, 14)
-        layout.setSpacing(10)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(8)
 
-        title = QLabel("Veri Yedekleme ve Geri Yükleme")
-        title.setStyleSheet("font-size:10pt;font-weight:700;")
-        layout.addWidget(title)
-
+        # NOT: İçeride ayrı bir başlık etiketi yok — pencere başlık çubuğu
+        # zaten aynı metni taşıyor, tekrarı dikey alan israfıydı.
         tabs = QTabWidget()
         tabs.setDocumentMode(True)
         layout.addWidget(tabs, 1)
@@ -401,75 +399,72 @@ class BackupDialog(QDialog):
     # ── Sekme 1: Yedekleme ───────────────────────────────────────────────────
 
     def _tab_backup(self):
+        # Kompakt düzen (kullanıcı isteği): açıklama metinleri ekrandan
+        # kaldırıldı, bilgi kaybolmasın diye TOOLTIP'lere taşındı.
         w = QWidget()
         layout = QVBoxLayout(w)
-        layout.setContentsMargins(16, 16, 16, 12)
-        layout.setSpacing(14)
+        layout.setContentsMargins(12, 12, 12, 10)
+        layout.setSpacing(10)
 
-        # Manuel yedekleme
-        man = QGroupBox("Şimdi Yedek Al")
-        ml = QVBoxLayout(man)
-        ml.setContentsMargins(14, 12, 14, 12)
-        ml.setSpacing(8)
-        ml.addWidget(QLabel(
-            "Tüm verilerinizin bir kopyasını bilgisayarınıza kaydeder.\n"
-            "(Müşteriler, teklifler, ürünler, ayarlar, logo ve imzalar)"
-        ))
-        last = self._meta.get("last_backup", "")
-        self.lbl_last = QLabel(f"Son yedek: {last or 'Henüz alınmadı'}")
-        self.lbl_last.setObjectName("hint_label")
-        ml.addWidget(self.lbl_last)
+        # Manuel yedekleme — tek satır: buton + son yedek bilgisi
         r = QHBoxLayout()
+        r.setSpacing(10)
         btn = QPushButton("Yedek Al")
         btn.setObjectName("primary")
         btn.setMinimumHeight(36)
+        btn.setToolTip(
+            "Tüm verilerinizin bir kopyasını bilgisayarınıza kaydeder.\n"
+            "(Müşteriler, teklifler, ürünler, ayarlar, logo ve imzalar)")
         btn.clicked.connect(self._manual)
         r.addWidget(btn)
+        last = self._meta.get("last_backup", "")
+        self.lbl_last = QLabel(f"Son yedek: {last or 'Henüz alınmadı'}")
+        self.lbl_last.setObjectName("hint_label")
+        r.addWidget(self.lbl_last)
         r.addStretch()
-        ml.addLayout(r)
-        layout.addWidget(man)
+        layout.addLayout(r)
 
         # Otomatik yedekleme
         aut = QGroupBox("Otomatik Yedekleme")
         ag = QGridLayout(aut)
-        ag.setContentsMargins(14, 12, 14, 12)
-        ag.setSpacing(10)
+        ag.setContentsMargins(12, 6, 12, 10)
+        ag.setSpacing(8)
         ag.setColumnStretch(1, 1)
 
         self.chk_auto = QCheckBox("Otomatik yedeklemeyi etkinleştir")
         self.chk_auto.setChecked(self._meta.get("auto_enabled", True))
+        self.chk_auto.setToolTip(
+            "Program açıkken arka planda otomatik yedek alınır.\n"
+            "En fazla 20 yedek tutulur, eskiler otomatik silinir.")
         self.chk_auto.stateChanged.connect(self._auto_toggle)
-        ag.addWidget(self.chk_auto, 0, 0, 1, 3)
+        ag.addWidget(self.chk_auto, 0, 0, 1, 2)
 
-        ag.addWidget(QLabel("Aralık:"), 1, 0)
+        # Aralık combo'su checkbox'la aynı satırda — ayrı "Aralık:" etiketi
+        # gereksizdi; anlamı tooltip'te.
         self.iv_combo = QComboBox()
         self.iv_combo.addItems(["15 Dakika", "30 Dakika", "1 Saat", "2 Saat"])
+        self.iv_combo.setToolTip("Otomatik yedekleme aralığı")
         iv_map = {15: 0, 30: 1, 60: 2, 120: 3}
         self.iv_combo.setCurrentIndex(
             iv_map.get(self._meta.get("auto_interval", 30), 1)
         )
-        ag.addWidget(self.iv_combo, 1, 1)
+        ag.addWidget(self.iv_combo, 0, 2)
 
-        ag.addWidget(QLabel("Yedek Klasörü:"), 2, 0)
+        ag.addWidget(QLabel("Yedek Klasörü:"), 1, 0)
+        # Tek satır + ortadan kısaltma: yol içinde boşluk olmadığından
+        # WordWrap "C:" gibi çirkin kırılmalar üretiyordu. Tam yol tooltip'te.
+        # Renk nötr (accent_blue link sanılıyordu — tıklanabilir değil).
+        self.lbl_dir = QLabel()
+        self.lbl_dir.setObjectName("hint_label")
+        ag.addWidget(self.lbl_dir, 1, 1)
         dir_val = self._meta.get("auto_backup_dir", str(_DEFAULT_BACKUP_DIR))
-        self.lbl_dir = QLabel(dir_val or str(_DEFAULT_BACKUP_DIR))
-        from ui.utils.theme_manager import get_theme as _gt
-        self.lbl_dir.setStyleSheet(f"color:{_gt()['accent_blue']};font-size:8pt;")
-        self.lbl_dir.setWordWrap(True)
-        ag.addWidget(self.lbl_dir, 2, 1)
+        self._set_dir_text(dir_val or str(_DEFAULT_BACKUP_DIR))
 
         btn_dir = QPushButton("Değiştir")
         btn_dir.setObjectName("secondary")
         btn_dir.setMinimumHeight(34)
         btn_dir.clicked.connect(self._pick_dir)
-        ag.addWidget(btn_dir, 2, 2)
-
-        info = QLabel(
-            "Program açıkken arka planda otomatik yedek alınır.\nEn fazla 20 yedek tutulur, eskiler otomatik silinir."
-        )
-        info.setObjectName("hint_label")
-        info.setWordWrap(True)
-        ag.addWidget(info, 3, 0, 1, 3)
+        ag.addWidget(btn_dir, 1, 2)
 
         r2 = QHBoxLayout()
         btn_sv = QPushButton("Ayarları Kaydet")
@@ -478,7 +473,7 @@ class BackupDialog(QDialog):
         btn_sv.clicked.connect(self._save_auto)
         r2.addWidget(btn_sv)
         r2.addStretch()
-        ag.addLayout(r2, 4, 0, 1, 3)
+        ag.addLayout(r2, 2, 0, 1, 3)
 
         layout.addWidget(aut)
         layout.addStretch()
@@ -489,8 +484,8 @@ class BackupDialog(QDialog):
     def _tab_restore(self):
         w = QWidget()
         layout = QVBoxLayout(w)
-        layout.setContentsMargins(16, 16, 16, 12)
-        layout.setSpacing(14)
+        layout.setContentsMargins(12, 12, 12, 10)
+        layout.setSpacing(10)
 
         warn = QLabel(
             "Dikkat: Bu işlem mevcut tüm verilerinizi seçtiğiniz yedekle değiştirir.\n\n"
@@ -512,8 +507,8 @@ class BackupDialog(QDialog):
 
         info_box = QGroupBox("Yedeği Geri Yükle")
         il = QVBoxLayout(info_box)
-        il.setContentsMargins(14, 12, 14, 12)
-        il.setSpacing(8)
+        il.setContentsMargins(12, 6, 12, 10)
+        il.setSpacing(6)
         il.addWidget(QLabel(
             "Daha önce aldığınız yedek dosyasını (.zip) seçin.\n"
             "Tüm verileriniz o yedeğe geri döner."
@@ -532,6 +527,12 @@ class BackupDialog(QDialog):
         return w
 
     # ── İşlemler ─────────────────────────────────────────────────────────────
+
+    def _set_dir_text(self, path: str):
+        """Klasör yolunu tek satırda, ortadan kısaltarak gösterir; tam yol tooltip'te."""
+        fm = self.lbl_dir.fontMetrics()
+        self.lbl_dir.setText(fm.elidedText(path, Qt.TextElideMode.ElideMiddle, 300))
+        self.lbl_dir.setToolTip(path)
 
     def _manual(self):
         d = QFileDialog.getExistingDirectory(
@@ -557,7 +558,7 @@ class BackupDialog(QDialog):
         )
         if d:
             self._meta["auto_backup_dir"] = d
-            self.lbl_dir.setText(d)
+            self._set_dir_text(d)
 
     def _auto_toggle(self, state):
         enabled = bool(state)
@@ -567,7 +568,7 @@ class BackupDialog(QDialog):
             )
             if d:
                 self._meta["auto_backup_dir"] = d
-                self.lbl_dir.setText(d)
+                self._set_dir_text(d)
             else:
                 self.chk_auto.setChecked(False)
 
@@ -577,7 +578,7 @@ class BackupDialog(QDialog):
         self._meta["auto_interval"] = iv_map.get(self.iv_combo.currentIndex(), 30)
         if not self._meta.get("auto_backup_dir"):
             self._meta["auto_backup_dir"] = str(_DEFAULT_BACKUP_DIR)
-            self.lbl_dir.setText(str(_DEFAULT_BACKUP_DIR))
+            self._set_dir_text(str(_DEFAULT_BACKUP_DIR))
         _save_meta(self._meta)
         self.settings_changed.emit()
         QMessageBox.information(

@@ -10,6 +10,7 @@ Dışa aktarılan dosyalar içe aktarmayla birebir uyumludur (roundtrip).
 import logging, csv, io, re
 from pathlib import Path
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QCheckBox
+from core.constants import normalize_currency
 
 logger = logging.getLogger("excel_import")
 
@@ -230,9 +231,9 @@ def _perform_import(import_type: str, rows_to_process: list,
                 continue
             price = _parse_number(row.get("price", 0))
             stock = _parse_number(row.get("stock", 0))
-            currency = (row.get("currency", "EUR") or "EUR").strip().upper()
-            if currency not in ("EUR", "USD", "TL"):
-                currency = "EUR"
+            # TRY/₺ gibi yaygın yazımlar sistemin "TL" koduna eşlenir;
+            # tanınmayan/boş → EUR (bkz. core.constants.normalize_currency).
+            currency = normalize_currency(row.get("currency", ""), default="EUR")
             unit = row.get("unit", "Adet") or "Adet"
             is_dup = row.get("_duplicate", False)
             try:
@@ -461,8 +462,8 @@ def _validate_offer_rows(raw_rows: list) -> tuple[list, list, list]:
                 "phone": str(r.get("phone", "")).strip(),
                 "email": str(r.get("email", "")).strip(),
                 "date": str(r.get("date", "")).strip(),
-                "currency": (str(r.get("currency", "EUR")).strip().upper()
-                             or "EUR"),
+                "currency": normalize_currency(r.get("currency", ""),
+                                               default="EUR"),
                 "status": status if status in STATUS_ORDER else "Beklemede",
                 "validity": str(r.get("validity", "")).strip(),
                 "validity_note": str(r.get("validity_note", "")).strip(),

@@ -707,13 +707,18 @@ QPushButton#secondary:checked {{
 }}
 QPushButton#secondary:pressed {{ padding: 7px 20px; }}
 
-/* Kare ikon butonu — "+" gibi tek karakter için */
+/* Kare ikon butonu — arka plan/kenarlık/hover içindir. Tek karakter
+   ("+" vb.) merkezlemesi QSS padding ile YAPILMAZ — platforma/yazı
+   tipi motoruna göre değişip kırılgan olur (elle ayarlanmış padding
+   bir ortamda doğru, gerçek Windows'ta yanlış çıkabiliyordu). Bunun
+   yerine ui/widgets/_plus_button.py -> PlusButton kullanılır: glifin
+   gerçek sınır kutusunu çalışma anında ölçüp tam merkeze çizer. */
 QPushButton#icon_btn {{
     background: transparent;
     color: {t['text_primary']};
     border: 1.5px solid {t['border']};
     border-radius: 8px;
-    padding: 0px 0px 2px 0px;
+    padding: 0px;
     font-size: 20pt;
     font-weight: 300;
 }}
@@ -828,6 +833,9 @@ QPushButton#tab_btn_delete:pressed {{
 /* ══════════════════════════════════════════════════════
    GROUPBOX
 ══════════════════════════════════════════════════════ */
+/* Başlık kutunun İÇİNDE (kenar çizgisine binmez) — eski "margin
+   bölgesinde şeffaf başlık" düzeni, çizginin başlığın içinden
+   geçmesine ve dağınık bir görünüme yol açıyordu. */
 QGroupBox {{
     background: {t['bg_card']};
     border: 1px solid {t['border']};
@@ -835,15 +843,15 @@ QGroupBox {{
     font-weight: 700;
     font-size: 9pt;
     color: {t['text_primary']};
-    margin-top: 14px;
-    padding-top: 16px;
+    margin-top: 0px;
+    padding-top: 26px;
 }}
 QGroupBox::title {{
-    subcontrol-origin: margin;
+    subcontrol-origin: padding;
     subcontrol-position: top left;
-    left: 14px;
-    top: 0px;
-    padding: 0px 6px;
+    left: 12px;
+    top: 8px;
+    padding: 0px;
     color: {t['text_primary']};
     background: transparent;
     font-size: 9pt;
@@ -1000,15 +1008,15 @@ QDialog QGroupBox {{
     background: {t['bg_dialog']};
     border: 1px solid {t['border']};
     border-radius: 10px;
-    margin-top: 14px;
-    padding-top: 16px;
+    margin-top: 0px;
+    padding-top: 26px;
 }}
 QDialog QGroupBox::title {{
-    subcontrol-origin: margin;
+    subcontrol-origin: padding;
     subcontrol-position: top left;
-    left: 14px;
-    top: 0px;
-    padding: 0px 6px;
+    left: 12px;
+    top: 8px;
+    padding: 0px;
     background: transparent;
     color: {t['text_primary']};
     font-size: 9pt;

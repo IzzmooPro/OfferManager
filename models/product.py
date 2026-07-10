@@ -15,6 +15,9 @@ class Product:
     stock: float = 0.0
     unit: str = "Adet"
     category_id: Optional[int] = None
+    # Alış fiyatı (maliyet) — yalnızca dahili kâr hesabı için; PDF/Excel
+    # teklif çıktılarına ve müşteri görünümüne asla dahil edilmez.
+    cost_price: float = 0.0
 
     @classmethod
     def from_row(cls, row):
@@ -32,4 +35,5 @@ class Product:
             stock=d["stock"],
             unit=d["unit"],
             category_id=d.get("category_id"),
+            cost_price=d.get("cost_price") or 0.0,
         )

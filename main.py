@@ -254,12 +254,20 @@ def main():
     logger.info("Yedek klasörü: %s", BACKUP_DIR)
 
     from PySide6.QtWidgets import QApplication
-    from PySide6.QtGui import QFontDatabase
+    from PySide6.QtGui import QFontDatabase, QIcon
     from PySide6.QtCore import QTranslator, QLibraryInfo, QLocale
 
     app = QApplication(sys.argv)
     app.setApplicationName("Teklif Yönetim Sistemi")
     app.setOrganizationName("TeklifApp")
+
+    # Uygulama genelinde varsayılan pencere ikonu — QApplication üzerinde
+    # tek seferde ayarlanır, açıkça kendi ikonunu vermeyen TÜM pencere ve
+    # dialoglara (Qt tarafından) otomatik miras kalır. Başlık çubuğu/görev
+    # çubuğu/alt-tab için çoklu çözünürlüklü .ico tercih edilir.
+    _icon_path = ASSET_ROOT / "assets" / "ico.ico"
+    if _icon_path.exists():
+        app.setWindowIcon(QIcon(str(_icon_path)))
 
     # Sayı biçimi her makinede Türk düzeni olsun (SpinBox: 1.234,56)
     QLocale.setDefault(QLocale(QLocale.Language.Turkish, QLocale.Country.Turkey))

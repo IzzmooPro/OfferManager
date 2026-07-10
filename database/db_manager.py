@@ -55,6 +55,7 @@ class DB:
             ("offers", "discount_type",      "TEXT DEFAULT 'amount'"),
             ("offers", "discount_value",     "REAL DEFAULT 0.0"),
             ("offers", "show_discount",      "INTEGER DEFAULT 1"),
+            ("products", "cost_price",       "REAL DEFAULT 0"),
         ]
         conn = self._get_conn()
         try:

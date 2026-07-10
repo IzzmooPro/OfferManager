@@ -155,14 +155,18 @@ def _write_table_sheet(ws, headers: list, rows: list) -> None:
             cell.border = border
             cell.alignment = Alignment(vertical="center")
 
-    # Sütun genişliği içeriğe göre — hiçbir hücre görsel olarak kesilmesin
+    # Sütun genişliği içeriğe göre — hiçbir hücre görsel olarak kesilmesin.
+    # Başlık kalın yazıldığı VE üzerinde otomatik filtre oku olduğu için,
+    # başlık için ekstra pay bırakılır (aksi halde "Adres", "Not" gibi kısa
+    # başlıklar filtre okunun altında kesik görünür). Veri için ayrı pay.
     for i, header in enumerate(headers, 1):
-        longest = len(str(header))
+        header_w = len(str(header)) + 6   # kalın font + filtre oku payı
+        data_w = 0
         for row in rows:
             val = row[i - 1]
             text = f"{val:.2f}" if isinstance(val, float) else str(val)
-            longest = max(longest, len(text))
-        ws.column_dimensions[get_column_letter(i)].width = min(70, longest + 4)
+            data_w = max(data_w, len(text) + 4)
+        ws.column_dimensions[get_column_letter(i)].width = min(70, max(header_w, data_w))
 
     # Başlık satırı sabit kalsın + filtre okları
     ws.freeze_panes = "A2"

@@ -11,6 +11,7 @@ from services.product_service import ProductService
 from models.product import Product
 from ui.widgets._resizable_table import ResizableTable
 from ui.widgets._row_hover_delegate import RowHoverDelegate
+from ui.widgets._plus_button import PlusButton
 from core.constants import UNIT_LIST, CURRENCY_LIST
 from core.formatting import fmt_number
 
@@ -55,6 +56,7 @@ class ProductDialog(QDialog):
         self.code_warn.setVisible(False)
 
         code_col = QVBoxLayout(); code_col.setSpacing(2)
+        code_col.setContentsMargins(0, 0, 0, 0)
         code_col.addWidget(self.code)
         code_col.addWidget(self.code_warn)
 
@@ -82,6 +84,27 @@ class ProductDialog(QDialog):
         self.price.setStepType(QDoubleSpinBox.StepType.AdaptiveDecimalStepType)
         form.addRow("Fiyat:", self.price)
 
+        # ── Alış Fiyatı (Maliyet) — yalnızca dahili kâr hesabı için ──
+        self.cost_price = QDoubleSpinBox()
+        self.cost_price.setMaximum(9_999_999)
+        self.cost_price.setDecimals(2)
+        self.cost_price.setMinimumHeight(36)
+        self.cost_price.setGroupSeparatorShown(True)
+        self.cost_price.setStepType(QDoubleSpinBox.StepType.AdaptiveDecimalStepType)
+
+        cost_hint = QLabel(
+            "Bu bilgi tekliflerde ve PDF'te görünmez, yalnızca sizin "
+            "kâr hesabınız içindir.")
+        cost_hint.setObjectName("hint_label")
+        cost_hint.setWordWrap(True)
+
+        cost_col = QVBoxLayout(); cost_col.setSpacing(2)
+        cost_col.setContentsMargins(0, 0, 0, 0)
+        cost_col.addWidget(self.cost_price)
+        cost_col.addWidget(cost_hint)
+        cost_wrap = QWidget(); cost_wrap.setLayout(cost_col)
+        form.addRow("Alış Fiyatı:", cost_wrap)
+
         # ── Para Birimi ──
         self.currency = QComboBox()
         self.currency.addItems(CURRENCY_LIST)
@@ -107,12 +130,13 @@ class ProductDialog(QDialog):
 
         # ── Kategori ──
         cat_row = QHBoxLayout()
+        cat_row.setContentsMargins(0, 0, 0, 0)
         cat_row.setSpacing(6)
         self.category_combo = QComboBox()
         self.category_combo.setMinimumHeight(34)
         self._load_categories()
         cat_row.addWidget(self.category_combo, 1)
-        cat_manage_btn = QPushButton("+")
+        cat_manage_btn = PlusButton()
         cat_manage_btn.setObjectName("icon_btn")
         cat_manage_btn.setFixedSize(34, 34)
         cat_manage_btn.setToolTip("Kategori ekle / düzenle / sil")
@@ -160,8 +184,12 @@ class ProductDialog(QDialog):
     def _fill(self, p):
         self.code.setText(p.product_code)
         self.name.setText(p.product_name)
+        # Uzun ürün adlarında imleci başa al — sonu değil başı görünsün.
+        self.code.setCursorPosition(0)
+        self.name.setCursorPosition(0)
         self.desc.setPlainText(p.description or "")
         self.price.setValue(p.price)
+        self.cost_price.setValue(p.cost_price or 0.0)
         idx = self.currency.findText(p.currency)
         if idx >= 0: self.currency.setCurrentIndex(idx)
         self.stock.setValue(int(p.stock) if p.stock == int(p.stock) else p.stock)
@@ -237,6 +265,7 @@ class ProductDialog(QDialog):
         p.product_name = self.name.text().strip()
         p.description  = self.desc.toPlainText().strip()
         p.price        = self.price.value()
+        p.cost_price   = self.cost_price.value()
         p.currency     = self.currency.currentText()
         p.stock        = self.stock.value()
         p.unit         = self.unit.currentText()

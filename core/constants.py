@@ -7,6 +7,26 @@ SYM_MAP = {"TL": "₺", "EUR": "€", "USD": "$"}
 # Para birimi seçenekleri — combobox'larda tek kaynak (varsayılan: EUR)
 CURRENCY_LIST = ["EUR", "USD", "TL"]
 
+# Serbest yazılmış para birimi etiketlerini sistemin kodlarına eşler.
+# Özellikle içe aktarmada: dosyalar Türk Lirası'nı çoğu zaman uluslararası
+# "TRY" koduyla ya da "₺" simgesiyle yazar; sistem ise "TL" bekler.
+_CURRENCY_ALIASES = {
+    "TRY": "TL", "TRL": "TL", "₺": "TL", "TL.": "TL", "TURK LIRASI": "TL",
+    "€": "EUR", "EURO": "EUR", "AVRO": "EUR", "EUR€": "EUR",
+    "$": "USD", "US$": "USD", "USD$": "USD", "DOLAR": "USD",
+}
+
+
+def normalize_currency(value, default: str = "EUR") -> str:
+    """Serbest yazılmış bir para birimini sistemin tanıdığı koda çevirir.
+
+    Örn: 'TRY'/'₺' → 'TL', '€' → 'EUR', '$' → 'USD'. Tanınmayan/boş değer
+    `default`'a düşer. Zaten geçerli olan (EUR/USD/TL) aynen döner.
+    """
+    cur = str(value or "").strip().upper()
+    cur = _CURRENCY_ALIASES.get(cur, cur)
+    return cur if cur in CURRENCY_LIST else default
+
 UNIT_LIST = ["Adet", "Kg", "Metre", "Litre", "Paket", "Kutu", "Set", "Takım"]
 
 DELIVERY_LIST = [

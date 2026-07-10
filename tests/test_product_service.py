@@ -52,6 +52,26 @@ class TestProductService(unittest.TestCase):
         self.assertAlmostEqual(stored.stock, 42.0)
         self.assertEqual(stored.unit, "Kutu")
 
+    # ── cost_price (alış fiyatı / kâr analizi) ──────────────────────────────
+
+    def test_add_default_cost_price_is_zero(self):
+        pid = self.svc.add(self._make("COST-DEF"))
+        stored = self.svc.get_by_id(pid)
+        self.assertAlmostEqual(stored.cost_price, 0.0)
+
+    def test_add_with_cost_price(self):
+        pid = self.svc.add(self._make("COST-01", cost_price=75.0))
+        stored = self.svc.get_by_id(pid)
+        self.assertAlmostEqual(stored.cost_price, 75.0)
+
+    def test_update_cost_price(self):
+        pid = self.svc.add(self._make("COST-UPD", cost_price=50.0))
+        p = self.svc.get_by_id(pid)
+        p.cost_price = 90.0
+        self.svc.update(p)
+        updated = self.svc.get_by_id(pid)
+        self.assertAlmostEqual(updated.cost_price, 90.0)
+
     def test_add_empty_code_raises(self):
         with self.assertRaises(ValueError):
             self.svc.add(self._make(code="", name="Ürün"))

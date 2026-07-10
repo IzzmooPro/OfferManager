@@ -4,10 +4,12 @@ Adım 1: Müşteri  |  Adım 2: Ürünler  |  Adım 3: Özet + PDF Önizleme
 """
 import logging, datetime, os, re
 from pathlib import Path
-from PySide6.QtGui import QPainter, QFont, QColor, QIntValidator, QShortcut, QKeySequence
+from PySide6.QtGui import QIntValidator, QShortcut, QKeySequence
 
 from ui.widgets._section_card import make_section_card
 from ui.widgets._row_hover_delegate import RowHoverDelegate
+from ui.widgets._profit_panel import ProfitPanel
+from ui.widgets._plus_button import PlusButton as _PlusButton
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QLineEdit, QComboBox,
@@ -33,6 +35,11 @@ DELIVERIES = ["Stokta Var", "1-2 Gün", "3-5 Gün", "2-3 Hafta"] + DELIVERY_LIST
 
 # Satır yüksekliği — tüm hücre widget'ları bu fixed yüksekliği kullanır
 ROW_H = 36
+
+# Ürün satırının maliyetini (alış fiyatı) gizlice taşımak için kullanılan
+# veri rolü — yalnızca dahili "Kâr Analizi" paneli okur; hiçbir kaydetme/
+# PDF/export akışına girmez (bkz. ui/widgets/_profit_panel.py).
+_COST_ROLE = Qt.ItemDataRole.UserRole + 1
 
 
 def _normalize_validity_text(value: str) -> str:
@@ -75,30 +82,6 @@ def _payment_days_for_input(value: str) -> str:
     match = re.fullmatch(
         r"(\d+)\s*(?:g[üu]n)?(?:\s*vadeli)?", text, flags=re.IGNORECASE)
     return str(int(match.group(1))) if match else ""
-
-
-class _PlusButton(QPushButton):
-    """Artı ikonunu QPainter ile tam merkeze çizen özel buton."""
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setText("")
-
-    def paintEvent(self, event):
-        super().paintEvent(event)          # arka plan + border (tema CSS'i)
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        from ui.utils.theme_manager import get_theme
-        p.setPen(QColor(get_theme()["text_primary"]))
-        f = QFont()
-        f.setPointSize(15)
-        f.setWeight(QFont.Weight.Light)
-        p.setFont(f)
-        fm   = p.fontMetrics()
-        br   = fm.boundingRect("+")
-        x    = (self.width()  - br.width())  // 2 - br.x()
-        y    = (self.height() - br.height()) // 2 - br.y()
-        p.drawText(x, y, "+")
-        p.end()
 
 
 class _TableComboBox(QComboBox):
@@ -733,6 +716,10 @@ class CreateOfferPage(QWidget):
         cl.addLayout(vg)
         layout.addWidget(card)
 
+        # Kâr Analizi — yalnızca dahili, varsayılan kapalı (bkz. _profit_panel.py)
+        self._profit_panel = ProfitPanel()
+        layout.addWidget(self._profit_panel)
+
         # Özet — Modern Panel
         scroll = QScrollArea(); scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -1007,7 +994,7 @@ class CreateOfferPage(QWidget):
                 continue
             self._add_row(code=p.product_code, name=p.product_name,
                           desc=p.description, unit=p.unit, price=p.price,
-                          currency=product_currency)
+                          currency=product_currency, cost=p.cost_price)
             # Stok uyarısı — 0 veya düşükse bildir
             if p.stock is not None and p.stock <= 0:
                 low_stock.append(f"{p.product_code} — {p.product_name} (Stok: {p.stock:.0f})")
@@ -1029,7 +1016,7 @@ class CreateOfferPage(QWidget):
 
     def _add_row(self, code="", name="", desc="", qty=1.0,
                  unit="Adet", delivery="2-3 Hafta", price=0.0,
-                 currency=None):
+                 currency=None, cost=0.0):
         row = self.prod_table.rowCount()
         if row == 0 and currency:
             self.current_currency = currency
@@ -1044,7 +1031,11 @@ class CreateOfferPage(QWidget):
                 it.setFlags(it.flags() & ~Qt.ItemFlag.ItemIsEditable)
             return it
 
-        self.prod_table.setItem(row, 0, item(code, editable=False))
+        code_item = item(code, editable=False)
+        # Maliyet, satırın kodu üzerinde gizli veri olarak taşınır — hiçbir
+        # görünür sütun/hücre yok, yalnızca Kâr Analizi paneli okur.
+        code_item.setData(_COST_ROLE, float(cost or 0.0))
+        self.prod_table.setItem(row, 0, code_item)
         self.prod_table.setItem(row, 1, item(name, editable=False))
         self.prod_table.setItem(row, 2, item(desc, editable=False))
 
@@ -1177,6 +1168,7 @@ class CreateOfferPage(QWidget):
                 "unit": unit_w.currentText() if unit_w else "Adet",
                 "delivery": del_w.currentText() if del_w else "2-3 Hafta",
                 "price": prc_w.value() if prc_w else 0,
+                "cost": (code_i.data(_COST_ROLE) or 0.0) if code_i else 0.0,
             })
             self.prod_table.removeRow(r)
         if batch:
@@ -1194,7 +1186,8 @@ class CreateOfferPage(QWidget):
             self._add_row(
                 code=item["code"], name=item["name"], desc=item["desc"],
                 qty=item["qty"], unit=item["unit"], delivery=item["delivery"],
-                price=item["price"], currency=self.current_currency)
+                price=item["price"], currency=self.current_currency,
+                cost=item.get("cost", 0.0))
         self._update_total()
 
     def _read_row(self, row: int) -> dict:
@@ -1214,6 +1207,7 @@ class CreateOfferPage(QWidget):
             "unit": unit_w.currentText() if unit_w else "Adet",
             "delivery": del_w.currentText() if del_w else "2-3 Hafta",
             "price": prc_w.value() if prc_w else 0,
+            "cost": (code_i.data(_COST_ROLE) or 0.0) if code_i else 0.0,
         }
 
     def _swap_rows(self, row_a: int, row_b: int):
@@ -1232,6 +1226,7 @@ class CreateOfferPage(QWidget):
         """Belirtilen satıra dict verilerini yazar."""
         if self.prod_table.item(row, 0):
             self.prod_table.item(row, 0).setText(data["code"])
+            self.prod_table.item(row, 0).setData(_COST_ROLE, data.get("cost", 0.0))
         if self.prod_table.item(row, 1):
             self.prod_table.item(row, 1).setText(data["name"])
         if self.prod_table.item(row, 2):
@@ -1325,12 +1320,18 @@ class CreateOfferPage(QWidget):
                 f"ürünlerin para birimiyle ({self.current_currency}) uyuşmuyor.\n\n"
                 "Bir teklifte yalnızca tek para birimi kullanılabilir.")
             return
+        # Şablonlar maliyet taşımaz (yalnızca ürün/miktar/fiyat) — kâr paneli
+        # için güncel maliyet, ürün kataloğundan kod eşleşmesiyle aranır.
+        product_svc = ProductService()
         for item in tmpl.items:
+            product = product_svc.get_by_code(item.product_code) \
+                if item.product_code else None
             self._add_row(
                 code=item.product_code, name=item.product_name,
                 desc=item.description, qty=item.quantity,
                 unit=item.unit, delivery=item.delivery_time,
-                price=item.unit_price, currency=tmpl.currency)
+                price=item.unit_price, currency=tmpl.currency,
+                cost=product.cost_price if product else 0.0)
 
     def _update_total(self, *_):
         sym = SYM_MAP.get(self.current_currency, "€")
@@ -1338,6 +1339,26 @@ class CreateOfferPage(QWidget):
         disc_val = self._discount_amount() if hasattr(self, 'discount_spin') else 0.0
         net = subtotal - disc_val
         self.total_lbl.setText(f"Genel Toplam: {fmt_money(net, sym)}")
+        if hasattr(self, "_profit_panel"):
+            self._profit_panel.set_currency_symbol(sym)
+            self._profit_panel.update_values(
+                self._calc_total_cost(), subtotal, net, self._row_costs())
+
+    def _row_costs(self) -> list:
+        """Her kalemin gizli maliyet verisini döner (eksik-maliyet uyarısı için)."""
+        return [self.prod_table.item(r, 0).data(_COST_ROLE) or 0.0
+                for r in range(self.prod_table.rowCount())
+                if self.prod_table.item(r, 0)]
+
+    def _calc_total_cost(self) -> float:
+        """Tüm kalemlerin toplam alış maliyeti (miktar × birim maliyet)."""
+        total = 0.0
+        for r in range(self.prod_table.rowCount()):
+            qty_w = _unwrap(self.prod_table.cellWidget(r, 3))
+            code_i = self.prod_table.item(r, 0)
+            if qty_w and code_i:
+                total += qty_w.value() * (code_i.data(_COST_ROLE) or 0.0)
+        return total
 
     def _discount_type(self) -> str:
         return "percent"
@@ -1750,13 +1771,20 @@ class CreateOfferPage(QWidget):
 
         self.current_currency = offer.currency or "EUR"
 
+        # Maliyet teklifle birlikte SAKLANMAZ (Faz 1 kararı) — kâr paneli
+        # için ürünün GÜNCEL alış fiyatı kod eşleşmesiyle canlı aranır.
+        # Ürün silinmiş/kod değişmişse sessizce 0 kabul edilir.
+        product_svc = ProductService()
         self.prod_table.setRowCount(0)
         for item in offer.items:
+            product = product_svc.get_by_code(item.product_code) \
+                if item.product_code else None
             self._add_row(
                 code=item.product_code or "", name=item.product_name or "",
                 desc=item.description or "",  qty=item.quantity or 1,
                 unit=item.unit or "Adet",      delivery=item.delivery_time or "2-3 Hafta",
                 price=item.unit_price or 0,    currency=self.current_currency,
+                cost=product.cost_price if product else 0.0,
             )
 
         # Teklif koşullarını DB'den gelen değerlerle doldur

@@ -68,6 +68,10 @@ class CustomerDialog(QDialog):
         self.phone.setText(c.phone)
         self.email.setText(c.email)
         self.notes.setPlainText(c.notes)
+        # Uzun metinlerde QLineEdit imleci sonda bırakıp METNİN SONUNU
+        # gösteriyor; başa alarak firma adının başını göster.
+        for f in (self.company, self.contact, self.address, self.phone, self.email):
+            f.setCursorPosition(0)
 
     def _save(self):
         if not self.company.text().strip():
