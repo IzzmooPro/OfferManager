@@ -1,6 +1,6 @@
 """Uygulama geneli sabitler — tek kaynak, tüm modüller buradan import eder."""
 
-APP_VERSION = "v3.7"
+APP_VERSION = "v3.8"
 
 SYM_MAP = {"TL": "₺", "EUR": "€", "USD": "$"}
 

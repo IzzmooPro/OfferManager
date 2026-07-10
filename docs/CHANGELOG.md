@@ -2,6 +2,28 @@
 
 ---
 
+## [v3.8] — 2026-07-10
+
+### Yeni Özellik
+- **Kâr Analizi paneli:** Ürünlere "Alış Fiyatı" (maliyet) eklendi. Teklif
+  oluştururken, yalnızca **sizin gördüğünüz** katlanabilir bir panelde
+  toplam alış/satış, kâr (₺ ve %), ve "maliyetine düşmeden en fazla ne
+  kadar iskonto verebileceğiniz" canlı gösterilir. Marj durumuna göre
+  yeşil/sarı/kırmızı renk uyarısı ve maliyeti girilmemiş ürün uyarısı var.
+  Bu bilgiler **PDF, Excel ve e-postaya asla dahil edilmez** — müşteri görmez.
+
+### İyileştirmeler
+- **İçe aktarma — para birimi:** Fiyatları "TRY" veya "₺" ile yazılmış
+  Excel dosyaları artık doğru şekilde TL olarak aktarılıyor (önceden
+  yanlışlıkla EUR'a düşüyordu).
+- **İçe aktarma — Excel başlıkları:** Dışa/içe aktarılan dosyalarda dar
+  sütun başlıkları artık kesilmiyor.
+- Çeşitli pencere düzeni ve okunabilirlik iyileştirmeleri (form hizası,
+  pencere ikonu, buton yazıları, kompakt yedekleme/hakkında pencereleri,
+  uzun metinlerin baştan gösterilmesi).
+
+---
+
 ## [v3.7] — 2026-07-09
 
 ### Düzeltmeler
