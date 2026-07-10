@@ -36,7 +36,8 @@
 |---|---|
 | 🧙 | **3 adımlı teklif sihirbazı** — müşteri → ürünler → koşullar → hazır teklif |
 | 📄 | **Profesyonel PDF** — logolu, imzalı, Türkçe karakter tam destekli |
-| 👥 | **Müşteri & ürün yönetimi** — arama, filtre, Excel/CSV içe-dışa aktarma |
+| 💰 | **Kâr Analizi** — teklif hazırlarken maliyetinize göre kârınızı ve verebileceğiniz **maksimum iskontoyu yalnızca siz** görürsünüz; müşteriye/PDF'e asla gitmez |
+| 👥 | **Müşteri & ürün yönetimi** — arama, filtre, çoklu seçim & toplu silme, binlerce kayıtlık Excel/CSV içe-dışa aktarma |
 | 🗂️ | **Kategoriler & şablonlar** — sık kullanılan teklifleri tek tıkla kur |
 | 📊 | **Raporlar** — aylık ciro, müşteri/ürün sıralaması, dönüşüm oranı |
 | 💱 | **Çoklu para birimi** — ₺ TL · € EUR · $ USD |
@@ -89,7 +90,8 @@ Save your products and customers, build a professional quotation with a 3-step w
 |---|---|
 | 🧙 | **3-step quote wizard** — customer → products → terms → ready quote |
 | 📄 | **Professional PDF** — with logo, signatures, full Turkish support |
-| 👥 | **Customer & product management** — search, filter, Excel/CSV import-export |
+| 💰 | **Profit analysis** — while building a quote, see your profit and the **maximum discount** you can offer based on cost — **visible only to you**, never shown to the customer or in the PDF |
+| 👥 | **Customer & product management** — search, filter, multi-select & bulk delete, Excel/CSV import-export (handles thousands of records) |
 | 🗂️ | **Categories & templates** — reuse frequent quotes in one click |
 | 📊 | **Reports** — monthly revenue, customer/product rankings, conversion rate |
 | 💱 | **Multi-currency** — ₺ TRY · € EUR · $ USD |
