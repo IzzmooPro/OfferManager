@@ -2,6 +2,16 @@
 
 ---
 
+## [v3.9] — 2026-07-10
+
+### Yeni Özellik
+- **Ürünlerde toplu silme:** Artık Ürünler sayfasında Shift/Ctrl ile birden
+  fazla ürün seçip tek seferde silebilirsiniz (Müşteriler sayfasındaki gibi).
+  Çok sayıda ürünle çalışırken filtreleyip topluca temizlemeyi kolaylaştırır.
+  Silinen ürünlerin mevcut tekliflerdeki bilgileri değişmeden kalır.
+
+---
+
 ## [v3.8] — 2026-07-10
 
 ### Yeni Özellik

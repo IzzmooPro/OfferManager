@@ -333,6 +333,8 @@ class ProductsPage(QWidget):
         ])
         self.table.setEditTriggers(self.table.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(self.table.SelectionBehavior.SelectRows)
+        # Shift/Ctrl ile çoklu seçim → toplu silme (müşteriler sayfasıyla aynı)
+        self.table.setSelectionMode(self.table.SelectionMode.ExtendedSelection)
         self.table.setAlternatingRowColors(False)
         self.table.verticalHeader().setVisible(False)
         self.table.doubleClicked.connect(self._edit)
@@ -400,6 +402,11 @@ class ProductsPage(QWidget):
         row = self.table.currentRow()
         return self._products[row] if 0 <= row < len(self._products) else None
 
+    def _selected_all(self):
+        """Seçili tüm ürünler (çoklu seçim)."""
+        rows = sorted({i.row() for i in self.table.selectionModel().selectedRows()})
+        return [self._products[r] for r in rows if 0 <= r < len(self._products)]
+
     def _add(self):
         dlg = ProductDialog(self)
         if dlg.exec() == QDialog.DialogCode.Accepted:
@@ -422,17 +429,38 @@ class ProductsPage(QWidget):
                 QMessageBox.warning(self, "Hata", f"Ürün güncellenemedi:\n{e}")
 
     def _delete(self):
-        p = self._selected()
-        if not p:
-            QMessageBox.information(self, "Bilgi", "Lütfen bir ürün seçin."); return
-        if QMessageBox.question(self, "Onay", f"'{p.product_name}' silinsin mi?",
-           QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) \
-           == QMessageBox.StandardButton.Yes:
+        """Seçili ürün(leri) siler — Shift/Ctrl ile çoklu seçim desteklenir."""
+        selected = self._selected_all()
+        if not selected:
+            QMessageBox.information(
+                self, "Bilgi", "Lütfen silinecek ürün(leri) seçin."); return
+
+        if len(selected) == 1:
+            msg = (f"'{selected[0].product_name}' ürününü silmek "
+                   "istediğinizden emin misiniz?")
+        else:
+            names = ", ".join(p.product_name for p in selected[:4])
+            if len(selected) > 4:
+                names += " ..."
+            msg = f"Seçili {len(selected)} ürün silinsin mi?\n({names})"
+        msg += ("\n\nNot: Mevcut tekliflerdeki ürün bilgileri (kod, ad, fiyat) "
+                "değişmeden kalır; ürün yalnızca katalogdan silinir.")
+
+        if QMessageBox.question(self, "Silme Onayı", msg,
+           QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+           QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+            return
+        errors = []
+        for p in selected:
             try:
                 self.service.delete(p.id)
-                self._load()
             except Exception as e:
-                QMessageBox.warning(self, "Hata", f"Ürün silinemedi:\n{e}")
+                logger.error("Ürün silme hatası: %s", e, exc_info=True)
+                errors.append(f"{p.product_name}: {e}")
+        if errors:
+            QMessageBox.warning(self, "Hata",
+                                "Bazı ürünler silinemedi:\n" + "\n".join(errors))
+        self._load_filtered()
 
     def eventFilter(self, obj, event):
         if obj is self.table.viewport():
