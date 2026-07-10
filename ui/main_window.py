@@ -369,6 +369,11 @@ class MainWindow(QMainWindow):
         else:
             done = run_import_flow(self, import_type)
         if done:
+            # İçe aktarma katalog verisini değiştirdi — tüm sayfaların önbelleğini
+            # geçersiz kıl ki bir sonraki girişte tablo tazelensin.
+            for p in self.pages.values():
+                if hasattr(p, "invalidate"):
+                    p.invalidate()
             page = self.stack.currentWidget()
             if hasattr(page, "on_enter"):
                 page.on_enter()

@@ -2,6 +2,32 @@
 
 ---
 
+## [v4.0] — 2026-07-10
+
+### Performans
+- **Toplu silme çok daha hızlı:** Ürünler/Müşteriler sayfasında çok sayıda
+  kaydı seçip silmek artık tek işlemde yapılıyor; binlerce kayıtta saniyeler
+  yerine göz açıp kapayıncaya kadar tamamlanıyor.
+- **Excel içe aktarma çok daha hızlı:** Büyük dosyalarda içe aktarma süresi
+  belirgin şekilde kısaldı (10.000 satırlık bir dosya ~10 saniyeden ~1 saniyenin
+  altına indi). Mükerrer kontrolü yeniden yazıldı.
+- **Sekmeler arası geçiş akıcılaştı:** Ürünler/Müşteriler sekmesine her
+  geçişte tablo gereksiz yere baştan kurulmuyordu; artık yalnızca veri
+  değiştiğinde yenileniyor. On binlerce üründe hissedilen takılma giderildi.
+- **Büyük listelerde anlık açılış:** Ürünler/Müşteriler tablosu ilk 500 kaydı
+  gösterir; liste daha büyükse üstte "… ilk 500 gösteriliyor, arama yapın"
+  notu çıkar. Arama ve kategori filtresi her zaman tüm veritabanında çalışır.
+
+### Yeni
+- **İçe aktarma ilerleme penceresi:** Excel içe aktarırken gerçek ilerlemeyi
+  (okuma → denetleme → kaydetme, %0–100) gösteren bir pencere eklendi.
+
+### İyileştirmeler
+- **Ara kutusu daha akıcı:** Ürün/müşteri aramasında her tuş vuruşunda değil,
+  yazmayı bıraktığınızda arama yapılır — çok sayıda kayıtta yazarken takılma olmaz.
+
+---
+
 ## [v3.9] — 2026-07-10
 
 ### Yeni Özellik

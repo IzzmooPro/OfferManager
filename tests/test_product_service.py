@@ -166,6 +166,21 @@ class TestProductService(unittest.TestCase):
         self.svc.delete(pid)
         self.assertIsNone(self.svc.get_by_id(pid))
 
+    def test_delete_many(self):
+        ids = [self.svc.add(self._make(f"MULTI-{i}")) for i in range(5)]
+        self.svc.delete_many(ids[:3])
+        self.assertEqual(self.svc.count(), 2)
+        for pid in ids[:3]:
+            self.assertIsNone(self.svc.get_by_id(pid))
+        for pid in ids[3:]:
+            self.assertIsNotNone(self.svc.get_by_id(pid))
+
+    def test_delete_many_empty_is_safe(self):
+        self.svc.add(self._make("KEEP-01"))
+        self.svc.delete_many([])
+        self.svc.delete_many(None)
+        self.assertEqual(self.svc.count(), 1)
+
     # ── count ────────────────────────────────────────────────────────────
 
     def test_count_empty(self):

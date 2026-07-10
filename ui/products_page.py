@@ -17,6 +17,11 @@ from core.formatting import fmt_number
 
 logger = logging.getLogger("products")
 
+# Tabloda aynı anda gösterilecek azami satır. On binlerce üründe tüm satırları
+# oluşturmak sayfa girişinde takılmaya yol açıyordu; ilk N gösterilir, gerisine
+# arama/filtreyle ulaşılır (arama tüm veritabanında çalışır).
+_ROW_CAP = 500
+
 
 class ProductDialog(QDialog):
     def __init__(self, parent=None, product=None):
@@ -280,6 +285,7 @@ class ProductsPage(QWidget):
         super().__init__()
         self.service   = ProductService()
         self._products = []
+        self._loaded   = False   # tablo dolu mu — gereksiz yeniden kurmayı önler
         self._build_ui()
 
     def _build_ui(self):
@@ -300,7 +306,12 @@ class ProductsPage(QWidget):
         t = QHBoxLayout(toolbar); t.setContentsMargins(8, 4, 8, 4)
         self.search = QLineEdit()
         self.search.setPlaceholderText("Ürün kodu veya adıyla ara...")
-        self.search.textChanged.connect(lambda _: self._load_filtered())
+        # Arama 300ms debounce — on binlerce üründe her tuş vuruşunda tabloyu
+        # yeniden kurmak yazmayı takıyordu; kullanıcı durunca tek sefer aranır.
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.timeout.connect(self._load_filtered)
+        self.search.textChanged.connect(lambda _: self._search_timer.start(300))
         t.addWidget(self.search)
         # Kategori filtresi
         self.cat_filter = QComboBox()
@@ -317,6 +328,12 @@ class ProductsPage(QWidget):
             b.clicked.connect(slot)
             t.addWidget(b)
         layout.addWidget(toolbar)
+
+        # Liste sınırlandığında bilgi notu (ör. "10.096 üründen ilk 500…")
+        self._info = QLabel("")
+        self._info.setObjectName("hint_label")
+        self._info.setVisible(False)
+        layout.addWidget(self._info)
 
         self.table = ResizableTable()
         self.table.setColumnCount(7)
@@ -375,10 +392,14 @@ class ProductsPage(QWidget):
         logger.debug("Ürünler yükleniyor, anahtar='%s', kategori=%s", keyword, category_id)
         try:
             if keyword:
-                self._products = self.service.search(keyword, category_id)
+                self._products = self.service.search(keyword, category_id, limit=_ROW_CAP)
             else:
-                self._products = self.service.get_all(category_id)
-            self.table.setRowCount(len(self._products))
+                self._products = self.service.get_all(category_id, limit=_ROW_CAP)
+            total = self.service.count(category_id, keyword)
+            shown = len(self._products)
+            # Tabloyu doldururken ara çizimleri kapat — büyük listede daha akıcı
+            self.table.setUpdatesEnabled(False)
+            self.table.setRowCount(shown)
             for row, p in enumerate(self._products):
                 self.table.setItem(row, 0, QTableWidgetItem(p.product_code))
                 self.table.setItem(row, 1, QTableWidgetItem(p.product_name))
@@ -395,7 +416,18 @@ class ProductsPage(QWidget):
                 self.table.setItem(row, 6, QTableWidgetItem(p.description or ""))
             self.table.resizeColumnToContents(2)
             self.table.resizeColumnToContents(0)
+            self.table.setUpdatesEnabled(True)
+            # Sınır bilgisi: yalnız gösterilen < toplam ise
+            if total > shown:
+                self._info.setText(
+                    f"{total:,} üründen ilk {shown:,} gösteriliyor — belirli bir "
+                    "ürünü bulmak için arama yapın.".replace(",", "."))
+                self._info.setVisible(True)
+            else:
+                self._info.setVisible(False)
+            self._loaded = True
         except Exception as e:
+            self.table.setUpdatesEnabled(True)
             logger.error("Ürün yükleme hatası: %s", e, exc_info=True)
 
     def _selected(self):
@@ -450,16 +482,13 @@ class ProductsPage(QWidget):
            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
            QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
             return
-        errors = []
-        for p in selected:
-            try:
-                self.service.delete(p.id)
-            except Exception as e:
-                logger.error("Ürün silme hatası: %s", e, exc_info=True)
-                errors.append(f"{p.product_name}: {e}")
-        if errors:
-            QMessageBox.warning(self, "Hata",
-                                "Bazı ürünler silinemedi:\n" + "\n".join(errors))
+        try:
+            # Tek transaction'da toplu silme — çok sayıda üründe hızlı
+            self.service.delete_many([p.id for p in selected])
+            logger.info("%d ürün silindi.", len(selected))
+        except Exception as e:
+            logger.error("Ürün toplu silme hatası: %s", e, exc_info=True)
+            QMessageBox.warning(self, "Hata", f"Ürünler silinemedi:\n{e}")
         self._load_filtered()
 
     def eventFilter(self, obj, event):
@@ -478,4 +507,12 @@ class ProductsPage(QWidget):
 
     def on_enter(self):
         self._load_category_filter()
-        self._load_filtered()
+        # Tabloyu YALNIZCA veri değiştiyse yeniden kur. 10 bin üründe her sekme
+        # geçişinde ~70 bin hücreyi yeniden yaratmak ~200ms takılma yaratıyordu.
+        # Dışarıdan değişiklikte (ör. Excel içe aktarma) invalidate() çağrılır.
+        if not self._loaded:
+            self._load_filtered()
+
+    def invalidate(self):
+        """Sonraki sekme girişinde tabloyu tazele — veri dışarıdan değişti."""
+        self._loaded = False

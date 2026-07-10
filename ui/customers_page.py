@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem, QLineEdit, QDialog,
     QFormLayout, QMessageBox, QFrame, QTextEdit
 )
-from PySide6.QtCore import Qt, QEvent
+from PySide6.QtCore import Qt, QEvent, QTimer
 from services.customer_service import CustomerService
 from services.offer_service import OfferService
 from models.customer import Customer
@@ -14,6 +14,10 @@ from ui.widgets._row_hover_delegate import RowHoverDelegate
 from core.date_utils import to_display_date
 
 logger = logging.getLogger("customers")
+
+# Tabloda aynı anda gösterilecek azami satır (bkz. products_page._ROW_CAP).
+# Büyük listede sayfa girişini akıcı tutar; gerisine aramayla ulaşılır.
+_ROW_CAP = 500
 
 
 class CustomerDialog(QDialog):
@@ -95,6 +99,7 @@ class CustomersPage(QWidget):
         self.service      = CustomerService()
         self.offer_svc    = OfferService()
         self._customers   = []
+        self._loaded      = False   # tablo dolu mu — gereksiz yeniden kurmayı önler
         self._build_ui()
 
     def _build_ui(self):
@@ -115,7 +120,12 @@ class CustomersPage(QWidget):
         t = QHBoxLayout(toolbar); t.setContentsMargins(8, 4, 8, 4)
         self.search = QLineEdit()
         self.search.setPlaceholderText("Firma adı veya ilgili kişiyle ara...")
-        self.search.textChanged.connect(lambda txt: self._load(txt))
+        # Arama 300ms debounce — çok sayıda müşteride her tuş vuruşunda tabloyu
+        # yeniden kurmak yerine kullanıcı durunca tek sefer aranır.
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.timeout.connect(lambda: self._load(self.search.text()))
+        self.search.textChanged.connect(lambda _: self._search_timer.start(300))
         t.addWidget(self.search)
         for lbl, slot, obj in [("Geçmiş",  self._history, "tab_btn_clone"),
                                ("Düzenle", self._edit,    "tab_btn_edit"),
@@ -126,6 +136,12 @@ class CustomersPage(QWidget):
             b.clicked.connect(slot)
             t.addWidget(b)
         layout.addWidget(toolbar)
+
+        # Liste sınırlandığında bilgi notu (ör. "975 müşteriden ilk 500…")
+        self._info = QLabel("")
+        self._info.setObjectName("hint_label")
+        self._info.setVisible(False)
+        layout.addWidget(self._info)
 
         # ResizableTable — Excel benzeri + Türkçe sağ tık
         self.table = ResizableTable()
@@ -166,9 +182,13 @@ class CustomersPage(QWidget):
     def _load(self, keyword=""):
         logger.debug("Müşteriler yükleniyor, anahtar='%s'", keyword)
         try:
-            self._customers = self.service.search(keyword) if keyword else self.service.get_all()
+            self._customers = (self.service.search(keyword, limit=_ROW_CAP)
+                               if keyword else self.service.get_all(limit=_ROW_CAP))
+            total = self.service.count(keyword)
+            shown = len(self._customers)
             summaries = self.offer_svc.get_all_customer_summaries()
-            self.table.setRowCount(len(self._customers))
+            self.table.setUpdatesEnabled(False)
+            self.table.setRowCount(shown)
             for row, c in enumerate(self._customers):
                 self.table.setItem(row, 0, QTableWidgetItem(c.company_name))
                 self.table.setItem(row, 1, QTableWidgetItem(c.contact_person))
@@ -189,7 +209,17 @@ class CustomersPage(QWidget):
                         Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
                     self.table.setItem(row, 5, cnt_item)
                     self.table.setItem(row, 6, QTableWidgetItem("—"))
+            self.table.setUpdatesEnabled(True)
+            if total > shown:
+                self._info.setText(
+                    f"{total:,} müşteriden ilk {shown:,} gösteriliyor — belirli bir "
+                    "müşteriyi bulmak için arama yapın.".replace(",", "."))
+                self._info.setVisible(True)
+            else:
+                self._info.setVisible(False)
+            self._loaded = True
         except Exception as e:
+            self.table.setUpdatesEnabled(True)
             logger.error("Müşteri yükleme hatası: %s", e, exc_info=True)
 
     def _selected(self):
@@ -265,17 +295,13 @@ class CustomersPage(QWidget):
            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
            QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
             return
-        errors = []
-        for c in selected:
-            try:
-                self.service.delete(c.id)
-                logger.info("Müşteri silindi: %s", c.company_name)
-            except Exception as e:
-                logger.error("Müşteri silme hatası: %s", e, exc_info=True)
-                errors.append(f"{c.company_name}: {e}")
-        if errors:
-            QMessageBox.warning(self, "Hata",
-                                "Bazı müşteriler silinemedi:\n" + "\n".join(errors))
+        try:
+            # Tek transaction'da toplu silme — çok sayıda müşteride hızlı
+            self.service.delete_many([c.id for c in selected])
+            logger.info("%d müşteri silindi.", len(selected))
+        except Exception as e:
+            logger.error("Müşteri toplu silme hatası: %s", e, exc_info=True)
+            QMessageBox.warning(self, "Hata", f"Müşteriler silinemedi:\n{e}")
         self._load(self.search.text())
 
     def eventFilter(self, obj, event):
@@ -293,4 +319,11 @@ class CustomersPage(QWidget):
         return super().eventFilter(obj, event)
 
     def on_enter(self):
-        self._load(self.search.text())
+        # Tabloyu yalnızca veri değiştiyse yeniden kur; dışarıdan değişiklikte
+        # (ör. Excel içe aktarma) invalidate() tazelemeyi zorlar.
+        if not self._loaded:
+            self._load(self.search.text())
+
+    def invalidate(self):
+        """Sonraki sekme girişinde tabloyu tazele — veri dışarıdan değişti."""
+        self._loaded = False
