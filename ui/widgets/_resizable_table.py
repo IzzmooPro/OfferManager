@@ -168,6 +168,13 @@ class ResizableTable(QTableWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_C and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
             self._copy_selection()
+        elif (event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace)
+              and self.on_delete is not None):
+            # Delete tuşu → sağ tıktaki/araç çubuğundaki "Sil" ile aynı davranış
+            # (seçili satır/satırları siler; onay penceresi callback'te). Sadece
+            # tabloda seçim varken tetiklenir.
+            if self.selectionModel() and self.selectionModel().hasSelection():
+                self.on_delete()
         else:
             super().keyPressEvent(event)
 
