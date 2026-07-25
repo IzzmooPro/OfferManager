@@ -596,8 +596,18 @@ class CreateOfferPage(QWidget):
         rem_btn.setMinimumHeight(38)
         rem_btn.clicked.connect(self._remove_selected_row)
 
+        tmpl_btn = QPushButton("Şablondan Yükle")
+        tmpl_btn.setObjectName("secondary")
+        tmpl_btn.setMinimumHeight(38)
+        tmpl_btn.setToolTip(
+            "Kayıtlı bir şablonun ürün kalemlerini bu teklife yükler.\n"
+            "Şablon oluşturmak için Teklifler ekranında bir teklife sağ tıklayıp\n"
+            "'Şablon Olarak Kaydet' seçeneğini kullanın.")
+        tmpl_btn.clicked.connect(self._load_from_template)
+
         btn_row.addWidget(add_btn)
         btn_row.addWidget(rem_btn)
+        btn_row.addWidget(tmpl_btn)
         btn_row.addStretch()
         layout.addLayout(btn_row)
 
