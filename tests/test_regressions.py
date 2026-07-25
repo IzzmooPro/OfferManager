@@ -1,5 +1,7 @@
 """Kritik finansal veri, export, yedek ve import regresyon testleri."""
+import ast
 import csv
+import inspect
 import os
 import re
 import sqlite3
@@ -13,7 +15,10 @@ from pathlib import Path
 _DATA_ROOT = tempfile.TemporaryDirectory(prefix="oms_regression_data_")
 os.environ["LOCALAPPDATA"] = _DATA_ROOT.name
 
-from core.app_paths import DB_PATH, LOGO_DISABLED_PATH, LOGO_PATH
+from core.app_paths import (
+    DB_PATH, LOGO_DISABLED_PATH, LOGO_PATH,
+    SIG1_PATH, SIG2_PATH, SIG3_PATH, SIG4_PATH,
+)
 from database.db_manager import get_db
 from models.offer import Offer
 from models.offer_item import OfferItem
@@ -232,11 +237,84 @@ class RegressionTests(unittest.TestCase):
             self.assertFalse(LOGO_PATH.exists())
             self.assertFalse(LOGO_DISABLED_PATH.exists())
 
+    def test_backup_roundtrip_covers_all_four_signatures(self):
+        # 3. ve 4. imza yedeğe hiç girmiyordu; geri yüklemeden sonra kalıcı
+        # olarak kayboluyordu (PDF sessizce imzasız çıkıyordu).
+        signatures = (SIG1_PATH, SIG2_PATH, SIG3_PATH, SIG4_PATH)
+        original = {path: f"imza-{index}".encode()
+                    for index, path in enumerate(signatures, 1)}
+        try:
+            for path, payload in original.items():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(payload)
+
+            with tempfile.TemporaryDirectory(prefix="oms_sig_") as temp_dir:
+                archive_path = backup_manager.create_backup(temp_dir)
+                with zipfile.ZipFile(archive_path) as archive:
+                    names = set(archive.namelist())
+                for index in range(1, 5):
+                    self.assertIn(f"signature{index}.png", names,
+                                  f"{index}. imza yedeğe alınmamış")
+
+                for path in signatures:      # yedek sonrası bozulma / silinme
+                    path.write_bytes(b"sonradan-degisti")
+                SIG4_PATH.unlink()
+
+                backup_manager.restore_backup(archive_path)
+
+                for path, payload in original.items():
+                    self.assertTrue(path.exists(), f"{path.name} geri gelmedi")
+                    self.assertEqual(path.read_bytes(), payload,
+                                     f"{path.name} içeriği yedekle aynı değil")
+        finally:
+            for path in signatures:
+                if path.exists():
+                    path.unlink()
+
     def test_localized_numbers_and_versions(self):
         self.assertEqual(_parse_number("1.234,56"), 1234.56)
         self.assertEqual(_parse_number("1,234.56"), 1234.56)
         self.assertFalse(is_newer_version("v1", "v1.0"))
         self.assertTrue(is_newer_version("v1.0.1", "v1.0"))
+
+
+class DialogCallContractTests(unittest.TestCase):
+    """Dialog çağrı yerleri gerçek imzayla uyuşmalı.
+
+    PDF önizleme penceresi EmailDialog'u var olmayan `to_email` parametresiyle
+    çağırıyordu; buton her tıklandığında TypeError ile çöküyordu. Çağrı yerleri
+    kaynaktan (AST) okunup imzaya bind edilerek bu sınıf hata yakalanır.
+    """
+
+    UI_ROOT = Path(__file__).resolve().parent.parent / "ui"
+
+    def _call_sites(self, name: str):
+        """ui/ altındaki `name(...)` çağrılarını (dosya, satır, düğüm) döndürür."""
+        for path in sorted(self.UI_ROOT.rglob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.Call)
+                        and isinstance(node.func, ast.Name)
+                        and node.func.id == name):
+                    yield path, node.lineno, node
+
+    def test_email_dialog_call_sites_match_signature(self):
+        from ui.dialogs.email_dialog import EmailDialog
+        signature = inspect.signature(EmailDialog.__init__)
+
+        checked = 0
+        for path, lineno, node in self._call_sites("EmailDialog"):
+            if any(kw.arg is None for kw in node.keywords):
+                continue                      # **kwargs ile çağrı — statik kontrol dışı
+            checked += 1
+            keywords = {kw.arg: None for kw in node.keywords}
+            try:
+                signature.bind(None, *([None] * len(node.args)), **keywords)
+            except TypeError as exc:
+                self.fail(
+                    f"{path.name}:{lineno} EmailDialog çağrısı imzayla "
+                    f"uyuşmuyor -> {exc}")
+        self.assertGreaterEqual(checked, 3, "EmailDialog çağrı yerleri bulunamadı")
 
 
 if __name__ == "__main__":

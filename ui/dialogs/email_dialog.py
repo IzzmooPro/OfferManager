@@ -61,8 +61,11 @@ class EmailWorker(QThread):
                     smtp.send_message(msg)
             else:
                 # STARTTLS Bağlantısı (Genellikle 587)
+                # context ZORUNLU: verilmezse Python doğrulama yapmayan bir
+                # context kurar ve oturum araya girmeye açık kalır.
+                context = ssl.create_default_context()
                 with smtplib.SMTP(server, port, timeout=15) as smtp:
-                    smtp.starttls()
+                    smtp.starttls(context=context)
                     smtp.login(user, password)
                     smtp.send_message(msg)
                     

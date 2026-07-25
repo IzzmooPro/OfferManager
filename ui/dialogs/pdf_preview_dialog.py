@@ -188,7 +188,7 @@ class PdfPreviewDialog(QDialog):
             return
         dlg = EmailDialog(
             pdf_path=self._pdf_path,
-            to_email=self._customer_email,
+            customer_email=self._customer_email,
             offer_no=self._offer_no,
             parent=self,
         )

@@ -104,9 +104,12 @@ class SmtpTestWorker(QThread):
                 with smtplib.SMTP_SSL(server, port, context=ctx, timeout=10) as smtp:
                     smtp.login(user, pwd)
             else:
+                # context ZORUNLU: verilmezse Python doğrulama yapmayan bir
+                # context kurar ve oturum araya girmeye açık kalır.
+                ctx = _ssl.create_default_context()
                 with smtplib.SMTP(server, port, timeout=10) as smtp:
                     smtp.ehlo()
-                    smtp.starttls()
+                    smtp.starttls(context=ctx)
                     smtp.login(user, pwd)
             self.result.emit(True, f"Bağlantı başarılı!  ({server}:{port})")
         except smtplib.SMTPAuthenticationError:

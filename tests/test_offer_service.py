@@ -374,5 +374,120 @@ class TestAutoCancelExpired(unittest.TestCase):
         self.assertEqual(self.svc.get_by_id(oid).status, "Beklemede")
 
 
+# ── İçe aktarılan teklif numarası ↔ sayaç senkronizasyonu ──────────────────
+
+class TestImportedOfferNumberCounter(unittest.TestCase):
+    """keep_offer_no=True ile kaydedilen teklifler sayacı ileri taşımalı.
+
+    Aksi hâlde sonraki yeni teklif aynı numarayı üretip
+    `UNIQUE constraint failed: offers.offer_no` ile kalıcı olarak
+    başarısız oluyordu.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.db = get_db()
+        cls.svc = OfferService()
+
+    def setUp(self):
+        with self.db.transaction() as conn:
+            conn.execute("DELETE FROM offer_items")
+            conn.execute("DELETE FROM offers")
+            conn.execute("DELETE FROM offer_counter")
+
+    def _imported(self, offer_no: str) -> Offer:
+        o = _valid_offer()
+        o.offer_no = offer_no
+        return o
+
+    def _last_number(self):
+        row = self.db.fetchone(
+            "SELECT last_number FROM offer_counter WHERE year = 0")
+        return row["last_number"] if row else None
+
+    def test_new_offer_after_import_does_not_collide(self):
+        self.svc.save(_valid_offer())                      # SNS-000001
+        self.svc.save(self._imported("SNS-000002"), keep_offer_no=True)
+        oid = self.svc.save(_valid_offer())                # çakışmamalı
+        self.assertEqual(self.svc.get_by_id(oid).offer_no, "SNS-000003")
+
+    def test_import_advances_counter(self):
+        self.svc.save(self._imported("SNS-000042"), keep_offer_no=True)
+        self.assertEqual(self._last_number(), 42)
+        self.assertEqual(self.svc.preview_offer_no(), "SNS-000043")
+
+    def test_import_never_rewinds_counter(self):
+        # Silinmiş bir teklifin yedekten geri aktarılması: numara sayacın
+        # gerisinde kalır, sayaç geriye çekilmemelidir.
+        first = self.svc.save(_valid_offer())              # SNS-000001
+        self.svc.save(_valid_offer())                      # SNS-000002
+        self.svc.save(_valid_offer())                      # sayaç = 3
+        self.svc.delete(first)
+        self.svc.save(self._imported("SNS-000001"), keep_offer_no=True)
+        self.assertEqual(self._last_number(), 3)
+        oid = self.svc.save(_valid_offer())
+        self.assertEqual(self.svc.get_by_id(oid).offer_no, "SNS-000004")
+
+    def test_unparseable_offer_no_leaves_counter_untouched(self):
+        self.svc.save(_valid_offer())                      # sayaç = 1
+        self.svc.save(self._imported("ELDEN-GIRILDI"), keep_offer_no=True)
+        self.assertEqual(self._last_number(), 1)
+        oid = self.svc.save(_valid_offer())
+        self.assertEqual(self.svc.get_by_id(oid).offer_no, "SNS-000002")
+
+    def test_foreign_prefix_leaves_counter_untouched(self):
+        self.svc.save(_valid_offer())                      # sayaç = 1
+        self.svc.save(self._imported("ABC-000900"), keep_offer_no=True)
+        self.assertEqual(self._last_number(), 1)
+        oid = self.svc.save(_valid_offer())
+        self.assertEqual(self.svc.get_by_id(oid).offer_no, "SNS-000002")
+
+    def test_probe_limit_fails_loudly_without_touching_counter(self):
+        # Tarama penceresindeki TÜM numaralar doluysa üretici kontrol edilmemiş
+        # bir numara döndürmemeli; açık bir hatayla durmalı ve sayacı
+        # değiştirmemeli (hata transaction ile birlikte geri alınır).
+        from services.offer_service import _MAX_OFFER_NO_PROBES
+        rows = [(f"SNS-{n:06d}", "2026-01-01", "TL", 0.0)
+                for n in range(1, _MAX_OFFER_NO_PROBES + 1)]
+        with self.db.transaction() as conn:
+            conn.executemany(
+                "INSERT INTO offers (offer_no, date, currency, total_amount) "
+                "VALUES (?,?,?,?)", rows)
+            conn.execute("INSERT INTO offer_counter (year, last_number) VALUES (0, 0)")
+
+        with self.assertRaises(RuntimeError):
+            self.svc.save(_valid_offer())
+
+        self.assertEqual(self._last_number(), 0, "sayaç değişmiş")
+        remaining = self.db.fetchone("SELECT COUNT(*) AS cnt FROM offers")["cnt"]
+        self.assertEqual(remaining, _MAX_OFFER_NO_PROBES, "yarım kayıt kalmış")
+
+    def test_free_number_just_inside_probe_limit_still_works(self):
+        # Sınırın son adımındaki boş numara normal biçimde bulunmalı —
+        # tarama davranışı daraltılmamalı.
+        from services.offer_service import _MAX_OFFER_NO_PROBES
+        rows = [(f"SNS-{n:06d}", "2026-01-01", "TL", 0.0)
+                for n in range(1, _MAX_OFFER_NO_PROBES)]
+        with self.db.transaction() as conn:
+            conn.executemany(
+                "INSERT INTO offers (offer_no, date, currency, total_amount) "
+                "VALUES (?,?,?,?)", rows)
+            conn.execute("INSERT INTO offer_counter (year, last_number) VALUES (0, 0)")
+
+        oid = self.svc.save(_valid_offer())
+        self.assertEqual(self.svc.get_by_id(oid).offer_no,
+                         f"SNS-{_MAX_OFFER_NO_PROBES:06d}")
+        self.assertEqual(self._last_number(), _MAX_OFFER_NO_PROBES)
+
+    def test_generator_skips_existing_number_when_counter_is_behind(self):
+        # Sayaç geride kalmış bir DB (eski sürümden gelen kayıt) — üretici
+        # mevcut numaranın üstüne yazmak yerine boş numaraya ilerlemeli.
+        self.svc.save(self._imported("SNS-000001"), keep_offer_no=True)
+        with self.db.transaction() as conn:
+            conn.execute("UPDATE offer_counter SET last_number=0 WHERE year=0")
+        oid = self.svc.save(_valid_offer())
+        self.assertEqual(self.svc.get_by_id(oid).offer_no, "SNS-000002")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

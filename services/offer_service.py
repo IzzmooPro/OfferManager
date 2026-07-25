@@ -1,5 +1,5 @@
 """Teklif servis katmanı."""
-import datetime, logging
+import datetime, logging, re
 from core.app_paths import PDF_DIR
 from typing import List, Optional
 from database.db_manager import get_db
@@ -15,6 +15,29 @@ def _get_offer_prefix() -> str:
     return load_company_config().get("offer_prefix", "SNS") or "SNS"
 
 
+# "SNS-000042" → 42. Sondaki rakam grubu sıra numarasıdır; önündeki her şey önek.
+_OFFER_NO_RE = re.compile(r"^(?P<prefix>.*)-(?P<number>\d+)$")
+
+# generate_and_commit_offer_no çakışma taraması için üst sınır — sonsuz döngü
+# yerine sınırlı deneme yapılır. Pencerenin tamamı doluysa numara üretimi
+# RuntimeError ile durur (doğrulanmamış numara asla döndürülmez).
+_MAX_OFFER_NO_PROBES = 1000
+
+
+def _offer_no_sequence(offer_no: str, prefix: str) -> Optional[int]:
+    """Teklif numarasındaki sıra numarasını döndürür.
+
+    Yalnızca numara AKTİF önekle yazılmışsa bir değer döner. Ayrıştırılamayan
+    ("ELDEN-GIRILDI") veya farklı önekli ("ABC-000900") numaralar sayacı
+    etkilememelidir — bunlar için None döner.
+    """
+    match = _OFFER_NO_RE.match((offer_no or "").strip())
+    if not match or match.group("prefix") != prefix:
+        return None
+    try:
+        return int(match.group("number"))
+    except ValueError:
+        return None
 
 
 
@@ -35,15 +58,65 @@ class OfferService:
         """Yeni numarayı üret ve sayacı GÜNCELLE. (Sadece veritabanına kayıt sırasında çağrılır)."""
         prefix = _get_offer_prefix()
         row = conn.execute("SELECT last_number FROM offer_counter WHERE year = 0").fetchone()
-        if row:
+        has_counter = row is not None
+        if has_counter:
             next_num = row["last_number"] + 1
-            conn.execute("UPDATE offer_counter SET last_number=? WHERE year=0", (next_num,))
         else:
             max_row = conn.execute("SELECT MAX(id) as max_id FROM offers").fetchone()
             next_num = (max_row["max_id"] or 0) + 1 if max_row else 1
+
+        # Sayaç geride kalmışsa (içe aktarılmış numara, elle düzeltilmiş DB)
+        # üretilen numara mevcut bir teklifle çakışabilir. Boş numara bulunana
+        # kadar SINIRLI sayıda ilerle (sonsuz döngü yok). Döngüden YALNIZCA
+        # boş olduğu doğrulanmış bir numarayla çıkılır.
+        first_num = next_num
+        offer_no = None
+        for _ in range(_MAX_OFFER_NO_PROBES):
+            candidate = f"{prefix}-{next_num:06d}"
+            taken = conn.execute(
+                "SELECT 1 FROM offers WHERE offer_no=?", (candidate,)).fetchone()
+            if taken is None:
+                offer_no = candidate
+                break
+            next_num += 1
+
+        if offer_no is None:
+            # Tarama penceresindeki tüm numaralar dolu. Doğrulanmamış bir
+            # numara döndürmek yerine sayaca dokunmadan hata ver; çağıran
+            # transaction bunu geri alır.
+            raise RuntimeError(
+                f"Yeni teklif numarası üretilemedi: {prefix}-{first_num:06d} ile "
+                f"{prefix}-{next_num - 1:06d} arasındaki numaraların tümü dolu. "
+                "Teklif numarası önekini değiştirin veya teklif numarası "
+                "sayacını kontrol ettirin.")
+
+        if has_counter:
+            conn.execute("UPDATE offer_counter SET last_number=? WHERE year=0", (next_num,))
+        else:
             conn.execute("DELETE FROM offer_counter")
             conn.execute("INSERT INTO offer_counter (year, last_number) VALUES (0, ?)", (next_num,))
-        return f"{prefix}-{next_num:06d}"
+        return offer_no
+
+    def _advance_counter_to(self, conn, offer_no: str) -> None:
+        """İçe aktarılan numarayı sayaca işler (sayacı asla geriye almaz).
+
+        Teklif INSERT'i ile AYNI transaction içinde çağrılır; böylece kayıt
+        geri alınırsa sayaç da geri alınır.
+        """
+        number = _offer_no_sequence(offer_no, _get_offer_prefix())
+        if number is None:
+            return  # ayrıştırılamayan / farklı önekli numara sayacı etkilemez
+        row = conn.execute(
+            "SELECT last_number FROM offer_counter WHERE year = 0").fetchone()
+        if row is None:
+            # Sayaç yoksa mevcut yedek davranışı (MAX(id)) ile birlikte değerlendir.
+            max_row = conn.execute("SELECT MAX(id) as max_id FROM offers").fetchone()
+            fallback = (max_row["max_id"] or 0) if max_row else 0
+            conn.execute("DELETE FROM offer_counter")
+            conn.execute("INSERT INTO offer_counter (year, last_number) VALUES (0, ?)",
+                         (max(number, fallback),))
+        elif number > row["last_number"]:
+            conn.execute("UPDATE offer_counter SET last_number=? WHERE year=0", (number,))
 
     def get_all(self) -> List[Offer]:
         db = get_db()
@@ -144,9 +217,13 @@ class OfferService:
             else:
                 if keep_offer_no and (offer.offer_no or "").strip():
                     offer.offer_no = offer.offer_no.strip()
+                    # Dosyadan gelen numara sayacın önündeyse sayacı ileri taşı;
+                    # aksi hâlde sonraki yeni teklif aynı numarayı üretip
+                    # UNIQUE kısıtına takılıyordu.
+                    self._advance_counter_to(conn, offer.offer_no)
                 else:
                     offer.offer_no = self.generate_and_commit_offer_no(conn)
-                
+
                 cursor = conn.execute("""
                     INSERT INTO offers
                       (offer_no, customer_id, company_name, customer_address, contact_person,

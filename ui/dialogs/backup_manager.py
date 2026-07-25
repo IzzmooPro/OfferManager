@@ -30,6 +30,8 @@ from core.app_paths import (
     LOGO_PATH   as _LOGO_PATH,
     SIG1_PATH   as _SIG1_PATH,
     SIG2_PATH   as _SIG2_PATH,
+    SIG3_PATH   as _SIG3_PATH,
+    SIG4_PATH   as _SIG4_PATH,
     LOGO_DISABLED_PATH as _LOGO_DISABLED_PATH,
     BACKUP_DIR  as _DEFAULT_BACKUP_DIR,
     DATA_ROOT   as _BASE,
@@ -76,6 +78,11 @@ _OPTIONAL_BACKUP_FILES = [
     (_LOGO_PATH, "logo.png"),
     (_SIG1_PATH, "signature1.png"),
     (_SIG2_PATH, "signature2.png"),
+    # 3. ve 4. yetkilinin imzaları da kullanıcı verisidir (Ayarlar 4 yetkili
+    # destekler, PDF imza bloğu dördünü de kullanır) — yedeğe dahil edilmezse
+    # geri yüklemeden sonra kalıcı olarak kaybolur.
+    (_SIG3_PATH, "signature3.png"),
+    (_SIG4_PATH, "signature4.png"),
     (_LOGO_DISABLED_PATH, "logo.disabled"),
 ]
 
