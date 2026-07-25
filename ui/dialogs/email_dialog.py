@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QTextEdit, QPushButton, QMessageBox, QFrame
 )
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from core.config import load_company_config
 from core.credential_store import get_smtp_password
 
@@ -23,8 +23,10 @@ class EmailWorker(QThread):
     # yanlış sinyale bağlanır.
     send_finished = Signal(bool, str)
 
-    def __init__(self, cfg: dict, to_addr: str, subject: str, body: str, pdf_path: str):
-        super().__init__()
+    def __init__(self, cfg: dict, to_addr: str, subject: str, body: str,
+                 pdf_path: str, parent=None):
+        # parent verilir: worker, sahibi olan dialog ile birlikte yaşar.
+        super().__init__(parent)
         self.cfg = cfg
         self.to_addr = to_addr
         self.subject = subject
@@ -94,6 +96,9 @@ class EmailDialog(QDialog):
         self.cfg["smtp_password"] = get_smtp_password()
         self._closing = False   # Worker tamamlanınca UI erişimini korur
         self.worker   = None
+        # Gönderim sürerken gelen kapatma isteği ertelenir; finished->close
+        # bağlantısı yalnız BİR kez kurulmalıdır.
+        self._close_after_worker_connected = False
 
         self._build_ui(customer_email, offer_no)
 
@@ -158,6 +163,14 @@ class EmailDialog(QDialog):
         h_btn.addWidget(self.btn_send)
         lay.addLayout(h_btn)
 
+        # Gönderim sürerken kapatma istenirse görünür (bkz. closeEvent)
+        self._closing_lbl = QLabel(
+            "E-posta gönderimi tamamlanıyor — pencere işlem bitince kapanacak.")
+        self._closing_lbl.setObjectName("hint_label")
+        self._closing_lbl.setWordWrap(True)
+        self._closing_lbl.setVisible(False)
+        lay.addWidget(self._closing_lbl)
+
     def _make_line(self) -> QFrame:
         f = QFrame()
         f.setFrameShape(QFrame.Shape.HLine)
@@ -166,13 +179,46 @@ class EmailDialog(QDialog):
         return f
 
     def closeEvent(self, event):
-        """Dialog kapatılırken çalışan worker'ı güvenle durdur."""
-        self._closing = True
-        if self.worker and self.worker.isRunning():
-            self.worker.send_finished.disconnect()   # Signal'i kopar — stale callback yok
-            self.worker.quit()
-            self.worker.wait(4000)              # En fazla 4 sn bekle
+        """Gönderim sürerken gelen kapatma isteğini ERTELER.
+
+        UI thread'inde uzun wait() YAPILMAZ: quit() bloklayan smtplib işini
+        zaten durduramıyor, wait() ise arayüzü donduruyordu. Bunun yerine
+        worker'ın YERLEŞİK finished() sinyaline tek seferlik bağlanılır;
+        gönderim gerçekten bitince pencere kendiliğinden kapanır. Worker,
+        sahibi olan bu dialog ile birlikte hayatta kalır.
+        """
+        if self.worker is not None and self.worker.isRunning():
+            # Sonuç callback'i bu aşamada mesaj kutusu açmasın.
+            self._closing = True
+            if not self._close_after_worker_connected:
+                self.worker.finished.connect(self.close)
+                self._close_after_worker_connected = True
+                self._show_closing_notice()
+            if not self.worker.isRunning():
+                # Kontrol ile bağlantı arasında bitmiş olabilir; sinyal artık
+                # gelmeyeceğinden kapanışı elle sürdür.
+                QTimer.singleShot(0, self.close)
+            event.ignore()
+            return
         event.accept()
+
+    def reject(self):
+        """İptal düğmesi ve Esc de aynı güvenli kapanış yolunu kullanır.
+
+        QDialog.reject() closeEvent göndermeden pencereyi kapatır; gönderim
+        sürerken bu, erteleme mekanizmasını (ve _closing korumasını) atlayıp
+        worker'ı sahipsiz bırakıyordu. Worker çalışıyorsa istek close()
+        üzerinden closeEvent'e yönlendirilir.
+        """
+        if self.worker is not None and self.worker.isRunning():
+            self.close()
+            return
+        super().reject()
+
+    def _show_closing_notice(self):
+        """Kapanışın ertelendiğini kullanıcıya kısaca bildirir."""
+        self.btn_send.setText("Gönderiliyor…")
+        self._closing_lbl.setVisible(True)
 
     def _send_email(self):
         if not self.cfg.get("smtp_server") or not self.cfg.get("smtp_user") or not self.cfg.get("smtp_password"):
@@ -191,10 +237,11 @@ class EmailDialog(QDialog):
         self.btn_send.setText("Gönderiliyor...")
 
         self.worker = EmailWorker(
-            self.cfg, to_addr, 
-            self.subject_input.text().strip(), 
-            self.body_input.toPlainText(), 
-            self.pdf_path
+            self.cfg, to_addr,
+            self.subject_input.text().strip(),
+            self.body_input.toPlainText(),
+            self.pdf_path,
+            parent=self,
         )
         self.worker.send_finished.connect(self._on_finished)
         self.worker.start()
