@@ -27,6 +27,12 @@ from core.constants import APP_VERSION
 GITHUB_REPO = "IzzmooPro/OfferManager"
 GITHUB_URL  = f"https://github.com/{GITHUB_REPO}"
 
+# Başlangıç güncelleme kontrolünün ağ zaman aşımı (saniye).
+# Program kapanırken MainWindow bu thread'in bitmesini SINIRLI süre bekler
+# (MainWindow._UPDATE_CHECK_WAIT_MS); iki değer birlikte ayarlanmalıdır —
+# bekleme sınırı bu zaman aşımından belirgin şekilde büyük olmalıdır.
+STARTUP_CHECK_TIMEOUT = 3
+
 
 def _version_parts(value: str) -> tuple:
     numbers = [int(part) for part in re.findall(r"\d+", value or "")]
@@ -88,9 +94,12 @@ class UpdateChecker(QThread):
 
 class _Downloader(QThread):
     """EXE dosyasını geçici dizine indirir."""
-    progress  = Signal(int)     # 0-100
-    finished  = Signal(str)     # indirilen dosya yolu
-    failed    = Signal(str)     # hata mesajı
+    # QThread'in yerleşik finished() sinyali GÖLGELENMEZ — aksi hâlde
+    # "thread.finished.connect(...)" standart temizlik deyimi sessizce
+    # yanlış sinyale bağlanır.
+    progress          = Signal(int)     # 0-100
+    download_finished = Signal(str)     # indirilen dosya yolu
+    failed            = Signal(str)     # hata mesajı
 
     def __init__(self, url: str, dest: str, parent=None):
         super().__init__(parent)
@@ -114,7 +123,7 @@ class _Downloader(QThread):
                         if total > 0:
                             pct = int(downloaded * 100 / total)
                             self.progress.emit(pct)
-            self.finished.emit(self._dest)
+            self.download_finished.emit(self._dest)
         except Exception as e:
             self.failed.emit(str(e))
 
@@ -205,7 +214,7 @@ class UpdateDialog(QDialog):
 
         self._downloader = _Downloader(self._download_url, tmp_exe, self)
         self._downloader.progress.connect(self._progress.setValue)
-        self._downloader.finished.connect(lambda path: self._on_downloaded(path))
+        self._downloader.download_finished.connect(lambda path: self._on_downloaded(path))
         self._downloader.failed.connect(self._on_download_failed)
         self._downloader.start()
 
@@ -290,7 +299,7 @@ class StartupUpdateChecker(QThread):
                 url,
                 headers={"User-Agent": f"TeklifApp/{APP_VERSION}"},
             )
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            with urllib.request.urlopen(req, timeout=STARTUP_CHECK_TIMEOUT) as resp:
                 data = json.loads(resp.read())
 
             latest_tag = data.get("tag_name", "").strip()

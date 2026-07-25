@@ -27,7 +27,10 @@ from core.date_utils import to_display_date
 # ── PDF Worker (QThread) ──────────────────────────────────────────────────────
 class PdfWorker(QThread):
     """PDF üretimini arka planda yürütür — UI donmasını önler."""
-    finished = Signal(list, list)   # (generated: [(path, meta)], errors: [str])
+    # QThread'in yerleşik finished() sinyali GÖLGELENMEZ — aksi hâlde
+    # "thread.finished.connect(...)" standart temizlik deyimi sessizce
+    # yanlış sinyale bağlanır.
+    result_ready = Signal(list, list)   # (generated: [(path, meta)], errors: [str])
 
     def __init__(self, tasks: list):
         super().__init__()
@@ -42,7 +45,7 @@ class PdfWorker(QThread):
                 generated.append((out_path, meta))
             except Exception as e:
                 errors.append(f"{getattr(offer_data, 'offer_no', '?')}: {e}")
-        self.finished.emit(generated, errors)
+        self.result_ready.emit(generated, errors)
 
 
 # ── Teklif Tablosu Modeli (MVC) ───────────────────────────────────────────────
@@ -1036,7 +1039,7 @@ class DashboardPage(QWidget):
         self._pdf_btn.setEnabled(False)
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         self._pdf_worker = PdfWorker(tasks)
-        self._pdf_worker.finished.connect(self._on_pdf_finished)
+        self._pdf_worker.result_ready.connect(self._on_pdf_finished)
         self._pdf_worker.start()
 
     def _on_pdf_finished(self, generated: list, errors: list):

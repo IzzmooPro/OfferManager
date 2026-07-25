@@ -89,12 +89,12 @@ class StartTlsCertificateVerificationTests(unittest.TestCase):
                 subject="Teklif",
                 body="Merhaba",
                 pdf_path=str(pdf_path),
-                finished=_Recorder(),
+                send_finished=_Recorder(),
             )
             with mock.patch.object(smtplib, "SMTP", _FakeSMTP):
                 EmailWorker.run(worker)
 
-        self.assertEqual(worker.finished.calls, [(True, "")],
+        self.assertEqual(worker.send_finished.calls, [(True, "")],
                          "Gönderim sahte sunucuda başarısız oldu")
         self.assertTrue(_FakeSMTP.last.starttls_called)
         self._assert_verified(_FakeSMTP.last.tls_context, "EmailWorker")

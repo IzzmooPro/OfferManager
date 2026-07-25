@@ -47,6 +47,20 @@ class NavCard(QPushButton):
 
 
 class MainWindow(QMainWindow):
+    # Kapanışta güncelleme kontrolünün bitmesi için beklenecek ÜST SINIR (ms).
+    #
+    # updater.STARTUP_CHECK_TIMEOUT (3 sn) tek tek SOKET işlemlerinin sınırıdır
+    # (bağlantı kurma ve her okuma ayrı ayrı); thread'in TOPLAM çalışma süresi
+    # bununla sınırlı DEĞİLDİR. Bağlantı kurulup yanıt damla damla gelirse
+    # çalışma 3 sn'yi rahatlıkla aşabilir. Bu yüzden 5 sn bir garanti değil,
+    # yaygın durumu (bağlantı zaman aşımı + pay) kapsayan pratik bir sınırdır.
+    #
+    # Doğruluk bu değere BAĞLI DEĞİLDİR: süre dolarsa thread yok edilmez,
+    # kapanış QThread'in yerleşik finished() sinyaline kadar ertelenir
+    # (bkz. _await_update_checker). Ağ normalken kontrol kapanıştan çok önce
+    # bittiği için bu bekleme pratikte 0 ms sürer. Sınırsız bekleme YOKTUR.
+    _UPDATE_CHECK_WAIT_MS = 5000
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Teklif Yönetim Sistemi")
@@ -54,6 +68,11 @@ class MainWindow(QMainWindow):
         self.resize(1300, 800)
 
         self._help_dialog = None   # F1 toggle için referans
+        # Kapanış onayları + kapanma yedeği yalnız BİR kez çalışsın; kapanış
+        # ertelenirse closeEvent yeniden tetiklenir.
+        self._shutdown_prepared = False
+        self._close_after_checker_connected = False
+        self._close_deferred = False
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -90,7 +109,21 @@ class MainWindow(QMainWindow):
     # ── Kapatma olayı ────────────────────────────────────────────────────────
 
     def closeEvent(self, event: QCloseEvent):
-        """Kapatma öncesi kaydedilmemiş form kontrolü + otomatik yedek."""
+        """Kapatma öncesi kaydedilmemiş form kontrolü + otomatik yedek.
+
+        Güncelleme kontrolü hâlâ sürüyorsa kapanış ERTELENİR (event.ignore);
+        thread gerçekten bitince close() yeniden çağrılır ve bu metot ikinci
+        kez çalışır. Onay soruları ve kapanma yedeği yalnız ilk turda işler.
+        """
+        if self._shutdown_prepared:
+            # İkinci tur: yalnız güncelleme kontrolünün bitmesi bekleniyor.
+            if not self._await_update_checker():
+                event.ignore()
+                return
+            event.accept()
+            self._finish_deferred_close()
+            return
+
         page = self.pages.get(4)
         if page and hasattr(page, "is_dirty") and page.is_dirty():
             ans = QMessageBox.question(
@@ -121,7 +154,69 @@ class MainWindow(QMainWindow):
             logger.info("Kapanma yedeği alındı.")
         except Exception as e:
             logger.warning("Kapanma yedeği alınamadı: %s", e)
+        self._shutdown_prepared = True
+        # Yedekten SONRA: arka plandaki güncelleme kontrolü hâlâ sürüyorsa
+        # pencere yok edilmeden önce bitmesini bekle.
+        if not self._await_update_checker():
+            event.ignore()
+            return
         event.accept()
+
+    def _finish_deferred_close(self):
+        """Ertelenmiş kapanışı sonlandırır.
+
+        Erteleme sırasında kapatılan otomatik çıkış geri açılır ve olay
+        döngüsünden çıkılır; pencere zaten gizli olduğu için Qt'nin
+        "son pencere kapandı" sinyaline güvenilmez.
+        """
+        if not self._close_deferred:
+            return
+        from PySide6.QtWidgets import QApplication
+        self._close_deferred = False
+        QApplication.setQuitOnLastWindowClosed(True)
+        logger.info("Güncelleme kontrolü bitti; kapanış tamamlanıyor.")
+        QApplication.quit()
+
+    def _await_update_checker(self) -> bool:
+        """Kapanışın güvenli olup olmadığını bildirir.
+
+        Çalışan bir QThread, sahibi (MainWindow) yok edilirken birlikte yok
+        edilirse Qt süreci anında abort eder (0xC0000409) — log'a hiçbir şey
+        düşmez. Bu yüzden kapanmadan önce SINIRLI süre beklenir.
+
+        True  → kontrol bitti, pencere kapanabilir.
+        False → kontrol sürüyor, kapanış ERTELENMELİ. Thread'in YERLEŞİK
+                finished() sinyaline tek seferlik bağlantı kurulur; iş
+                bitince close() yeniden çağrılır. Thread MainWindow'un
+                çocuğu ve güçlü referansı olarak hayatta kalır.
+        """
+        checker = getattr(self, "_update_checker", None)
+        if checker is None or not checker.isRunning():
+            return True
+        if checker.wait(self._UPDATE_CHECK_WAIT_MS):
+            return True
+
+        if not self._close_after_checker_connected:
+            # K6-D sayesinde bu sinyal QThread'in gerçek finished() sinyali;
+            # yalnız thread TAMAMEN bittikten sonra tetiklenir.
+            checker.finished.connect(self.close)
+            self._close_after_checker_connected = True
+            logger.info(
+                "Güncelleme kontrolü %d ms içinde bitmedi; kapanış thread "
+                "bitene kadar ertelendi.", self._UPDATE_CHECK_WAIT_MS)
+            # Kullanıcı açısından pencere kapanmış görünsün; süreç ise
+            # thread bitene kadar yaşamaya devam etmeli. Son görünür pencereyi
+            # gizlemek Qt'de "son pencere kapandı" çıkışını tetiklediğinden
+            # otomatik çıkış geçici olarak kapatılır.
+            from PySide6.QtWidgets import QApplication
+            self._close_deferred = True
+            QApplication.setQuitOnLastWindowClosed(False)
+            self.hide()
+        if not checker.isRunning():
+            # wait() ile connect() arasında bitmiş olabilir; sinyal artık
+            # gelmeyeceğinden kapanışı elle sürdür.
+            QTimer.singleShot(0, self.close)
+        return False
 
     # ── Menü çubuğu ──────────────────────────────────────────────────────────
 

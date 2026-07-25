@@ -18,7 +18,10 @@ logger = logging.getLogger("email_dialog")
 
 
 class EmailWorker(QThread):
-    finished = Signal(bool, str)
+    # QThread'in yerleşik finished() sinyali GÖLGELENMEZ — aksi hâlde
+    # "thread.finished.connect(...)" standart temizlik deyimi sessizce
+    # yanlış sinyale bağlanır.
+    send_finished = Signal(bool, str)
 
     def __init__(self, cfg: dict, to_addr: str, subject: str, body: str, pdf_path: str):
         super().__init__()
@@ -43,7 +46,7 @@ class EmailWorker(QThread):
                     pdf_data = f.read()
                 msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename=pdf_path.name)
             else:
-                self.finished.emit(False, f"PDF dosyası bulunamadı: {pdf_path}")
+                self.send_finished.emit(False, f"PDF dosyası bulunamadı: {pdf_path}")
                 return
 
             server = self.cfg.get("smtp_server", "").strip()
@@ -69,15 +72,15 @@ class EmailWorker(QThread):
                     smtp.login(user, password)
                     smtp.send_message(msg)
                     
-            self.finished.emit(True, "")
+            self.send_finished.emit(True, "")
             
         except smtplib.SMTPAuthenticationError:
-            self.finished.emit(False, "Kimlik doğrulama reddedildi (Şifre veya Kullanıcı adı yanlış). Gmail kullanıyorsanız 'Uygulama Şifresi' oluşturmayı unutmayın.")
+            self.send_finished.emit(False, "Kimlik doğrulama reddedildi (Şifre veya Kullanıcı adı yanlış). Gmail kullanıyorsanız 'Uygulama Şifresi' oluşturmayı unutmayın.")
         except TimeoutError:
-            self.finished.emit(False, "Bağlantı zaman aşımına uğradı (15 sn). Sunucu adresi ve port numarasını kontrol edin.")
+            self.send_finished.emit(False, "Bağlantı zaman aşımına uğradı (15 sn). Sunucu adresi ve port numarasını kontrol edin.")
         except Exception as e:
             logger.error("E-posta gönderim hatası: %s", e, exc_info=True)
-            self.finished.emit(False, str(e))
+            self.send_finished.emit(False, str(e))
 
 
 class EmailDialog(QDialog):
@@ -166,7 +169,7 @@ class EmailDialog(QDialog):
         """Dialog kapatılırken çalışan worker'ı güvenle durdur."""
         self._closing = True
         if self.worker and self.worker.isRunning():
-            self.worker.finished.disconnect()   # Signal'i kopar — stale callback yok
+            self.worker.send_finished.disconnect()   # Signal'i kopar — stale callback yok
             self.worker.quit()
             self.worker.wait(4000)              # En fazla 4 sn bekle
         event.accept()
@@ -193,7 +196,7 @@ class EmailDialog(QDialog):
             self.body_input.toPlainText(), 
             self.pdf_path
         )
-        self.worker.finished.connect(self._on_finished)
+        self.worker.send_finished.connect(self._on_finished)
         self.worker.start()
 
     def _on_finished(self, success: bool, error_msg: str):
