@@ -1,6 +1,7 @@
 """Teklif servis katmanı."""
 import datetime, logging, re
 from core.app_paths import PDF_DIR
+from types import SimpleNamespace
 from typing import List, Optional
 from database.db_manager import get_db
 from models.offer import Offer, calculate_discount
@@ -22,6 +23,34 @@ _OFFER_NO_RE = re.compile(r"^(?P<prefix>.*)-(?P<number>\d+)$")
 # yerine sınırlı deneme yapılır. Pencerenin tamamı doluysa numara üretimi
 # RuntimeError ile durur (doğrulanmamış numara asla döndürülmez).
 _MAX_OFFER_NO_PROBES = 1000
+
+
+_VALIDITY_RE = re.compile(r"(\d+)\s*(?:g[üu]n|ay)?", re.IGNORECASE)
+
+
+def remaining_days(offer) -> Optional[int]:
+    """Teklifin geçerliliğine kalan gün sayısı; çözümlenemezse None.
+
+    TEK KAYNAK: hem servis (süresi dolan teklifler) hem de arayüz (tablodaki
+    uyarı işaretleri) bu fonksiyonu kullanır — ayrıştırma kuralları iki yerde
+    kopyalanmaz. Geçerlilik bilgisi bozuk/anlaşılamıyorsa None döner ve teklif
+    ASLA süresi dolmuş sayılmaz.
+
+    Not: "ay" = 30 gün davranışı bilinçli olarak korunmuştur (ayrı ürün kararı).
+    """
+    validity = (getattr(offer, "validity", "") or "").strip()
+    match = _VALIDITY_RE.fullmatch(validity)
+    if not match:
+        return None
+    try:
+        offer_date = datetime.date.fromisoformat(getattr(offer, "date", "") or "")
+    except (ValueError, TypeError):
+        return None
+    days = int(match.group(1))
+    if "ay" in validity.lower():
+        days *= 30
+    expiry = offer_date + datetime.timedelta(days=days)
+    return (expiry - datetime.date.today()).days
 
 
 def _offer_no_sequence(offer_no: str, prefix: str) -> Optional[int]:
@@ -310,51 +339,64 @@ class OfferService:
 
     def get_expiring_offers(self, days: int = 3) -> List[Offer]:
         """Geçerlilik süresi 'days' gün içinde dolacak veya dolmuş Beklemede teklifler."""
-        import re
-        all_pending = self.get_filtered(status="Beklemede")
-        today = datetime.date.today()
         result = []
-        for o in all_pending:
-            validity = (o.validity or "").strip()
-            match = re.fullmatch(r"(\d+)\s*(?:g[üu]n|ay)?", validity, flags=re.IGNORECASE)
-            if not match:
-                continue
-            try:
-                offer_date = datetime.date.fromisoformat(o.date)
-            except (ValueError, TypeError):
-                continue
-            validity_days = int(match.group(1))
-            if "ay" in validity.lower():
-                validity_days *= 30
-            expiry_date = offer_date + datetime.timedelta(days=validity_days)
-            remaining = (expiry_date - today).days
-            o._expiry_date = expiry_date
-            o._remaining_days = remaining
-            if remaining <= days:
+        for o in self.get_filtered(status="Beklemede"):
+            kalan = remaining_days(o)
+            if kalan is None:
+                continue                      # geçerlilik çözümlenemedi → atla
+            o._remaining_days = kalan
+            if kalan <= days:
                 result.append(o)
         return result
 
-    def auto_cancel_expired(self) -> List[str]:
-        """Geçerlilik süresi dolan 'Beklemede' teklifleri otomatik İptal eder.
+    def get_expired_pending(self) -> List[Offer]:
+        """Geçerlilik süresi GERÇEKTEN dolmuş 'Beklemede' teklifler.
 
-        Yalnızca Beklemede olanlar etkilenir (Onaylandı dokunulmaz);
-        geçerliliği çözümlenemeyen teklifler atlanır.
-        İptal edilen tekliflerin numaralarını döndürür.
+        Yalnızca okur — hiçbir yazma yapmaz. İptal işlemi kullanıcı onayına
+        bağlıdır (bkz. cancel_expired).
         """
-        expired = [o for o in self.get_expiring_offers(days=-1)
-                   if getattr(o, "_remaining_days", 0) < 0]
-        cancelled = []
-        for o in expired:
-            try:
-                self.update_status(o.id, "İptal")
-                cancelled.append(o.offer_no or f"#{o.id}")
-            except Exception as e:
-                logger.warning("Süresi dolan teklif iptal edilemedi (id=%s): %s",
-                               o.id, e)
-        if cancelled:
-            logger.info("Süresi dolan %d teklif otomatik İptal edildi: %s",
-                        len(cancelled), ", ".join(cancelled))
-        return cancelled
+        return [o for o in self.get_expiring_offers(days=-1)
+                if getattr(o, "_remaining_days", 0) < 0]
+
+    def cancel_expired(self, offer_ids: list) -> int:
+        """Verilen tekliflerden GERÇEKTEN süresi dolmuş olanları 'İptal' yapar.
+
+        Çağıranın listesine körü körüne GÜVENİLMEZ: her teklifin güncel
+        status/date/validity değerleri AYNI transaction içinde yeniden okunur
+        ve yalnızca hâlâ 'Beklemede' olan, geçerliliği çözümlenebilen ve
+        gerçekten süresi dolmuş (kalan < 0) kayıtlar güncellenir. Böylece
+        onay ile uygulama arasında geçerliliği uzatılan veya durumu
+        değiştirilen teklif etkilenmez.
+
+        Tüm okuma ve yazmalar TEK transaction'dadır; bir adım hata verirse
+        değişikliklerin tamamı geri alınır. Güncellenen kayıt sayısını döndürür.
+        """
+        ids = [i for i in (offer_ids or []) if i is not None]
+        if not ids:
+            return 0
+        db = get_db()
+        guncellenen = 0
+        with db.transaction() as conn:
+            for offer_id in ids:
+                row = conn.execute(
+                    "SELECT status, date, validity FROM offers WHERE id=?",
+                    (offer_id,)).fetchone()
+                if row is None:
+                    continue
+                if (row["status"] or "Beklemede") != "Beklemede":
+                    continue
+                kalan = remaining_days(SimpleNamespace(
+                    date=row["date"], validity=row["validity"]))
+                if kalan is None or kalan >= 0:
+                    continue                  # süresi dolmamış / çözümlenemedi
+                cur = conn.execute(
+                    "UPDATE offers SET status='İptal' "
+                    "WHERE id=? AND COALESCE(status,'Beklemede')='Beklemede'",
+                    (offer_id,))
+                guncellenen += cur.rowcount or 0
+        logger.info("Süresi dolan %d teklif kullanıcı onayıyla İptal edildi "
+                    "(%d aday incelendi).", guncellenen, len(ids))
+        return guncellenen
 
     def get_all_customer_summaries(self) -> dict:
         """Tüm müşterilerin özet istatistiklerini tek sorguda çeker. {customer_id: summary}"""

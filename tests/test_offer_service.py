@@ -1,6 +1,7 @@
 """OfferService birim testleri."""
 import threading
 import unittest
+import unittest.mock
 from datetime import date
 from pathlib import Path
 
@@ -341,37 +342,100 @@ class TestAutoCancelExpired(unittest.TestCase):
         o.status = status
         return self.svc.save(o)
 
-    def test_expired_pending_becomes_cancelled(self):
+    # Süresi dolan teklifler artık KENDİLİĞİNDEN iptal edilmez: listelenir,
+    # yalnızca kullanıcı onayıyla (cancel_expired) güncellenir.
+
+    def test_expired_pending_is_listed_without_writing(self):
         oid = self._offer_with_validity(days_ago=30, validity="10 Gün")
-        cancelled = self.svc.auto_cancel_expired()
-        self.assertEqual(len(cancelled), 1)
+        expired = self.svc.get_expired_pending()
+        self.assertEqual([o.id for o in expired], [oid])
+        self.assertEqual(self.svc.get_by_id(oid).status, "Beklemede",
+                         "listeleme veritabanına yazdı")
+
+    def test_cancel_expired_updates_only_requested_pending(self):
+        oid = self._offer_with_validity(days_ago=30, validity="10 Gün")
+        self.assertEqual(self.svc.cancel_expired([oid]), 1)
         self.assertEqual(self.svc.get_by_id(oid).status, "İptal")
 
-    def test_valid_pending_untouched(self):
+    def test_valid_pending_not_listed(self):
         oid = self._offer_with_validity(days_ago=5, validity="30 Gün")
-        cancelled = self.svc.auto_cancel_expired()
-        self.assertEqual(cancelled, [])
+        self.assertEqual(self.svc.get_expired_pending(), [])
         self.assertEqual(self.svc.get_by_id(oid).status, "Beklemede")
 
-    def test_expired_approved_untouched(self):
+    def test_expired_approved_not_listed_and_not_cancelled(self):
         oid = self._offer_with_validity(days_ago=30, validity="10 Gün",
                                         status="Onaylandı")
-        cancelled = self.svc.auto_cancel_expired()
-        self.assertEqual(cancelled, [])
+        self.assertEqual(self.svc.get_expired_pending(), [])
+        # Doğrudan istense bile Beklemede olmayan teklif değiştirilmemeli
+        self.assertEqual(self.svc.cancel_expired([oid]), 0)
         self.assertEqual(self.svc.get_by_id(oid).status, "Onaylandı")
 
-    def test_unparseable_validity_skipped(self):
+    def test_unparseable_validity_not_listed(self):
         oid = self._offer_with_validity(days_ago=90, validity="Belirtilmemiş")
-        cancelled = self.svc.auto_cancel_expired()
-        self.assertEqual(cancelled, [])
+        self.assertEqual(self.svc.get_expired_pending(), [])
         self.assertEqual(self.svc.get_by_id(oid).status, "Beklemede")
 
     def test_expiry_boundary_last_day_still_valid(self):
-        # Tam son gün (kalan 0 gün) hâlâ geçerlidir — iptal edilmez
+        # Tam son gün (kalan 0 gün) hâlâ geçerlidir — süresi dolmuş sayılmaz
         oid = self._offer_with_validity(days_ago=10, validity="10 Gün")
-        cancelled = self.svc.auto_cancel_expired()
-        self.assertEqual(cancelled, [])
+        self.assertEqual(self.svc.get_expired_pending(), [])
         self.assertEqual(self.svc.get_by_id(oid).status, "Beklemede")
+
+    def test_cancel_expired_uses_single_transaction(self):
+        ids = [self._offer_with_validity(days_ago=30, validity="10 Gün")
+               for _ in range(3)]
+        from database import db_manager
+        sayac = {"n": 0}
+        gercek = db_manager.DB.transaction
+
+        def _sayan(self_db, *a, **k):
+            sayac["n"] += 1
+            return gercek(self_db, *a, **k)
+
+        with unittest.mock.patch.object(db_manager.DB, "transaction", _sayan):
+            self.assertEqual(self.svc.cancel_expired(ids), 3)
+        self.assertEqual(sayac["n"], 1,
+                         f"satır başına ayrı transaction açıldı ({sayac['n']})")
+        for oid in ids:
+            self.assertEqual(self.svc.get_by_id(oid).status, "İptal")
+
+    def test_cancel_expired_rolls_back_on_failure(self):
+        ids = [self._offer_with_validity(days_ago=30, validity="10 Gün")
+               for _ in range(3)]
+        import sqlite3
+        from database import db_manager
+
+        gercek_transaction = db_manager.DB.transaction
+
+        class _PatlayanConn:
+            """3. execute çağrısında hata veren sarmalayıcı."""
+            def __init__(self, gercek):
+                self._g = gercek
+                self._n = 0
+
+            def execute(self, *a, **k):
+                self._n += 1
+                if self._n == 3:
+                    raise sqlite3.OperationalError("test: güncelleme hatası")
+                return self._g.execute(*a, **k)
+
+            def __getattr__(self, ad):
+                return getattr(self._g, ad)
+
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _sarmalayan(self_db, *a, **k):
+            with gercek_transaction(self_db, *a, **k) as conn:
+                yield _PatlayanConn(conn)
+
+        with unittest.mock.patch.object(db_manager.DB, "transaction", _sarmalayan):
+            with self.assertRaises(sqlite3.OperationalError):
+                self.svc.cancel_expired(ids)
+
+        for oid in ids:
+            self.assertEqual(self.svc.get_by_id(oid).status, "Beklemede",
+                             "hata sonrası değişiklikler geri alınmadı")
 
 
 # ── İçe aktarılan teklif numarası ↔ sayaç senkronizasyonu ──────────────────

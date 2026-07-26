@@ -405,6 +405,9 @@ class DashboardPage(QWidget):
         self._date_from      = ""
         self._date_to        = ""
         self._pdf_worker     = None
+        # Süresi dolan teklifler için bu OTURUMDA sorulmuş teklif id'leri.
+        # Kalıcı bir "sorma" ayarı yazılmaz; yalnız sayfa durumudur.
+        self._expiry_asked_ids: set = set()
 
         # Debounce — 350 ms sessizlik sonrası _load() çalışır
         self._search_timer = QTimer(self)
@@ -662,7 +665,7 @@ class DashboardPage(QWidget):
 
     def on_enter(self):
         """Sayfaya her geçişte çalışır — istatistik + tablo güncellenir."""
-        cancelled_any = self._auto_cancel_expired()
+        cancelled_any = self._prompt_expired_offers()
         scroll_pos = self.table.verticalScrollBar().value()
 
         try:
@@ -693,48 +696,84 @@ class DashboardPage(QWidget):
 
     @staticmethod
     def _enrich_expiry(offers: list):
-        """Her offer'a _remaining_days atar (geçerlilik süresi kalan gün)."""
-        import datetime as _dt
-        today = _dt.date.today()
-        for o in offers:
-            o._remaining_days = None
-            if (o.status or "Beklemede") != "Beklemede":
-                continue
-            validity = (o.validity or "").strip()
-            match = re.fullmatch(r"(\d+)\s*(?:g[üu]n|ay)?", validity, flags=re.IGNORECASE)
-            if not match:
-                continue
-            try:
-                offer_date = _dt.date.fromisoformat(o.date)
-            except (ValueError, TypeError):
-                continue
-            days = int(match.group(1))
-            if "ay" in validity.lower():
-                days *= 30
-            expiry = offer_date + _dt.timedelta(days=days)
-            o._remaining_days = (expiry - today).days
+        """Her offer'a _remaining_days atar (geçerlilik süresi kalan gün).
 
-    def _auto_cancel_expired(self) -> bool:
-        """Geçerlilik süresi dolan Beklemede teklifleri otomatik İptal eder."""
+        Ayrıştırma kuralları servis katmanındaki tek kaynaktan gelir
+        (offer_service.remaining_days) — burada kopyalanmaz.
+        """
+        from services.offer_service import remaining_days
+        for o in offers:
+            o._remaining_days = (None if (o.status or "Beklemede") != "Beklemede"
+                                 else remaining_days(o))
+
+    def _prompt_expired_offers(self) -> bool:
+        """Süresi dolmuş Beklemede teklifler için TEK toplu onay sorar.
+
+        Hiçbir şey KENDİLİĞİNDEN değişmez: kullanıcı onaylamazsa (Şimdilik
+        Dokunma / Esc / X) veritabanına yazılmaz. Aynı teklif kümesi için
+        oturum boyunca bir kez sorulur; sonradan yeni bir teklifin süresi
+        dolarsa yeniden sorulabilir (yalnız sayfa durumu, kalıcı ayar yok).
+
+        True → veritabanı değişti, tablo yenilenmeli.
+        """
         try:
-            cancelled = self.svc_o.auto_cancel_expired()
+            expired = self.svc_o.get_expired_pending()
         except Exception as e:
-            logger.debug("Otomatik iptal atlandı: %s", e)
+            logger.debug("Süresi dolan teklif kontrolü atlandı: %s", e)
             return False
-        if not cancelled:
+        # Yalnız DAHA ÖNCE SORULMAMIŞ teklifler; kullanıcının "Şimdilik
+        # Dokunma" dediği teklifler ne mesaja ne de toplu iptale girer.
+        yeni = [o for o in expired
+                if o.id is not None and o.id not in self._expiry_asked_ids]
+        if not yeni:
             return False
-        nos = ", ".join(cancelled[:5]) + (" ..." if len(cancelled) > 5 else "")
+        ids = {o.id for o in yeni}
+
+        numaralar = [o.offer_no or f"#{o.id}" for o in yeni][:5]
+        ornek = ", ".join(numaralar) + (" ..." if len(yeni) > 5 else "")
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Icon.Question)
+        box.setWindowTitle("Süresi Dolan Teklifler")
+        box.setText(
+            f"Geçerlilik süresi dolmuş {len(yeni)} adet 'Beklemede' teklif "
+            f"var:\n{ornek}\n\nBunlar 'İptal' olarak işaretlensin mi?")
+        btn_iptal = box.addButton("İptal Olarak İşaretle",
+                                  QMessageBox.ButtonRole.AcceptRole)
+        btn_dokunma = box.addButton("Şimdilik Dokunma",
+                                    QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(btn_dokunma)
+        box.exec()
+        if box.clickedButton() is not btn_iptal:
+            # Reddedildi (Esc/X dâhil) → hiçbir yazma yok, bir daha sorma.
+            self._expiry_asked_ids |= ids
+            return False
+
+        try:
+            adet = self.svc_o.cancel_expired(sorted(ids))
+        except Exception as e:
+            # İşaretleme YAPILMAZ: kullanıcı sekmeye döndüğünde yeniden
+            # deneyebilmeli. Tekrar yalnız bir sonraki on_enter'da olur,
+            # bu diyaloğun içinde döngü kurulmaz.
+            logger.error("Süresi dolan teklifler güncellenemedi: %s", e,
+                         exc_info=True)
+            QMessageBox.warning(
+                self, "İşlem Başarısız",
+                f"Teklifler güncellenemedi, hiçbir değişiklik yapılmadı:\n{e}")
+            return False
+        self._expiry_asked_ids |= ids
+
         main_win = self.window()
         if hasattr(main_win, 'show_status'):
             main_win.show_status(
-                f"Geçerlilik süresi dolan {len(cancelled)} teklif otomatik "
-                f"İptal edildi: {nos}", level="warning")
+                f"Süresi dolan {adet} teklif İptal olarak işaretlendi.",
+                level="warning")
         return True
 
     def _check_expiring_offers(self):
         """Süresi 3 gün içinde dolacak teklifler varsa bildirim gösterir.
 
-        Süresi dolmuş olanlar _auto_cancel_expired ile zaten İptal edilir."""
+        Yalnız HENÜZ dolmamış olanları (kalan 0-3 gün) kapsar; süresi dolmuş
+        teklifler için _prompt_expired_offers ayrıca onay sorar."""
         try:
             expiring = self.svc_o.get_expiring_offers(days=3)
         except Exception as e:
