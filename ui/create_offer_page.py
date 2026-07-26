@@ -1609,7 +1609,12 @@ class CreateOfferPage(QWidget):
         from pathlib import Path as _Path
         desktop = _Path.home() / "Desktop"
         if not desktop.exists(): desktop = _Path.home()
-        default_file = str(desktop / f"{self._offer_no}.pdf")
+        # Önerilen dosya adı: yeni teklifte önek Ayarlar'dan değişmiş olabilir,
+        # bu yüzden güncel önizleme numarası kullanılır. Sayfanın durumu
+        # DEĞİŞTİRİLMEZ — kayıt başarısız olursa hiçbir şey kaymasın.
+        onerilen_no = (self._offer_no if self._current_offer_id
+                       else self.offer_svc.preview_offer_no())
+        default_file = str(desktop / f"{onerilen_no}.pdf")
         
         out_path, _ = QFileDialog.getSaveFileName(
             self, "PDF Kaydet", default_file, "PDF Dosyası (*.pdf)")
@@ -1623,10 +1628,17 @@ class CreateOfferPage(QWidget):
             oid = self.offer_svc.save(data)
             self._current_offer_id = oid
             self._is_new = False
-            
+            # save() teklif numarasını KENDİSİ üretir ve data.offer_no'ya
+            # yazar; bu, sayfadaki önizleme numarasından farklı olabilir
+            # (ör. önek Ayarlar'dan değiştiyse). Arşiv adı ve sonraki tüm
+            # yollar GERÇEK numaradan üretilmeli — aksi hâlde arşiv PDF'i
+            # yanlış adla yazılır ve teklif silinince yetim kalır.
+            self._offer_no = data.offer_no or self._offer_no
+            self.offer_no_lbl.setText(self._offer_no)
+
             from pdf.pdf_generator import generate_pdf
             from core.app_paths import PDF_DIR
-            
+
             PDF_DIR.mkdir(parents=True, exist_ok=True)
             backup = str(PDF_DIR / f"{self._offer_no}.pdf")
             generate_pdf(data, out_path)
