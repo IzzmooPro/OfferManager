@@ -101,6 +101,90 @@ def _norm(s: str) -> str:
     return s.lower().replace("̇", "").replace("_", " ")
 
 
+_CSV_ENCODINGS = ("utf-8-sig", "utf-8", "cp1254", "latin-1")
+_CSV_DELIMITERS = ",;\t"
+_CSV_OKUMA_HATASI = (
+    "Dosya okunamadı — içeriği bozuk ya da CSV değil.\n"
+    "Dosyayı Excel'de açıp 'CSV UTF-8' biçiminde yeniden kaydedip deneyin.")
+
+
+def _ikili_gorunumlu(ham: bytes) -> bool:
+    """İçerik metin mi? NUL baytı veya yoğun kontrol karakteri → metin değil.
+
+    latin-1 HER bayt dizisini hatasız çözdüğünden, bu kontrol olmadan ikili
+    dosyalar anlamsız satırlara dönüşüp "okundu" sanılıyordu.
+    """
+    ornek = ham[:4096]
+    if b"\x00" in ornek:
+        return True
+    if not ornek:
+        return False
+    bozuk = sum(1 for b in ornek if b < 9 or 13 < b < 32)
+    return bozuk / len(ornek) > 0.30
+
+
+def _csv_ayraci(text: str, kaynak: str) -> str:
+    """Ayıracı belirler; Sniffer başarısızsa güvenli yedeğe düşer.
+
+    Tek sütunlu veya sıra dışı ama OKUNABİLİR dosyalar reddedilmez; zorunlu
+    sütun denetimi sonraki doğrulama katmanının işidir. Sniffer hatası
+    sessizce yutulmaz, log'a yazılır.
+    """
+    try:
+        return csv.Sniffer().sniff(
+            text[:2048], delimiters=_CSV_DELIMITERS).delimiter
+    except csv.Error as exc:
+        ilk_satir = next((s for s in text.splitlines() if s.strip()), "")
+        ayrac = max(_CSV_DELIMITERS, key=ilk_satir.count)
+        if ilk_satir.count(ayrac) == 0:
+            ayrac = ","
+        logger.info("CSV ayıracı belirlenemedi (%s): %s — yedek ayıraç %r "
+                    "kullanılıyor", kaynak, exc, ayrac)
+        return ayrac
+
+
+def _read_csv(path: Path) -> tuple[list, str]:
+    """CSV'yi bilinen kodlamalarla okur → (satırlar, kullanıcı hatası).
+
+    GERÇEKTEN boş dosya ile OKUNAMAYAN dosya ayrılır: tüm denemeler
+    başarısız olursa hata alanı boş bırakılmaz (eskiden kullanıcı gerçek
+    neden yerine "Dosyada veri bulunamadı." görüyordu). Teknik ayrıntı
+    log'a yazılır, kullanıcıya kısa bir açıklama döner.
+    """
+    try:
+        ham = path.read_bytes()
+    except OSError as exc:
+        logger.warning("CSV açılamadı (%s): %s", path.name, exc)
+        return [], _CSV_OKUMA_HATASI
+
+    if not ham.strip():
+        return [], ""                      # gerçekten boş dosya
+    if _ikili_gorunumlu(ham):
+        logger.warning("CSV metin içermiyor (%s): ikili/bozuk içerik", path.name)
+        return [], _CSV_OKUMA_HATASI
+
+    son_hata = None
+    for enc in _CSV_ENCODINGS:
+        try:
+            text = ham.decode(enc)
+        except (UnicodeDecodeError, LookupError) as exc:
+            son_hata = exc
+            logger.debug("CSV kodlama denemesi başarısız (%s/%s): %s",
+                         path.name, enc, exc)
+            continue
+        try:
+            reader = csv.DictReader(io.StringIO(text),
+                                    delimiter=_csv_ayraci(text, path.name))
+            return [dict(r) for r in reader], ""
+        except csv.Error as exc:
+            son_hata = exc
+            logger.debug("CSV ayrıştırma başarısız (%s/%s): %s",
+                         path.name, enc, exc)
+
+    logger.warning("CSV ayrıştırılamadı (%s): %s", path.name, son_hata)
+    return [], _CSV_OKUMA_HATASI
+
+
 def _read_file(path: str, progress=None) -> tuple[list, str]:
     """Dosyayı okur, (rows, error) döndürür. rows = list of dicts.
 
@@ -136,16 +220,7 @@ def _read_file(path: str, progress=None) -> tuple[list, str]:
                             "Lütfen dosyayı CSV olarak kaydedin veya\n"
                             "komut satırında: pip install openpyxl")
         elif ext == ".csv":
-            # BOM ve encoding denemesi
-            for enc in ("utf-8-sig", "utf-8", "cp1254", "latin-1"):
-                try:
-                    text = p.read_text(encoding=enc)
-                    dialect = csv.Sniffer().sniff(text[:2048], delimiters=",;\t")
-                    reader = csv.DictReader(io.StringIO(text), dialect=dialect)
-                    rows = [dict(r) for r in reader]
-                    break
-                except Exception:
-                    continue
+            return _read_csv(p)
         else:
             return [], f"Desteklenmeyen dosya türü: {ext}\nDesteklenen: .xlsx, .csv"
     except Exception as e:
