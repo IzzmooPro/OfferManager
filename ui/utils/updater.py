@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QProgressBar, QMessageBox
 )
-from PySide6.QtCore import QThread, Signal, Qt
+from PySide6.QtCore import QThread, QTimer, Signal, Qt
 
 logger = logging.getLogger("updater")
 
@@ -29,7 +29,7 @@ GITHUB_URL  = f"https://github.com/{GITHUB_REPO}"
 
 # Başlangıç güncelleme kontrolünün ağ zaman aşımı (saniye).
 # Program kapanırken MainWindow bu thread'in bitmesini SINIRLI süre bekler
-# (MainWindow._UPDATE_CHECK_WAIT_MS); iki değer birlikte ayarlanmalıdır —
+# (MainWindow._SHUTDOWN_WAIT_MS); iki değer birlikte ayarlanmalıdır —
 # bekleme sınırı bu zaman aşımından belirgin şekilde büyük olmalıdır.
 STARTUP_CHECK_TIMEOUT = 3
 
@@ -140,6 +140,15 @@ class UpdateDialog(QDialog):
         self._version      = version
         self._download_url = download_url
         self._downloader   = None
+        # İndirme sürerken gelen kapatma isteği ertelenir; finished->close
+        # bağlantısı yalnız BİR kez kurulmalıdır.
+        self._close_after_download_connected = False
+        self._quit_suppressed = False
+        # Kullanıcı kapatmayı istedi mi? _Downloader.download_finished sinyali
+        # run() İÇİNDE, yerleşik finished() ise run() döndükten SONRA gelir;
+        # yani sonuç callback'i ertelenmiş kapanıştan ÖNCE çalışır. Bu bayrak
+        # olmadan, kullanıcı X/Daha sonra/Esc demesine rağmen kurulum başlar.
+        self._close_requested = False
 
         self.setWindowTitle("Güncelleme Mevcut")
         # Sabit boyut YOK — progress + durum satırı görününce metin ezilip
@@ -220,6 +229,15 @@ class UpdateDialog(QDialog):
 
     def _on_downloaded(self, new_exe: str):
         """İndirme tamamlandı → güncelleme scriptini çalıştır ve kapat."""
+        if self._close_requested:
+            # Kullanıcı indirme sürerken pencereyi kapatmak istedi: kurulum
+            # BAŞLATILMAZ (os.startfile / webbrowser / os._exit çalışmaz).
+            # Ertelenmiş kapanış, thread'in yerleşik finished() sinyaliyle
+            # tamamlanır.
+            logger.info("İndirme tamamlandı ancak kapatma istendi; "
+                        "kurulum başlatılmıyor: %s", new_exe)
+            self._discard_downloaded_installer(new_exe)
+            return
         self._status.setText("Güncelleme uygulanıyor…")
         logger.info("Yeni sürüm indirildi: %s", new_exe)
 
@@ -260,7 +278,98 @@ class UpdateDialog(QDialog):
         self.accept()
         os._exit(0)
 
+    def closeEvent(self, event):
+        """İndirme sürerken gelen kapatma isteğini ERTELER.
+
+        Çalışan _Downloader bu dialog'un çocuğudur; dialog (ve dolayısıyla
+        thread) iş bitmeden yok edilirse Qt süreci abort eder. UI thread'inde
+        bekleme yapılmaz: thread'in YERLEŞİK finished() sinyaline tek
+        seferlik bağlanılır, indirme bitince pencere kendiliğinden kapanır.
+        """
+        if self._downloader is not None and self._downloader.isRunning():
+            # Sonuç callback'i kurulumu BAŞLATMASIN.
+            self._close_requested = True
+            if not self._close_after_download_connected:
+                from PySide6.QtWidgets import QApplication
+                self._downloader.finished.connect(self.close)
+                self._close_after_download_connected = True
+                self._status.setVisible(True)
+                self._status.setText(
+                    "İndirme tamamlanıyor — pencere işlem bitince kapanacak.")
+                self.adjustSize()
+                # Bu dialog ana pencereye parent'lı olduğu için Qt onu
+                # "transient" sayar: ana pencere kapanırsa uygulama, burada
+                # iş sürerken bile çıkmak ister. İndirme bitene kadar
+                # otomatik çıkış kapatılır.
+                self._quit_suppressed = True
+                QApplication.setQuitOnLastWindowClosed(False)
+            if not self._downloader.isRunning():
+                # Kontrol ile bağlantı arasında bitmiş olabilir; sinyal artık
+                # gelmeyeceğinden kapanışı elle sürdür.
+                QTimer.singleShot(0, self.close)
+            event.ignore()
+            return
+        event.accept()
+        self._finish_deferred_close()
+
+    def _finish_deferred_close(self):
+        """Ertelenmiş kapanış bittiğinde otomatik çıkışı geri açar.
+
+        Erteleme sırasında ana pencere kapanmış olabilir; görünür birincil
+        pencere kalmadıysa süreç kendiliğinden sonlanmalıdır.
+        """
+        if not self._quit_suppressed:
+            return
+        from PySide6.QtWidgets import QApplication
+        self._quit_suppressed = False
+        QApplication.setQuitOnLastWindowClosed(True)
+        birincil_acik = any(
+            w is not self and w.parent() is None and w.isVisible()
+            for w in QApplication.topLevelWidgets())
+        if not birincil_acik:
+            logger.info("İndirme bitti; açık pencere kalmadı, uygulama kapanıyor.")
+            QApplication.quit()
+
+    def reject(self):
+        """"Daha sonra" düğmesi ve Esc de aynı güvenli kapanış yolunu kullanır.
+
+        QDialog.reject() closeEvent göndermeden pencereyi kapatır; indirme
+        sürerken bu, erteleme mekanizmasını atlayıp thread'i sahipsiz
+        bırakırdı.
+        """
+        if self._downloader is not None and self._downloader.isRunning():
+            self.close()
+            return
+        super().reject()
+
+    def _discard_downloaded_installer(self, installer_path: str) -> None:
+        """Kapatma istendiği için kullanılmayacak kurulum dosyasını siler.
+
+        Yalnızca indirilen DOSYA silinir — özyinelemeli klasör silme YOKTUR.
+        Üst klasör ancak TAMAMEN boşsa kaldırılır (rmdir dolu klasörde hata
+        verir), böylece kullanıcının TEMP içindeki başka dosyaları korunur.
+        Silme başarısız olursa kapanış ENGELLENMEZ; yalnız log'a yazılır.
+        """
+        dosya = Path(installer_path)
+        try:
+            dosya.unlink(missing_ok=True)
+        except OSError as exc:
+            logger.warning("Kullanılmayan kurulum dosyası silinemedi (%s): %s",
+                           dosya, exc)
+            return
+        try:
+            dosya.parent.rmdir()          # yalnız klasör tamamen boşsa başarılı
+        except OSError as exc:
+            logger.debug("Geçici indirme klasörü kaldırılmadı (%s): %s",
+                         dosya.parent, exc)
+
     def _on_download_failed(self, err: str):
+        if self._close_requested:
+            # Pencere kapanıyor: kullanıcıyı hata kutusuyla rahatsız etme ve
+            # dialogu yeniden kullanılabilir hâle getirme.
+            logger.info("Güncelleme indirmesi başarısız oldu (kapanış "
+                        "istendiği için bildirilmiyor): %s", err)
+            return
         self._progress.setVisible(False)
         self._status.setVisible(False)
         self._btn_update.setEnabled(True)

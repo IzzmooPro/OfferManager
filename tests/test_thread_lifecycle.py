@@ -210,10 +210,13 @@ class DeferredCloseGuardTests(unittest.TestCase):
                 time.sleep(1.0)
 
         class _SahtePencere:
-            _UPDATE_CHECK_WAIT_MS = 50          # hemen zaman aşımına uğrasın
+            _SHUTDOWN_WAIT_MS = 50              # hemen zaman aşımına uğrasın
+            # Worker toplama mantığı gerçek uygulamadan ödünç alınır.
+            _shutdown_workers = MainWindow._shutdown_workers
             def __init__(self, checker):
                 self._update_checker = checker
-                self._close_after_checker_connected = False
+                self.pages = {}                 # PDF/SMTP worker'ı yok
+                self._close_connected_workers = []
                 self._close_deferred = False
                 self.hide_sayisi = 0
             def hide(self):
@@ -227,9 +230,10 @@ class DeferredCloseGuardTests(unittest.TestCase):
         self.addCleanup(QApplication.setQuitOnLastWindowClosed, True)
         checker.start()
         try:
-            self.assertFalse(MainWindow._await_update_checker(pencere))
-            self.assertFalse(MainWindow._await_update_checker(pencere))
-            self.assertTrue(pencere._close_after_checker_connected)
+            self.assertFalse(MainWindow._await_running_workers(pencere))
+            self.assertFalse(MainWindow._await_running_workers(pencere))
+            self.assertEqual(len(pencere._close_connected_workers), 1,
+                             "aynı worker için birden fazla bağlantı kuruldu")
             self.assertEqual(pencere.hide_sayisi, 1,
                              "erteleme bloğu birden fazla kez çalışmış")
         finally:
@@ -243,10 +247,10 @@ class TimeoutAlignmentTests(unittest.TestCase):
         from ui.main_window import MainWindow
         from ui.utils.updater import STARTUP_CHECK_TIMEOUT
         self.assertGreater(
-            MainWindow._UPDATE_CHECK_WAIT_MS, STARTUP_CHECK_TIMEOUT * 1000,
+            MainWindow._SHUTDOWN_WAIT_MS, STARTUP_CHECK_TIMEOUT * 1000,
             "kapanış beklemesi ağ zaman aşımını kapsamıyor")
         self.assertLessEqual(
-            MainWindow._UPDATE_CHECK_WAIT_MS, 10_000,
+            MainWindow._SHUTDOWN_WAIT_MS, 10_000,
             "kapanışta kabul edilemez uzunlukta bekleme")
         self.assertGreater(STARTUP_CHECK_TIMEOUT, 0)
 

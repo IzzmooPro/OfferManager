@@ -1,5 +1,6 @@
 """Ana pencere — sidebar kart tasarımı, üst bar tema butonu, yedekleme servisi."""
 import logging
+import time
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QLabel, QStackedWidget, QMessageBox, QStatusBar
@@ -47,19 +48,18 @@ class NavCard(QPushButton):
 
 
 class MainWindow(QMainWindow):
-    # Kapanışta güncelleme kontrolünün bitmesi için beklenecek ÜST SINIR (ms).
+    # Kapanışta çalışan arka plan işlerinin bitmesi için beklenecek TOPLAM
+    # ÜST SINIR (ms) — güncelleme kontrolü, toplu PDF üretimi, SMTP testi.
     #
-    # updater.STARTUP_CHECK_TIMEOUT (3 sn) tek tek SOKET işlemlerinin sınırıdır
-    # (bağlantı kurma ve her okuma ayrı ayrı); thread'in TOPLAM çalışma süresi
-    # bununla sınırlı DEĞİLDİR. Bağlantı kurulup yanıt damla damla gelirse
-    # çalışma 3 sn'yi rahatlıkla aşabilir. Bu yüzden 5 sn bir garanti değil,
-    # yaygın durumu (bağlantı zaman aşımı + pay) kapsayan pratik bir sınırdır.
+    # Bu bir garanti değil, yaygın durumu kapsayan pratik bir sınırdır: ne
+    # updater.STARTUP_CHECK_TIMEOUT (tek tek SOKET işlemlerinin sınırıdır,
+    # toplam çalışma süresini bağlamaz) ne de PDF üretimi süreyle sınırlıdır.
     #
-    # Doğruluk bu değere BAĞLI DEĞİLDİR: süre dolarsa thread yok edilmez,
-    # kapanış QThread'in yerleşik finished() sinyaline kadar ertelenir
-    # (bkz. _await_update_checker). Ağ normalken kontrol kapanıştan çok önce
-    # bittiği için bu bekleme pratikte 0 ms sürer. Sınırsız bekleme YOKTUR.
-    _UPDATE_CHECK_WAIT_MS = 5000
+    # Doğruluk bu değere BAĞLI DEĞİLDİR: süre dolarsa hiçbir thread yok
+    # edilmez, kapanış QThread'lerin yerleşik finished() sinyallerine kadar
+    # ertelenir (bkz. _await_running_workers). Arka planda iş yokken bu
+    # bekleme 0 ms sürer. Sınırsız bekleme YOKTUR.
+    _SHUTDOWN_WAIT_MS = 5000
 
     def __init__(self):
         super().__init__()
@@ -71,8 +71,10 @@ class MainWindow(QMainWindow):
         # Kapanış onayları + kapanma yedeği yalnız BİR kez çalışsın; kapanış
         # ertelenirse closeEvent yeniden tetiklenir.
         self._shutdown_prepared = False
-        self._close_after_checker_connected = False
         self._close_deferred = False
+        # finished->close bağlantısı kurulmuş worker'lar; tekrarlı kapatma
+        # istekleri aynı worker için ikinci bir bağlantı oluşturmamalı.
+        self._close_connected_workers = []
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -116,8 +118,8 @@ class MainWindow(QMainWindow):
         kez çalışır. Onay soruları ve kapanma yedeği yalnız ilk turda işler.
         """
         if self._shutdown_prepared:
-            # İkinci tur: yalnız güncelleme kontrolünün bitmesi bekleniyor.
-            if not self._await_update_checker():
+            # İkinci tur: yalnız arka plan işlerinin bitmesi bekleniyor.
+            if not self._await_running_workers():
                 event.ignore()
                 return
             event.accept()
@@ -155,9 +157,9 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.warning("Kapanma yedeği alınamadı: %s", e)
         self._shutdown_prepared = True
-        # Yedekten SONRA: arka plandaki güncelleme kontrolü hâlâ sürüyorsa
-        # pencere yok edilmeden önce bitmesini bekle.
-        if not self._await_update_checker():
+        # Yedekten SONRA: arka planda iş (güncelleme kontrolü, toplu PDF,
+        # SMTP testi) sürüyorsa pencere yok edilmeden önce bitmesini bekle.
+        if not self._await_running_workers():
             event.ignore()
             return
         event.accept()
@@ -177,42 +179,79 @@ class MainWindow(QMainWindow):
         logger.info("Güncelleme kontrolü bitti; kapanış tamamlanıyor.")
         QApplication.quit()
 
-    def _await_update_checker(self) -> bool:
+    def _shutdown_workers(self) -> list:
+        """Kapanışta beklenmesi gereken, HÂLÂ ÇALIŞAN arka plan işleri.
+
+        Kapsam: başlangıç güncelleme kontrolü, toplu PDF üretimi ve SMTP
+        bağlantı testi. E-posta gönderimi kendi dialog'unda ertelenir,
+        indirme ise UpdateDialog'da — bu yüzden burada yer almazlar.
+        """
+        adaylar = [getattr(self, "_update_checker", None)]
+        for sayfa_idx, alan in ((0, "_pdf_worker"), (5, "_smtp_worker")):
+            sayfa = self.pages.get(sayfa_idx)
+            if sayfa is not None:
+                adaylar.append(getattr(sayfa, alan, None))
+
+        calisan = []
+        for worker in adaylar:
+            if worker is None:
+                continue
+            try:
+                if worker.isRunning():
+                    calisan.append(worker)
+            except RuntimeError:
+                continue      # C++ nesnesi zaten silinmiş (deleteLater)
+        return calisan
+
+    def _await_running_workers(self) -> bool:
         """Kapanışın güvenli olup olmadığını bildirir.
 
         Çalışan bir QThread, sahibi (MainWindow) yok edilirken birlikte yok
         edilirse Qt süreci anında abort eder (0xC0000409) — log'a hiçbir şey
         düşmez. Bu yüzden kapanmadan önce SINIRLI süre beklenir.
 
-        True  → kontrol bitti, pencere kapanabilir.
-        False → kontrol sürüyor, kapanış ERTELENMELİ. Thread'in YERLEŞİK
-                finished() sinyaline tek seferlik bağlantı kurulur; iş
-                bitince close() yeniden çağrılır. Thread MainWindow'un
-                çocuğu ve güçlü referansı olarak hayatta kalır.
+        True  → çalışan iş yok, pencere kapanabilir.
+        False → iş sürüyor, kapanış ERTELENMELİ. Her worker'ın YERLEŞİK
+                finished() sinyaline tek seferlik bağlantı kurulur; işler
+                bitince close() yeniden çağrılır. Worker'lar sahipleriyle
+                ve güçlü referanslarıyla hayatta kalır.
         """
-        checker = getattr(self, "_update_checker", None)
-        if checker is None or not checker.isRunning():
-            return True
-        if checker.wait(self._UPDATE_CHECK_WAIT_MS):
+        calisan = self._shutdown_workers()
+        if not calisan:
             return True
 
-        if not self._close_after_checker_connected:
+        # Toplam bütçe tüm worker'lar arasında paylaşılır — sınırsız bekleme yok.
+        bitis = time.monotonic() + self._SHUTDOWN_WAIT_MS / 1000.0
+        for worker in calisan:
+            kalan_ms = int(max(0.0, bitis - time.monotonic()) * 1000)
+            if kalan_ms <= 0:
+                break
+            worker.wait(kalan_ms)
+
+        kalanlar = self._shutdown_workers()
+        if not kalanlar:
+            return True
+
+        for worker in kalanlar:
             # K6-D sayesinde bu sinyal QThread'in gerçek finished() sinyali;
             # yalnız thread TAMAMEN bittikten sonra tetiklenir.
-            checker.finished.connect(self.close)
-            self._close_after_checker_connected = True
+            if not any(bagli is worker for bagli in self._close_connected_workers):
+                worker.finished.connect(self.close)
+                self._close_connected_workers.append(worker)
+
+        if not self._close_deferred:
             logger.info(
-                "Güncelleme kontrolü %d ms içinde bitmedi; kapanış thread "
-                "bitene kadar ertelendi.", self._UPDATE_CHECK_WAIT_MS)
+                "Arka plan işi %d ms içinde bitmedi; kapanış iş bitene kadar "
+                "ertelendi.", self._SHUTDOWN_WAIT_MS)
             # Kullanıcı açısından pencere kapanmış görünsün; süreç ise
-            # thread bitene kadar yaşamaya devam etmeli. Son görünür pencereyi
+            # işler bitene kadar yaşamaya devam etmeli. Son görünür pencereyi
             # gizlemek Qt'de "son pencere kapandı" çıkışını tetiklediğinden
             # otomatik çıkış geçici olarak kapatılır.
             from PySide6.QtWidgets import QApplication
             self._close_deferred = True
             QApplication.setQuitOnLastWindowClosed(False)
             self.hide()
-        if not checker.isRunning():
+        if not self._shutdown_workers():
             # wait() ile connect() arasında bitmiş olabilir; sinyal artık
             # gelmeyeceğinden kapanışı elle sürdür.
             QTimer.singleShot(0, self.close)
