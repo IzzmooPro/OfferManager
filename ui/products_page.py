@@ -210,16 +210,14 @@ class ProductDialog(QDialog):
     # ── Duplicate kontrolü ───────────────────────────────────────────────────
 
     def _check_duplicate(self):
-        code = self.code.text().strip().upper()
+        code = self.code.text().strip()
         if not code:
             self._hide_warn(); return
 
-        # Düzenleme modunda kendi kodunu kontrol etme
-        if self.product and self.product.product_code.upper() == code:
-            self._hide_warn(); return
-
         try:
-            existing = self._svc.get_by_code(code)
+            # Düzenleme modunda kendi kaydı hariç tutulur (ortak anahtar).
+            existing = self._svc.get_by_code(
+                code, exclude_id=self.product.id if self.product else None)
             if existing:
                 self.code_warn.setText(
                     f"'{existing.product_code}' kodu zaten kayıtlı: {existing.product_name}")
@@ -244,23 +242,25 @@ class ProductDialog(QDialog):
         if not self.code.text().strip() or not self.name.text().strip():
             QMessageBox.warning(self, "Hata", "Ürün kodu ve adı zorunludur."); return
 
-        # Duplicate son kontrol — hız farkı olabilir
-        code = self.code.text().strip().upper()
-        if not (self.product and self.product.product_code.upper() == code):
-            try:
-                existing = self._svc.get_by_code(code)
-                if existing:
-                    ans = QMessageBox.warning(
-                        self, "Aynı Kod Mevcut",
-                        f"'{existing.product_code}' kodu zaten kayıtlı:\n"
-                        f"Ürün: {existing.product_name}\n\n"
-                        f"Yine de kaydetmek istiyor musunuz?",
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                        QMessageBox.StandardButton.No)
-                    if ans != QMessageBox.StandardButton.Yes:
-                        return
-            except Exception as e:
-                logger.debug("Duplicate kontrol hatası: %s", e)
+        # Mükerrer kod kaydı ENGELLENİR: "yine de kaydet" seçeneği yoktu
+        # sayılır — veritabanı kısıtı yüzünden hiçbir zaman uygulanamıyordu.
+        try:
+            existing = self._svc.get_by_code(
+                self.code.text(),
+                exclude_id=self.product.id if self.product else None)
+        except Exception as e:
+            logger.debug("Duplicate kontrol hatası: %s", e)
+            existing = None
+        if existing is not None:
+            QMessageBox.warning(
+                self, "Aynı Kod Mevcut",
+                f"Bu ürün kodu zaten kayıtlı:\n\n"
+                f"Kod: {existing.product_code}\n"
+                f"Ürün: {existing.product_name}\n\n"
+                f"Lütfen farklı bir ürün kodu girin.")
+            self.code.setFocus()
+            self.code.selectAll()
+            return
 
         self.accept()
 

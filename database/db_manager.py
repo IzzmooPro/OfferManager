@@ -135,9 +135,52 @@ class DB:
                     conn.execute(idx_sql)
                 except sqlite3.OperationalError as e:
                     logger.debug("Index oluşturma atlandı: %s", e)
+
+            self._migrate_product_code_unique_index(conn)
             conn.commit()
         finally:
             conn.close()
+
+    @staticmethod
+    def _migrate_product_code_unique_index(conn) -> None:
+        """Ürün kodunda büyük/küçük harf duyarsız benzersizlik (idempotent).
+
+        Mevcut veriyi ASLA silmez, birleştirmez veya yeniden adlandırmaz.
+        Önce çakışma var mı diye bakılır; varsa index ATLANIR, uyarı loglanır
+        ve uygulama normal açılmaya devam eder. Böylece eski bir veritabanı
+        yüzünden program açılışı çökmez.
+
+        Not: SQLite NOCASE collation ASCII-only'dir; Türkçe harf farkları
+        servis katmanındaki NFKC+casefold doğrulamasıyla yakalanır.
+        """
+        try:
+            # ASCII dışı ürün kodları için KISMİ index. Benzersiz DEĞİLDİR:
+            # hiçbir veri çakışmasıyla başarısız olamaz, veriye dokunmaz.
+            # ProductService.get_by_code'un NFKC yedek taraması bu index
+            # sayesinde tüm tablo yerine yalnız ASCII dışı kodları okur
+            # (gerçek veride 10.096 satır yerine 66 girdi).
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS ix_products_code_nonascii "
+                "ON products(product_code) WHERE product_code GLOB '*[^ -~]*'")
+        except sqlite3.OperationalError as e:
+            logger.warning("ASCII dışı ürün kodu index'i eklenemedi: %s", e)
+
+        try:
+            cakisma = conn.execute(
+                "SELECT COUNT(*) FROM ("
+                "  SELECT product_code COLLATE NOCASE AS k FROM products"
+                "  GROUP BY k HAVING COUNT(*) > 1)").fetchone()[0]
+            if cakisma:
+                logger.warning(
+                    "Ürün kodu benzersizlik index'i atlandı: %d kod büyük/küçük "
+                    "harf farkıyla çakışıyor. Mevcut veriye dokunulmadı.",
+                    cakisma)
+                return
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_products_code_nocase "
+                "ON products(product_code COLLATE NOCASE)")
+        except (sqlite3.OperationalError, sqlite3.IntegrityError) as e:
+            logger.warning("Ürün kodu benzersizlik index'i eklenemedi: %s", e)
 
     def execute(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
         conn = self._get_conn()

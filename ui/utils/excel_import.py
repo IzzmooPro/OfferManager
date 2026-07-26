@@ -285,10 +285,25 @@ def _validate_rows(import_type: str, raw_rows: list,
         existing = {(r["company_name"] or "").strip(): r["id"]
                     for r in db.fetchall("SELECT id, company_name FROM customers")}
     else:
-        existing = {(r["product_code"] or "").strip().upper(): r["id"]
-                    for r in db.fetchall("SELECT id, product_code FROM products")}
+        # Servisle AYNI anahtar (NFKC + casefold) ve ORDER BY id ile
+        # deterministik eşleme: eski DB'de çakışma varsa en düşük id kazanır.
+        from services.product_service import normalize_code
+        existing = {}
+        for r in db.fetchall(
+                "SELECT id, product_code FROM products ORDER BY id"):
+            anahtar = normalize_code(r["product_code"])
+            if not anahtar:
+                continue
+            if anahtar in existing:
+                logger.warning(
+                    "Ürün kodu %r birden fazla kayıtta; en düşük id (%s) "
+                    "kullanılıyor (id=%s atlandı).",
+                    anahtar, existing[anahtar], r["id"])
+                continue
+            existing[anahtar] = r["id"]
 
     valid, duplicates, invalid = [], [], []
+    dosyadaki = set()          # aynı dosyada tekrar eden anahtarlar
     total = len(raw_rows)
     for i, raw in enumerate(raw_rows):
         r = _map_row(raw, col_map)
@@ -297,17 +312,31 @@ def _validate_rows(import_type: str, raw_rows: list,
             r["_error"] = f"Zorunlu alan eksik: {', '.join(missing)}"
             invalid.append(r)
         else:
-            if import_type == "customers":
+            urun = import_type != "customers"
+            if urun:
+                from services.product_service import normalize_code
+                key = normalize_code(r.get("product_code", ""))
+            else:
                 key = r.get("company_name", "").strip()
+            # Dosya içi tekrar kontrolü YALNIZ ürün dalında (O6). Müşteri
+            # tarafının davranışı bu kapsamda değiştirilmedi.
+            if urun and key in dosyadaki:
+                # Aynı kod dosyada birden fazla kez (abc/ABC/ürün/ÜRÜN dâhil):
+                # ilk satır işlenir, sonrakiler atlanır — sessizce ikinci bir
+                # kayıt oluşturmak veya yanlış ürünü güncellemek yerine bildirilir.
+                r["_error"] = ("Bu ürün kodu dosyada birden fazla kez var; "
+                               "yalnız ilk satır işlendi")
+                invalid.append(r)
             else:
-                key = r.get("product_code", "").strip().upper()
-            ex_id = existing.get(key)
-            if ex_id is not None:
-                r["_duplicate"] = True
-                r["_existing_id"] = ex_id
-                duplicates.append(r)
-            else:
-                valid.append(r)
+                if urun:
+                    dosyadaki.add(key)
+                ex_id = existing.get(key)
+                if ex_id is not None:
+                    r["_duplicate"] = True
+                    r["_existing_id"] = ex_id
+                    duplicates.append(r)
+                else:
+                    valid.append(r)
         if progress and (i & 0x3FF) == 0:   # ~her 1024 satırda bir güncelle
             progress(i + 1, total)
     if progress:
