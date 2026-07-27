@@ -62,7 +62,10 @@ class _PreviewBox(QWidget):
         p.end()
 
 logger = logging.getLogger("settings")
-from core.credential_store import get_smtp_password, set_smtp_password, keyring_available
+from core.credential_store import (
+    CredentialStoreError, get_smtp_password, keyring_available,
+    migrate_plaintext_smtp_password, set_smtp_password,
+    TASIMA_BASARISIZ, TASIMA_CFG_TEMIZLENEMEDI)
 from core.config import load_company_config, save_company_config
 from core.app_paths import (
     LOGO_PATH,
@@ -75,6 +78,18 @@ from core.app_paths import (
 )
 
 SIG_PATHS = (SIG1_PATH, SIG2_PATH, SIG3_PATH, SIG4_PATH)
+
+
+def _guvenli_oku() -> str:
+    """Önizleme/karşılaştırma için şifreyi okur; depo hatasında "" döner.
+
+    Bu yol yalnız görüntüleme amaçlıdır ve kullanıcıya soru sormaz; okuma
+    hatası ayrıca `_sifreyi_oku()` tarafından bildirilir.
+    """
+    try:
+        return get_smtp_password()
+    except CredentialStoreError:
+        return ""
 
 
 class SmtpTestWorker(QThread):
@@ -143,6 +158,9 @@ class SettingsPage(QWidget):
     def __init__(self):
         super().__init__()
         self._loaded_prefix = "SNS"
+        # Güvenli depo okunamadıysa True; boş parola alanının yanlışlıkla
+        # "kaydı sil" olarak yorumlanmasını engeller.
+        self._sifre_okunamadi = False
         self._build_ui()
         self._load()
         self._snapshot = self._current_values()
@@ -733,14 +751,11 @@ class SettingsPage(QWidget):
         self.f_smtp_server.setText(cfg.get("smtp_server", ""))
         self.f_smtp_port.setText(cfg.get("smtp_port", "465"))
         self.f_smtp_user.setText(cfg.get("smtp_user", ""))
-        # Şifre: önce güvenli depodan oku
-        smtp_pw = get_smtp_password()
-        # Eski sürümlerde cfg'ye kaydedilmişse bir kez keyring'e taşı
-        if not smtp_pw and cfg.get("smtp_password"):
-            smtp_pw = cfg["smtp_password"]
-            set_smtp_password(smtp_pw)
-            logger.info("SMTP şifresi keyring'e taşındı.")
+        # Şifre: önce güvenli depodan oku, gerekiyorsa eski düz metni taşı
+        smtp_pw, smtp_uyari = self._sifreyi_oku(cfg)
         self.f_smtp_pass.setText(smtp_pw)
+        if smtp_uyari:
+            QMessageBox.warning(self, "Güvenli Depo", smtp_uyari)
         # PDF metinleri (PDF sırasına göre)
         for key in ("pdf_giris_metni", "pdf_iskonto", "pdf_teslim_yeri",
                     "pdf_kur_notu", "pdf_kdv_notu", "pdf_onay_metni",
@@ -783,15 +798,88 @@ class SettingsPage(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Kaydetme Hatası", f"Ayarlar kaydedilemedi:\n{e}")
             return
-        # SMTP şifresini güvenli depoya kaydet
-        set_smtp_password(self.f_smtp_pass.text().strip())
+        # SMTP şifresini güvenli depoya yaz; başarısızlık SESSİZ geçilmez.
+        sifre_uyarisi = self._sifreyi_kaydet(self.f_smtp_pass.text().strip())
         msg = "Ayarlar kaydedildi.\nBundan sonra oluşturulan PDF tekliflere yansır."
         if self._loaded_prefix and self._loaded_prefix != new_prefix:
             msg += (f"\n\nDikkat: Teklif Öneki '{self._loaded_prefix}' → '{new_prefix}' olarak değiştirildi."
                     "\nMevcut tekliflerin numaraları değişmez, yalnızca yeni tekliflere uygulanır.")
         self._loaded_prefix = new_prefix
         self._snapshot = self._current_values()
-        QMessageBox.information(self, "Kaydedildi", msg)
+        if sifre_uyarisi:
+            # Diğer ayarlar kaydedildi ama şifre yazılamadı → KISMİ başarı.
+            QMessageBox.warning(self, "Kısmi Kayıt", sifre_uyarisi)
+        else:
+            QMessageBox.information(self, "Kaydedildi", msg)
+
+    # ── Güvenli depo yardımcıları (Qt'den bağımsız, test edilebilir) ─────────
+
+    def _sifreyi_kaydet(self, parola: str):
+        """Şifreyi güvenli depoya yazar/siler.
+
+        Başarıda None, hata durumunda KULLANICIYA gösterilecek uyarı metnini
+        döndürür. Teknik ayrıntı ve backend hata metni mesaja KONMAZ.
+
+        Güvenli depo OKUNAMADIYSA ve alan hâlâ boşsa bu, kullanıcının
+        "parolayı sil" isteği DEĞİLDİR: mevcut kayda dokunulmaz.
+        """
+        if not parola and getattr(self, "_sifre_okunamadi", False):
+            return ("Ayarlar kaydedildi ancak SMTP şifresi okunamadığı için "
+                    "güvenli depodaki kayıt değiştirilmedi.\n"
+                    "Şifreyi değiştirmek isterseniz alana yeni şifreyi yazıp "
+                    "yeniden kaydedin.")
+        try:
+            set_smtp_password(parola)
+            if parola:
+                # Yazma başarılı → okuma-hatası durumu artık geçerli değil.
+                self._sifre_okunamadi = False
+            return None
+        except CredentialStoreError:
+            if parola:
+                return ("Ayarlar kaydedildi ancak SMTP şifresi güvenli depoya "
+                        "yazılamadı.\n"
+                        "E-posta gönderimi başarısız olabilir; şifreyi daha "
+                        "sonra yeniden kaydetmeyi deneyin.")
+            return ("Ayarlar kaydedildi ancak eski SMTP şifresi güvenli depodan "
+                    "silinemedi.\n"
+                    "Eski şifre güvenli depoda kalmış olabilir.")
+
+    def _sifreyi_oku(self, cfg):
+        """(şifre, uyarı_metni) döndürür.
+
+        Okuma hatası "şifre girilmemiş" ile KARIŞTIRILMAZ; kullanıcıya güvenli
+        deponun okunamadığı açıkça bildirilir. Eski düz metin şifre varsa
+        güvenli depoya taşınır ve sonucu raporlanır.
+        """
+        try:
+            smtp_pw = get_smtp_password()
+        except CredentialStoreError:
+            # Boş alanın yanlışlıkla "sil" sayılmaması için durum saklanır.
+            self._sifre_okunamadi = True
+            return "", ("Kayıtlı SMTP şifresi güvenli depodan OKUNAMADI.\n"
+                        "Şifre alanı boş görünüyor; bu, şifrenin silindiği "
+                        "anlamına gelmez. Kaydetmeden önce güvenli depo "
+                        "sorununu giderin.")
+        self._sifre_okunamadi = False
+
+        if not (cfg or {}).get("smtp_password"):
+            return smtp_pw, None
+
+        # Güvenli depoda kayıt varsa o KAYNAKTIR; yalnız cfg'deki düz metin
+        # kopya temizlenir (yazma yapılmaz).
+        parola, durum = migrate_plaintext_smtp_password(
+            cfg, mevcut_parola=smtp_pw)
+        if durum == TASIMA_BASARISIZ:
+            return parola, ("Eski SMTP şifresi güvenli depoya TAŞINAMADI.\n"
+                            "Şifre şimdilik ayar dosyasında düz metin olarak "
+                            "duruyor; güvenli depo sorununu giderip Ayarlar'ı "
+                            "yeniden kaydedin.")
+        if durum == TASIMA_CFG_TEMIZLENEMEDI:
+            return parola, ("SMTP şifresi güvenli depoya taşındı ancak ayar "
+                            "dosyasındaki düz metin kopya KALDIRILAMADI.\n"
+                            "Şifrenin iki kopyası bulunabilir; Ayarlar'ı "
+                            "yeniden kaydetmeyi deneyin.")
+        return parola, None
 
     def on_enter(self):
         # Snapshot burada YENİLENMEZ — kaydedilmemiş değişiklikler
@@ -867,7 +955,7 @@ class SettingsPage(QWidget):
             "smtp_server":   self.f_smtp_server.text().strip(),
             "smtp_port":     self.f_smtp_port.text().strip(),
             "smtp_user":     self.f_smtp_user.text().strip(),
-            "smtp_password": self.f_smtp_pass.text().strip() or get_smtp_password(),
+            "smtp_password": self.f_smtp_pass.text().strip() or _guvenli_oku(),
         }
         if not cfg["smtp_server"] or not cfg["smtp_user"]:
             from ui.utils.theme_manager import get_theme

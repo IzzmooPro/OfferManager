@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from core.config import load_company_config
-from core.credential_store import get_smtp_password
+from core.credential_store import CredentialStoreError, get_smtp_password
 
 logger = logging.getLogger("email_dialog")
 
@@ -93,7 +93,17 @@ class EmailDialog(QDialog):
         self.resize(560, 520)
         self.pdf_path = pdf_path
         self.cfg = load_company_config()
-        self.cfg["smtp_password"] = get_smtp_password()
+        # Güvenli depo okunamazsa bu "şifre girilmemiş" DEMEK DEĞİLDİR;
+        # kullanıcı gönderim öncesi uyarılır (bkz. _kimlik_uyarisi).
+        self._kimlik_uyarisi = ""
+        try:
+            self.cfg["smtp_password"] = get_smtp_password()
+        except CredentialStoreError:
+            self.cfg["smtp_password"] = ""
+            self._kimlik_uyarisi = (
+                "SMTP şifresi güvenli depodan okunamadı.\n"
+                "Gönderim başarısız olabilir; Ayarlar'dan şifreyi yeniden "
+                "kaydetmeyi deneyin.")
         self._closing = False   # Worker tamamlanınca UI erişimini korur
         self.worker   = None
         # Gönderim sürerken gelen kapatma isteği ertelenir; finished->close
@@ -221,8 +231,14 @@ class EmailDialog(QDialog):
         self._closing_lbl.setVisible(True)
 
     def _send_email(self):
+        if self._kimlik_uyarisi:
+            # Şifre alanının boş görünmesi "tanımlanmamış" değil, "OKUNAMADI"
+            # demek; kullanıcıya doğru neden gösterilir.
+            QMessageBox.warning(self, "Güvenli Depo Okunamadı",
+                                self._kimlik_uyarisi)
+            return
         if not self.cfg.get("smtp_server") or not self.cfg.get("smtp_user") or not self.cfg.get("smtp_password"):
-            QMessageBox.warning(self, "SMTP Ayarı Yok", 
+            QMessageBox.warning(self, "SMTP Ayarı Yok",
                 "E-posta gönderebilmek için uygulamanın sol menüsünden\n"
                 "'Ayarlar -> E-Posta Ayarları' sekmesine giderek\n"
                 "kendi e-posta adresinizi ve şifrenizi tanımlamanız gerekmektedir.")

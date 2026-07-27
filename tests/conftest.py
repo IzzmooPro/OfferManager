@@ -49,6 +49,49 @@ os.environ["HOMEPATH"]  = _kalan or os.sep
 tempfile.tempdir = str(_TEMP)
 
 
+# ── Güvenli depo (keyring) yalıtımı ──────────────────────────────────────────
+# Suite GERÇEK Windows Credential Manager'a okuma/yazma/silme YAPMAZ.
+# Sınırdaki üç fonksiyon bellek içi sahte bir depoyla değiştirilir; gerçek
+# fonksiyonlar `GERCEK_KEYRING` altında saklanır ve hiç çağrılmaz.
+# Credential testleri kendi senaryoları için bu sahteleri kendileri değiştirir.
+SAHTE_KEYRING = {}
+KEYRING_CAGRILARI = {"get": 0, "set": 0, "delete": 0}
+GERCEK_KEYRING = {}
+
+
+def _sahte_kur():
+    try:
+        import keyring
+    except Exception:
+        return
+    GERCEK_KEYRING.update({
+        "get": keyring.get_password,
+        "set": keyring.set_password,
+        "delete": keyring.delete_password,
+    })
+
+    def _get(servis, kullanici):
+        KEYRING_CAGRILARI["get"] += 1
+        return SAHTE_KEYRING.get((servis, kullanici))
+
+    def _set(servis, kullanici, deger):
+        KEYRING_CAGRILARI["set"] += 1
+        SAHTE_KEYRING[(servis, kullanici)] = deger
+
+    def _delete(servis, kullanici):
+        KEYRING_CAGRILARI["delete"] += 1
+        if (servis, kullanici) not in SAHTE_KEYRING:
+            raise keyring.errors.PasswordDeleteError("kayıt yok")
+        del SAHTE_KEYRING[(servis, kullanici)]
+
+    keyring.get_password = _get
+    keyring.set_password = _set
+    keyring.delete_password = _delete
+
+
+_sahte_kur()
+
+
 def _oturum_kokunu_temizle():
     """Oturum sonunda geçici kökü sil.
 
