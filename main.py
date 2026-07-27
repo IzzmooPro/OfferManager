@@ -8,7 +8,7 @@ Başlangıç sırası:
   4. QApplication + MainWindow oluşturulur
   5. Arka planda güncelleme kontrolü başlar (MainWindow içinde)
 """
-import sys, os, traceback, logging, ctypes
+import sys, os, time, traceback, logging, ctypes
 import importlib.util
 from datetime import datetime
 from importlib import metadata
@@ -180,14 +180,38 @@ def _clean_old_logs(log_dir: Path, keep_days: int = 30):
 
 _clean_old_logs(LOG_DIR)
 
+
+def _kullanilabilir_akis(akis):
+    """Yazılabilir bir standart akış mı?
+
+    console=False ile paketlenmiş EXE'de sys.stdin/stdout/stderr None olur
+    (ayrık konsolsuz süreçte ölçüldü). Böyle bir akışa bağlanan
+    StreamHandler'ın stream'i de None kalır ve her log kaydında sessizce
+    handleError'a düşer — kayıt hiçbir yere yazılmaz, yalnız boşa iş yapılır.
+    """
+    if akis is None:
+        return False
+    try:
+        if getattr(akis, "closed", False):
+            return False
+        return callable(getattr(akis, "write", None))
+    except Exception:
+        return False
+
+
+# Dosya logu HER ZAMAN kurulur; konsol handler'ı yalnız gerçekten yazılabilir
+# bir akış varsa eklenir (geliştirmede stdout, o yoksa stderr).
+_log_handlers = [logging.FileHandler(str(log_filename), encoding="utf-8")]
+_konsol_akisi = next(
+    (a for a in (sys.stdout, sys.stderr) if _kullanilabilir_akis(a)), None)
+if _konsol_akisi is not None:
+    _log_handlers.append(logging.StreamHandler(_konsol_akisi))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
-    handlers=[
-        logging.FileHandler(str(log_filename), encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
-    ],
+    handlers=_log_handlers,
 )
 logger = logging.getLogger("main")
 
@@ -196,18 +220,133 @@ sys.path.insert(0, str(ASSET_ROOT))
 
 # ── Global exception hook ─────────────────────────────────────────────────────
 
+_HATA_BASLIGI = "Teklif Yönetim Sistemi - Hata"
+
+# Kullanıcıya gösterilen metin BİLEREK kısadır: istisna metni, traceback,
+# dosya yolları ve müşteri/SMTP verisi yalnız log dosyasına yazılır.
+_HATA_METNI = (
+    "Beklenmeyen bir uygulama hatası oluştu.\n"
+    "İşlem tamamlanamamış olabilir.\n\n"
+    "Ayrıntılar şu log dosyasına kaydedildi:\n"
+    "{log}"
+)
+
+_hook_devrede = False        # hook kendi içindeyken tekrar girilmesini engeller
+
+# Aynı hata için pencere selini önleyen KISA bastırma penceresi. Süresiz
+# bastırma yapılmaz: kullanıcı 10 saniye sonra aynı işlemi tekrar denerse
+# yeniden bilgilendirilmelidir. Bastırılan tekrarlar yine de loglanır.
+_AYNI_HATA_BASTIRMA_SN = 10.0
+_son_bildirim = (None, 0.0)  # (traceback imzası, _monotonik() zamanı)
+
+
+def _monotonik() -> float:
+    """Geri gitmeyen saat — sistem saati değişse bile bastırma bozulmaz."""
+    return time.monotonic()
+
+
+def _log_handlerlarini_bosalt():
+    """Kullanıcıya bir şey göstermeden ÖNCE traceback diske insin."""
+    for h in list(logging.getLogger().handlers):
+        try:
+            h.flush()
+        except Exception:
+            pass
+
+
+def _bildir_qt(mesaj: str) -> bool:
+    """QApplication varsa ve ANA UI thread'indeysek QMessageBox göster."""
+    from PySide6.QtWidgets import QApplication, QMessageBox
+    from PySide6.QtCore import QThread
+    app = QApplication.instance()
+    if app is None:
+        return False
+    if getattr(app, "closingDown", None) and app.closingDown():
+        return False                      # kapanış sırasında widget oluşturma
+    if QThread.currentThread() is not app.thread():
+        return False                      # widget'a yalnız ana thread dokunur
+    QMessageBox.critical(None, _HATA_BASLIGI, mesaj)
+    return True
+
+
+def _bildir_windows(mesaj: str) -> bool:
+    """Qt kullanılamıyorsa doğrudan Windows MessageBoxW (konsol gerektirmez)."""
+    if sys.platform != "win32":
+        return False
+    ctypes.windll.user32.MessageBoxW(None, mesaj, _HATA_BASLIGI, 0x10)
+    return True
+
+
+def _bildir_akis(mesaj: str) -> bool:
+    """Son çare: yazılabilir bir standart akış varsa oraya yaz."""
+    for akis in (sys.stderr, sys.stdout):
+        if _kullanilabilir_akis(akis):
+            akis.write("\n" + mesaj + "\n")
+            try:
+                akis.flush()
+            except Exception:
+                pass
+            return True
+    return False
+
+
 def exception_hook(exc_type, exc_value, exc_tb):
-    error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
-    logger.critical("=== UYGULAMA HATASI ===\n%s", error_msg)
-    print("\n" + "=" * 60)
-    print("HATA OLUŞTU! Detaylar log dosyasında:")
-    print(f"  {log_filename}")
-    print("=" * 60)
-    print("Devam etmek için Enter'a basın...")
+    """Yakalanmamış Python istisnalarını logla ve kullanıcıya kısaca bildir.
+
+    Windowed EXE'de stdin/stdout/stderr bulunmayabilir; bu yüzden burada
+    ASLA input() çağrılmaz ve koşulsuz print yapılmaz. Bildirim sırası:
+    QMessageBox → Windows MessageBoxW → yazılabilir akış. Hiçbiri
+    çalışmazsa hook sessizce biter; hiçbir koşulda dışarı istisna sızdırmaz.
+
+    Aynı hata art arda tekrarlarsa (ör. her karede patlayan bir paintEvent)
+    pencere yalnız _AYNI_HATA_BASTIRMA_SN boyunca bastırılır — süresiz
+    DEĞİL. Süre dolduktan sonra kullanıcı aynı hatayı tekrar tetiklerse
+    yeniden bilgilendirilir. Farklı bir hata her zaman hemen bildirilir ve
+    HER oluşum, bildirim bastırılsa bile log dosyasına yazılır.
+
+    KAPSAM DIŞI: 0xC0000409 gibi native fast-fail çökmeleri (ör. çalışan bir
+    QThread yok edilirken) Python'a hiç ulaşmaz ve bu hook tarafından
+    YAKALANAMAZ. Onlar iş parçacığı yaşam döngüsü tarafında çözülür.
+    """
+    global _hook_devrede, _son_bildirim
+
     try:
-        input()
-    except (EOFError, KeyboardInterrupt):
+        imza = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    except BaseException:
+        imza = repr(exc_type)
+
+    # Loglama her zaman ve bildirimden ÖNCE yapılır.
+    try:
+        logger.critical("=== UYGULAMA HATASI ===\n%s", imza)
+        _log_handlerlarini_bosalt()
+    except BaseException:
         pass
+
+    if _hook_devrede:
+        return
+    _onceki_imza, _onceki_zaman = _son_bildirim
+    if (imza == _onceki_imza
+            and _monotonik() - _onceki_zaman < _AYNI_HATA_BASTIRMA_SN):
+        return                    # aynı hata az önce bildirildi (log yazıldı)
+
+    _hook_devrede = True
+    try:
+        mesaj = _HATA_METNI.format(log=log_filename)
+        for bildir in (_bildir_qt, _bildir_windows, _bildir_akis):
+            try:
+                if bildir(mesaj):
+                    # Zaman bildirimden SONRA alınır: modal pencere açık
+                    # kaldığı sürece bastırma süresi işlemeye başlamaz.
+                    # Hiçbir yol başarılı olmazsa bu satıra ulaşılmaz ve
+                    # son bildirim zamanı GÜNCELLENMEZ.
+                    _son_bildirim = (imza, _monotonik())
+                    return
+            except BaseException:
+                continue          # bu yol tıkalı → sıradaki geri düşüşü dene
+    except BaseException:
+        pass                      # hook dışarı istisna sızdırmaz
+    finally:
+        _hook_devrede = False
 
 
 sys.excepthook = exception_hook
