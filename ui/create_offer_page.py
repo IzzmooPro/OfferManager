@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QScrollArea, QFileDialog, QDateEdit, QCheckBox,
     QStyle, QStyleOptionComboBox
 )
-from PySide6.QtCore import Qt, Signal, QDate, QEvent
+from PySide6.QtCore import Qt, Signal, QDate, QEvent, QTimer
 from services.customer_service import CustomerService
 from services.product_service import ProductService
 from services.offer_service import OfferService
@@ -155,12 +155,21 @@ def _unwrap(cw):
 # Ürün seçim diyalogu — çoklu seçim (Shift/Ctrl)
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Ürün seçme penceresinde tek seferde gösterilecek EN FAZLA satır sayısı.
+# Ölçüm: 10.096 ürünün tamamı yüklendiğinde pencere ~418 ms bloklanıyordu
+# (maliyetin ~%92'si tablo doldurma). Ürünler sayfasındaki sınırla aynı.
+_URUN_SATIR_SINIRI = 500
+# Arama kutusunda her karakter ayrı sorgu tetiklemesin.
+_ARAMA_BEKLEME_MS = 200
+
+
 class ProductSelectDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Ürün Seç")
         self.setMinimumSize(720, 520)
         self.selected_products = []
+        self._kapaniyor = False
         self._build_ui()
 
     def _build_ui(self):
@@ -184,7 +193,13 @@ class ProductSelectDialog(QDialog):
         search = QLineEdit()
         search.setPlaceholderText("Ürün kodu, adı veya açıklaması ile ara...")
         search.setMinimumHeight(34)
-        search.textChanged.connect(self._on_filter_changed)
+        # Her tuşta sorgu ÇALIŞMAZ; kısa bir bekleme sonrası tek yükleme olur.
+        self._arama_timer = QTimer(self)
+        self._arama_timer.setSingleShot(True)
+        self._arama_timer.setInterval(_ARAMA_BEKLEME_MS)
+        self._arama_timer.timeout.connect(self._aramayi_uygula)
+        search.textChanged.connect(lambda _: self._arama_timer.start())
+        search.returnPressed.connect(self._aramayi_hemen_uygula)
         self._search_edit = search
 
         # Kategori filtre combo
@@ -192,7 +207,9 @@ class ProductSelectDialog(QDialog):
         self._cat_filter.setMinimumHeight(34)
         self._cat_filter.setMinimumWidth(150)
         self._load_category_filter()
-        self._cat_filter.currentIndexChanged.connect(lambda _: self._on_filter_changed())
+        # Kategori değişimi bekleyen aramayı iptal edip HEMEN yükler.
+        self._cat_filter.currentIndexChanged.connect(
+            lambda _: self._aramayi_hemen_uygula())
 
         filter_row = QHBoxLayout()
         filter_row.addWidget(search, 1)
@@ -221,6 +238,12 @@ class ProductSelectDialog(QDialog):
         self.table.viewport().setMouseTracking(True)
         self.table.viewport().installEventFilter(self)
         layout.addWidget(self.table)
+
+        # Sonuç sınırı bilgisi — yalnız gösterilen < toplam ise dolar.
+        self._sonuc_bilgisi = QLabel("")
+        self._sonuc_bilgisi.setObjectName("hint_label")
+        self._sonuc_bilgisi.setWordWrap(True)
+        layout.addWidget(self._sonuc_bilgisi)
 
         sel_lbl = QLabel("")
         sel_lbl.setObjectName("sel_lbl")
@@ -261,11 +284,33 @@ class ProductSelectDialog(QDialog):
         cat_id = self._cat_filter.currentData()
         self._load(keyword, cat_id)
 
+    def _aramayi_uygula(self):
+        """Debounce süresi dolunca çalışır; kapanmış pencerede iş yapmaz."""
+        if self._kapaniyor:
+            return
+        self._on_filter_changed()
+
+    def _aramayi_hemen_uygula(self):
+        """Bekleyen aramayı iptal edip filtreyi ANINDA uygular."""
+        self._arama_timer.stop()
+        self._aramayi_uygula()
+
+    def done(self, sonuc):
+        # Kapanıştan sonra gecikmiş bir timer `_load()` çağırmasın.
+        self._kapaniyor = True
+        self._arama_timer.stop()
+        super().done(sonuc)
+
     def _load(self, keyword="", category_id=-1):
+        # Arama SQL üzerinden TÜM veritabanında çalışır; yalnız gösterilen
+        # sonuç sayısı sınırlanır (bkz. _URUN_SATIR_SINIRI).
         if keyword:
-            self._products = self._svc.search(keyword, category_id)
+            self._products = self._svc.search(keyword, category_id,
+                                              limit=_URUN_SATIR_SINIRI)
         else:
-            self._products = self._svc.get_all(category_id)
+            self._products = self._svc.get_all(category_id,
+                                               limit=_URUN_SATIR_SINIRI)
+        self._sonuc_bilgisini_guncelle(keyword, category_id)
         self.table.setRowCount(len(self._products))
         for row, p in enumerate(self._products):
             self.table.setItem(row, 0, QTableWidgetItem(p.product_code))
@@ -280,6 +325,33 @@ class ProductSelectDialog(QDialog):
             si.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.table.setItem(row, 5, si)
 
+    def _sonuc_bilgisini_guncelle(self, keyword, category_id):
+        """Sınıra takılan sonuçlarda kullanıcıyı bilgilendirir.
+
+        Toplam sayı, arama/kategori filtreleriyle BİREBİR aynı koşulları
+        kullanan `ProductService.count()` ile alınır. Toplam sınırın altındaysa
+        yanıltıcı 'ilk N' uyarısı gösterilmez.
+        """
+        gosterilen = len(self._products)
+        if gosterilen < _URUN_SATIR_SINIRI:
+            self._sonuc_bilgisi.setText("")
+            return
+        try:
+            toplam = self._svc.count(category_id, keyword)
+        except Exception as e:
+            logger.debug("Ürün sayısı alınamadı: %s", e)
+            self._sonuc_bilgisi.setText("")
+            return
+        if toplam <= gosterilen:
+            self._sonuc_bilgisi.setText("")
+        elif keyword:
+            self._sonuc_bilgisi.setText(
+                f"{gosterilen} / {toplam} sonuç gösteriliyor. "
+                "Aramanızı daraltarak diğer sonuçlara ulaşabilirsiniz.")
+        else:
+            self._sonuc_bilgisi.setText(
+                f"İlk {gosterilen} / toplam {toplam} ürün gösteriliyor. "
+                "Diğer ürünler için arama yapın.")
 
     def eventFilter(self, obj, event):
         if obj is self.table.viewport():
@@ -295,6 +367,11 @@ class ProductSelectDialog(QDialog):
         return super().eventFilter(obj, event)
 
     def _select(self):
+        if self._arama_timer.isActive():
+            # Bekleyen filtre varsa ESKİ satırdan ürün seçilmemeli: filtre
+            # uygulanır ve kullanıcı güncel listeden yeniden seçer.
+            self._aramayi_hemen_uygula()
+            return
         rows = sorted(set(idx.row() for idx in self.table.selectionModel().selectedRows()))
         if not rows: return
         self.selected_products = [self._products[r] for r in rows if r < len(self._products)]

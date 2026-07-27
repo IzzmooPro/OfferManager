@@ -125,7 +125,8 @@ class ProductService:
         sql = "SELECT * FROM products"
         if cat_sql:
             sql += " WHERE " + cat_sql
-        sql += " ORDER BY product_name"
+        # id eşitlik bozucusu: LIMIT altında eş adlı ürünlerde sıra sabit kalsın.
+        sql += " ORDER BY product_name, id"
         if limit:
             sql += " LIMIT ?"; params.append(limit)
         rows = db.fetchall(sql, tuple(params))
@@ -143,7 +144,7 @@ class ProductService:
         if cat_sql:
             where.insert(0, cat_sql)
         sql = "SELECT * FROM products WHERE " + " AND ".join(where) + \
-              " ORDER BY product_name"
+              " ORDER BY product_name, id"
         params = params + search_params
         if limit:
             sql += " LIMIT ?"; params.append(limit)
