@@ -2,7 +2,6 @@
 import ast
 import csv
 import inspect
-import os
 import re
 import sqlite3
 import tempfile
@@ -12,9 +11,9 @@ from datetime import date
 from pathlib import Path
 
 
-_DATA_ROOT = tempfile.TemporaryDirectory(prefix="oms_regression_data_")
-os.environ["LOCALAPPDATA"] = _DATA_ROOT.name
-
+# Ortam yalıtımı tests/conftest.py'de, TÜM kullanıcı değişkenleri için tek
+# oturum kökünde yapılır. Buradaki eski LOCALAPPDATA ezmesi ortak yalıtımı
+# geçersiz kılıyor ve gerçek %TEMP%'te artık bırakıyordu; kaldırıldı.
 from core.app_paths import (
     DB_PATH, LOGO_DISABLED_PATH, LOGO_PATH,
     SIG1_PATH, SIG2_PATH, SIG3_PATH, SIG4_PATH,
@@ -67,7 +66,9 @@ class RegressionTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.db.close()
-        _DATA_ROOT.cleanup()
+        # Geçici kökün silinmesi artık conftest'in oturum sonu temizliğinde;
+        # burada silinirse suite'in geri kalanı için veri klasörü ortadan
+        # kalkıyordu.
 
     def setUp(self):
         with self.db.transaction() as conn:

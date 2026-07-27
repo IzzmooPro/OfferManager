@@ -7,7 +7,23 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 with tempfile.TemporaryDirectory(prefix="oms_verify_") as temp_dir:
-    os.environ["LOCALAPPDATA"] = temp_dir
+    # conftest.py ile AYNI kapsam: yalnız LOCALAPPDATA yönlendirilirse
+    # app_paths.BACKUP_DIR gerçek Documents altında çözülür ve orada klasör
+    # oluşturur. Bu betik pytest tarafından toplanmadığı için yalıtımını
+    # kendisi kurar.
+    _kok = Path(temp_dir)
+    _profil = _kok / "profil"
+    for _alt in (_profil / "AppData" / "Local", _profil / "AppData" / "Roaming",
+                 _profil / "Documents", _kok / "Temp"):
+        _alt.mkdir(parents=True, exist_ok=True)
+    os.environ["USERPROFILE"]  = str(_profil)
+    os.environ["HOME"]         = str(_profil)
+    os.environ["LOCALAPPDATA"] = str(_profil / "AppData" / "Local")
+    os.environ["APPDATA"]      = str(_profil / "AppData" / "Roaming")
+    os.environ["TMP"] = os.environ["TEMP"] = str(_kok / "Temp")
+    _surucu, _kalan = os.path.splitdrive(str(_profil))
+    os.environ["HOMEDRIVE"] = _surucu
+    os.environ["HOMEPATH"]  = _kalan or os.sep
 
     from models.customer import Customer
     from models.offer import Offer
