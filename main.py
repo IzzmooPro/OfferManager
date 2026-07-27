@@ -113,14 +113,40 @@ def _bring_existing_window_forward():
         ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
         ctypes.windll.user32.SetForegroundWindow(hwnd)
 
-def _ensure_single_instance() -> bool:
+def _kismi_edinimi_birak(kernel32, handle, shm) -> None:
+    """Başarısız denemede YALNIZ o denemede edinilen kaynakları bırakır.
+
+    Kritik: mutex alınıp paylaşımlı bellek alınamazsa handle açık kalırsa,
+    aynı süreç bir sonraki denemede KENDİ handle'ıyla karşılaşıp
+    ERROR_ALREADY_EXISTS alır; kilit gerçekten serbest kalsa bile bir daha
+    asla edinemez ve yeniden başlatılan süreç 5 sn sonunda başarısız olur.
+
+    Temizlik hatası dışarı SIZDIRILMAZ; yalnız loglanır.
     """
-    QSharedMemory ile çapraz platform (cross-platform) tek örnek kontrolü.
-    Program zaten çalışıyorsa (Windows'ta) mevcut pencereyi öne getirir ve False döner.
-    False → çıkış yapılmalı.
-    True  → devam edilebilir.
+    if shm is not None:
+        try:
+            if shm.isAttached():
+                shm.detach()
+        except Exception as e:
+            logger.debug("Paylaşımlı bellek bırakılamadı: %s", e)
+    if handle and kernel32 is not None:
+        try:
+            kernel32.CloseHandle(ctypes.c_void_p(handle))
+        except Exception as e:
+            logger.debug("Mutex handle kapatılamadı: %s", e)
+
+
+def _try_acquire_single_instance() -> bool:
+    """Kilidi BİR kez almayı dener. Pencere öne getirme YAPMAZ.
+
+    Edinim YEREL değişkenlerle yapılır; globallere ancak HER İKİ kaynak da
+    (Windows mutex + paylaşımlı bellek) alındıktan sonra aktarılır. Böylece
+    kısmi edinim geride açık handle bırakmaz.
     """
     global _shared_memory, _win_mutex_handle
+
+    kernel32 = None
+    yerel_handle = None
 
     # Inno Setup'ın AppMutex denetimiyle ortak Windows mutex'i. Böylece
     # hem ikinci uygulama örneği hem de çalışan uygulama üzerine kurulum engellenir.
@@ -134,24 +160,50 @@ def _ensure_single_instance() -> bool:
         handle = kernel32.CreateMutexW(
             None, False, "TeklifYonetimSistemi_AppMutex")
         if not handle:
-            return False
+            return False                    # hiçbir kaynak edinilmedi
         if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
+            # Mutex BAŞKA sürece ait; yalnız kendi handle'ımız kapatılır,
+            # globaldeki (varsa) kendi kilidimize DOKUNULMAZ.
             kernel32.CloseHandle(ctypes.c_void_p(handle))
+            return False
+        yerel_handle = handle
+
+    yerel_shm = QSharedMemory("TeklifYonetimSistemi_SingleInstance_Mutex")
+    if yerel_shm.attach() or not yerel_shm.create(1):
+        # Zaten çalışıyor ya da segment oluşturulamadı → bu denemede
+        # edinilen her şeyi bırak, globalleri kirletme.
+        _kismi_edinimi_birak(kernel32, yerel_handle, yerel_shm)
+        return False
+
+    # Yalnız tam başarıda globallere aktar (güçlü referans burada tutulur).
+    _win_mutex_handle = yerel_handle
+    _shared_memory = yerel_shm
+    return True
+
+
+def _ensure_single_instance(bekleme_s: float = 0.0) -> bool:
+    """
+    QSharedMemory ile çapraz platform (cross-platform) tek örnek kontrolü.
+    Program zaten çalışıyorsa (Windows'ta) mevcut pencereyi öne getirir ve False döner.
+    False → çıkış yapılmalı.
+    True  → devam edilebilir.
+
+    `bekleme_s` YALNIZ dahili yeniden başlatma işaretiyle açılan ardıl süreç
+    için verilir; eski süreç kilidini bırakana kadar SINIRLI süre yeniden
+    denenir. Normal kullanıcı açılışında varsayılan 0'dır ve tek denemeyle
+    eskisiyle birebir aynı hızlı davranış korunur.
+
+    Başarı ölçütü kilidin GERÇEKTEN alınmasıdır; eski PID'in yaşayıp
+    yaşamadığına bakılmaz (PID yeniden kullanımı güvenlik sınırı değildir).
+    """
+    bitis = time.monotonic() + max(0.0, bekleme_s)
+    while True:
+        if _try_acquire_single_instance():
+            return True
+        if time.monotonic() >= bitis:
             _bring_existing_window_forward()
             return False
-        _win_mutex_handle = handle
-
-    _shared_memory = QSharedMemory("TeklifYonetimSistemi_SingleInstance_Mutex")
-    
-    if _shared_memory.attach():
-        # Zaten çalışıyor
-        _bring_existing_window_forward()
-        return False
-        
-    if not _shared_memory.create(1):
-        return False
-        
-    return True
+        time.sleep(0.1)
 
 # ── app_paths import (AppData klasörleri oluşturulur + migrasyon) ─────────────
 # Bu import yan etki olarak:
@@ -161,6 +213,8 @@ def _ensure_single_instance() -> bool:
 from core.app_paths import (
     ASSET_ROOT, DATA_DIR, LOG_DIR, DB_PATH, BACKUP_DIR
 )
+# Yeniden başlatma: iki eski yol (os.execl + Popen) TEK ortak mekanizmada.
+from core import restart
 
 # ── Loglama ──────────────────────────────────────────────────────────────────
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -290,6 +344,22 @@ def _bildir_akis(mesaj: str) -> bool:
     return False
 
 
+def _kullaniciya_bildir(mesaj: str) -> bool:
+    """Kısa bir mesajı kullanıcıya ulaştırır — geri düşüş zinciriyle.
+
+    QMessageBox → Windows MessageBoxW → yazılabilir akış. Her adım kendi
+    try/except'i içindedir; hiçbir yol çalışmazsa False döner ve İSTİSNA
+    FIRLATMAZ. Hem exception_hook hem yeniden başlatma hataları bunu kullanır.
+    """
+    for bildir in (_bildir_qt, _bildir_windows, _bildir_akis):
+        try:
+            if bildir(mesaj):
+                return True
+        except BaseException:
+            continue          # bu yol tıkalı → sıradaki geri düşüşü dene
+    return False
+
+
 def exception_hook(exc_type, exc_value, exc_tb):
     """Yakalanmamış Python istisnalarını logla ve kullanıcıya kısaca bildir.
 
@@ -331,18 +401,11 @@ def exception_hook(exc_type, exc_value, exc_tb):
 
     _hook_devrede = True
     try:
-        mesaj = _HATA_METNI.format(log=log_filename)
-        for bildir in (_bildir_qt, _bildir_windows, _bildir_akis):
-            try:
-                if bildir(mesaj):
-                    # Zaman bildirimden SONRA alınır: modal pencere açık
-                    # kaldığı sürece bastırma süresi işlemeye başlamaz.
-                    # Hiçbir yol başarılı olmazsa bu satıra ulaşılmaz ve
-                    # son bildirim zamanı GÜNCELLENMEZ.
-                    _son_bildirim = (imza, _monotonik())
-                    return
-            except BaseException:
-                continue          # bu yol tıkalı → sıradaki geri düşüşü dene
+        if _kullaniciya_bildir(_HATA_METNI.format(log=log_filename)):
+            # Zaman bildirimden SONRA alınır: modal pencere açık kaldığı
+            # sürece bastırma süresi işlemeye başlamaz. Hiçbir yol başarılı
+            # olmazsa son bildirim zamanı GÜNCELLENMEZ.
+            _son_bildirim = (imza, _monotonik())
     except BaseException:
         pass                      # hook dışarı istisna sızdırmaz
     finally:
@@ -367,23 +430,78 @@ def _check_data_on_startup(app) -> bool:
     from ui.dialogs.backup_manager import check_and_restore_on_startup
     restored = check_and_restore_on_startup(parent=None)
     if restored:
-        # Geri yükleme sonrası yeniden başlat
-        logger.info("Backup geri yüklendi, program yeniden başlatılıyor.")
-        try:
-            import subprocess
-            subprocess.Popen([sys.executable] + sys.argv)
-        except Exception as e:
-            logger.warning("Yeniden başlatma başarısız: %s", e)
+        # Geri yükleme sonrası yeniden başlat. Süreç BURADA başlatılmaz;
+        # yalnız istek kaydedilir, ardıl ortak yoldan (_yeniden_baslat)
+        # DB kapatıldıktan sonra açılır.
+        logger.info("Backup geri yüklendi, program yeniden başlatılacak.")
+        restart.request_restart()
         return True
     return False
+
+
+_YENIDEN_BASLATILAMADI = (
+    "Program yeniden başlatılamadı.\n"
+    "Lütfen programı elle yeniden açın.\n\n"
+    "Ayrıntılar şu log dosyasına kaydedildi:\n"
+    "{log}"
+)
+
+_KILIT_ALINAMADI = (
+    "Programın önceki kopyası hâlâ kapanmadı.\n"
+    "Lütfen birkaç saniye sonra elle yeniden açın.\n\n"
+    "Ayrıntılar şu log dosyasına kaydedildi:\n"
+    "{log}"
+)
+
+
+def _veritabanini_kapat():
+    """Ardıl süreç açılmadan ÖNCE bağlantıyı düzgün kapat."""
+    try:
+        from database.db_manager import get_db
+        get_db().close()
+        logger.info("Veritabanı bağlantısı kapatıldı.")
+    except Exception as e:
+        logger.warning("DB kapatma hatası: %s", e)
+
+
+def _yeniden_baslat() -> int:
+    """Ardıl süreci başlatır ve bu sürecin çıkış kodunu döndürür.
+
+    Yalnız DB kapatıldıktan sonra çağrılır. Başlatma başarısız olursa
+    kullanıcıya kısa bir mesaj gösterilir (teknik ayrıntı yalnız logda) ve
+    SIFIR OLMAYAN bir kodla çıkılır — geri yükleme yapılmış olsa bile
+    uygulama eski/açık bağlantılarla çalışmaya DEVAM ETTİRİLMEZ.
+    """
+    if restart.spawn_successor(os.getpid()):
+        return 0
+    _kullaniciya_bildir(_YENIDEN_BASLATILAMADI.format(log=log_filename))
+    return restart.EXIT_SPAWN_FAILED
 
 
 # ── Ana fonksiyon ─────────────────────────────────────────────────────────────
 
 def main():
-    # Program zaten açıksa mevcut pencereyi öne getir, yeni örnek açma
-    if not _ensure_single_instance():
-        sys.exit(0)
+    # Dahili yeniden başlatma işareti QApplication'a ve uygulamanın normal
+    # argümanlarına AKTARILMADAN önce ayrıştırılıp çıkarılır.
+    sys.argv, _ebeveyn_pid = restart.parse_restart_flag(sys.argv)
+
+    # Program zaten açıksa mevcut pencereyi öne getir, yeni örnek açma.
+    # Yalnız yeniden başlatma ardılıysa eski süreç kilidi bırakana kadar
+    # SINIRLI süre yeniden denenir; normal açılışta ek bekleme yoktur.
+    if _ebeveyn_pid is None:
+        if not _ensure_single_instance():
+            sys.exit(0)
+    else:
+        logger.info("Yeniden başlatma ardılı (eski pid=%s); tek örnek kilidi "
+                    "en fazla %.1f sn beklenecek.", _ebeveyn_pid,
+                    restart.LOCK_WAIT_S)
+        if not _ensure_single_instance(bekleme_s=restart.LOCK_WAIT_S):
+            logger.error(
+                "Yeniden başlatma ardılı tek örnek kilidini %.1f sn içinde "
+                "alamadı (eski pid=%s); açılış iptal edildi.",
+                restart.LOCK_WAIT_S, _ebeveyn_pid)
+            _kullaniciya_bildir(_KILIT_ALINAMADI.format(log=log_filename))
+            sys.exit(restart.EXIT_LOCK_TIMEOUT)
 
     logger.info("=" * 50)
     from core.constants import APP_VERSION
@@ -420,9 +538,11 @@ def main():
         app.installTranslator(_translator)
         logger.info("Qt Türkçe çevirisi yüklendi.")
 
-    # Başlangıç veri kontrolü
+    # Başlangıç veri kontrolü — geri yükleme yapıldıysa ardıl süreci ortak
+    # yoldan başlat. Spawn başarısızsa sessiz sys.exit(0) YOK.
     if _check_data_on_startup(app):
-        sys.exit(0)
+        _veritabanini_kapat()
+        sys.exit(_yeniden_baslat())
 
     # Font yükleme — Inter varsa Inter, yoksa Segoe UI
     inter_path = ASSET_ROOT / "assets" / "fonts" / "Inter-Regular.ttf"
@@ -578,12 +698,14 @@ def main():
     exit_code = app.exec()
 
     # Uygulama kapanınca DB bağlantısını düzgün kapat
-    try:
-        from database.db_manager import get_db
-        get_db().close()
-        logger.info("Veritabanı bağlantısı kapatıldı.")
-    except Exception as e:
-        logger.warning("DB kapatma hatası: %s", e)
+    _veritabanini_kapat()
+
+    # Yeniden başlatma istendiyse ardıl süreç ANCAK burada başlatılır:
+    # MainWindow.closeEvent worker'ları bekledi (K6) ve DB kapandı.
+    if restart.restart_requested():
+        kod = _yeniden_baslat()
+        if kod:
+            exit_code = kod
 
     logger.info("Uygulama kapatıldı. Çıkış kodu: %d", exit_code)
     sys.exit(exit_code)

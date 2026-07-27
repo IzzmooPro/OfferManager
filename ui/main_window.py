@@ -150,12 +150,21 @@ class MainWindow(QMainWindow):
                 QMessageBox.StandardButton.Yes)
             if ans == QMessageBox.StandardButton.Yes:
                 spage._save()
-        # Onay alındıktan SONRA yedek al
-        try:
-            self._backup_svc.trigger_now(reason="kapanma")
-            logger.info("Kapanma yedeği alındı.")
-        except Exception as e:
-            logger.warning("Kapanma yedeği alınamadı: %s", e)
+        # Onay alındıktan SONRA yedek al.
+        # Geri yükleme sonrası yeniden başlatma kapanışında yedek ALINMAZ:
+        # yeni geri yüklenen veriden hemen yeni bir yedek üretmek, 20 yedeklik
+        # saklama penceresinden EN ESKİ yedeği düşürür (bkz. _cleanup keep=20)
+        # — kullanıcı eski bir yedeği geri yüklerken tam da onu kaybedebilir.
+        # Normal kullanıcı kapanışındaki yedek davranışı DEĞİŞMEDİ.
+        from core import restart
+        if restart.restart_requested():
+            logger.info("Yeniden başlatma kapanışı: kapanma yedeği atlandı.")
+        else:
+            try:
+                self._backup_svc.trigger_now(reason="kapanma")
+                logger.info("Kapanma yedeği alındı.")
+            except Exception as e:
+                logger.warning("Kapanma yedeği alınamadı: %s", e)
         self._shutdown_prepared = True
         # Yedekten SONRA: arka planda iş (güncelleme kontrolü, toplu PDF,
         # SMTP testi) sürüyorsa pencere yok edilmeden önce bitmesini bekle.

@@ -622,16 +622,22 @@ class BackupDialog(QDialog):
             QMessageBox.critical(self, "Geri Yükleme Hatası", f"Başarısız:\n{e}")
 
     def _restart_app(self):
-        """Programı yeniden başlatır (geri yükleme sonrası DB bağlantısını taze açmak için)."""
-        import sys, os
+        """Programı yeniden başlatır (geri yükleme sonrası DB'yi taze açmak için).
+
+        Burada süreç BAŞLATILMAZ. Yalnız istek kaydedilir ve uygulamanın
+        NORMAL kapanış yolu işletilir: MainWindow.closeEvent çalışan
+        worker'ları bekler (K6), ardından main() `get_db().close()` yapar ve
+        ardıl süreci ortak `core.restart` mekanizmasıyla açar.
+
+        Eski `os.execl` çağrısı KALDIRILDI: Windows'ta süreci yerine
+        geçirmiyor, `ExitProcess` ile ani çıkış yaptığı için Qt kapanışını,
+        worker beklemesini ve DB kapanışını tamamen atlıyordu.
+        """
         from PySide6.QtWidgets import QApplication
-        try:
-            if getattr(sys, "frozen", False):
-                # PyInstaller EXE
-                os.execl(sys.executable, sys.executable)
-            else:
-                # Python kaynak modu
-                os.execl(sys.executable, sys.executable, *sys.argv)
-        except OSError as e:
-            logger.warning("Yeniden başlatma başarısız, uygulama kapatılıyor: %s", e)
-            QApplication.quit()
+        from core import restart
+        restart.request_restart()
+        self.accept()                     # yedek penceresini kapat
+        # Tüm üst düzey pencereleri normal yoldan kapat; MainWindow kapanışı
+        # ertelerse (worker sürüyorsa) süreç iş bitene kadar yaşamaya devam
+        # eder ve ardıl ancak ondan sonra açılır.
+        QApplication.closeAllWindows()
