@@ -11,6 +11,7 @@ from services.offer_service import OfferService
 from models.customer import Customer
 from ui.widgets._resizable_table import ResizableTable
 from ui.widgets._row_hover_delegate import RowHoverDelegate
+from ui.utils import operation_error as op_hata
 from core.date_utils import to_display_date
 
 logger = logging.getLogger("customers")
@@ -232,15 +233,21 @@ class CustomersPage(QWidget):
         return [self._customers[r] for r in rows if 0 <= r < len(self._customers)]
 
     def _add(self):
+        # Hata olursa AYNI dialog yeniden açılır: kullanıcının girdiği değerler
+        # korunur. Yeniden servis çağrısı yalnız kullanıcı tekrar Kaydet'e
+        # basarsa yapılır (otomatik retry YOK).
         dlg = CustomerDialog(self)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
+        while dlg.exec() == QDialog.DialogCode.Accepted:
             try:
-                self.service.add(dlg.get_customer())
-                logger.info("Müşteri eklendi.")
-                self._load()
-            except Exception as e:
-                logger.error("Müşteri ekleme hatası: %s", e, exc_info=True)
-                QMessageBox.warning(self, "Hata", f"Müşteri eklenemedi:\n{e}")
+                yeni_id = self.service.add(dlg.get_customer())
+            except Exception as exc:
+                op_hata.logla(exc, "Müşteri ekleme")
+                QMessageBox.warning(
+                    self, "Hata", op_hata.guvenli_mesaj(exc, "Müşteri"))
+                continue
+            logger.info("Müşteri eklendi (id=%s).", yeni_id)
+            self._load()
+            return
 
     def _history(self):
         c = self._selected()
@@ -254,13 +261,19 @@ class CustomersPage(QWidget):
         if not c:
             QMessageBox.information(self, "Bilgi", "Lütfen bir müşteri seçin."); return
         dlg = CustomerDialog(self, c)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
+        while dlg.exec() == QDialog.DialogCode.Accepted:
             try:
                 self.service.update(dlg.get_customer())
-                logger.info("Müşteri güncellendi: %s", c.company_name)
-                self._load()
-            except Exception as e:
-                logger.error("Müşteri güncelleme hatası: %s", e, exc_info=True)
+            except Exception as exc:
+                # Eskiden bu hata SESSİZCE yutuluyordu: kullanıcı hiçbir uyarı
+                # görmüyor ve girdiği veri kayboluyordu.
+                op_hata.logla(exc, "Müşteri güncelleme", kayit_id=c.id)
+                QMessageBox.warning(
+                    self, "Hata", op_hata.guvenli_mesaj(exc, "Müşteri"))
+                continue
+            logger.info("Müşteri güncellendi (id=%s).", c.id)
+            self._load()
+            return
 
     def _delete(self):
         """Seçili müşteri(leri) siler — Shift/Ctrl ile çoklu seçim desteklenir."""
@@ -298,10 +311,12 @@ class CustomersPage(QWidget):
         try:
             # Tek transaction'da toplu silme — çok sayıda müşteride hızlı
             self.service.delete_many([c.id for c in selected])
-            logger.info("%d müşteri silindi.", len(selected))
-        except Exception as e:
-            logger.error("Müşteri toplu silme hatası: %s", e, exc_info=True)
-            QMessageBox.warning(self, "Hata", f"Müşteriler silinemedi:\n{e}")
+        except Exception as exc:
+            op_hata.logla(exc, "Müşteri silme")
+            QMessageBox.warning(
+                self, "Hata", op_hata.guvenli_mesaj(exc, "Müşteri", "sil"))
+            return          # başarısızken tabloyu başarı olmuş gibi yenileme
+        logger.info("%d müşteri silindi.", len(selected))
         self._load(self.search.text())
 
     def eventFilter(self, obj, event):

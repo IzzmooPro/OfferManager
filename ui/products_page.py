@@ -11,6 +11,7 @@ from services.product_service import ProductService
 from models.product import Product
 from ui.widgets._resizable_table import ResizableTable
 from ui.widgets._row_hover_delegate import RowHoverDelegate
+from ui.utils import operation_error as op_hata
 from ui.widgets._plus_button import PlusButton
 from core.constants import UNIT_LIST, CURRENCY_LIST
 from core.formatting import fmt_number
@@ -440,25 +441,36 @@ class ProductsPage(QWidget):
         return [self._products[r] for r in rows if 0 <= r < len(self._products)]
 
     def _add(self):
+        # Hata olursa AYNI dialog yeniden açılır; kullanıcı girdisi korunur.
         dlg = ProductDialog(self)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
+        while dlg.exec() == QDialog.DialogCode.Accepted:
             try:
-                self.service.add(dlg.get_product())
-                self._load()
-            except Exception as e:
-                QMessageBox.warning(self, "Hata", f"Ürün eklenemedi:\n{e}")
+                yeni_id = self.service.add(dlg.get_product())
+            except Exception as exc:
+                op_hata.logla(exc, "Ürün ekleme")
+                QMessageBox.warning(
+                    self, "Hata", op_hata.guvenli_mesaj(exc, "Ürün"))
+                continue
+            logger.info("Ürün eklendi (id=%s).", yeni_id)
+            self._load()
+            return
 
     def _edit(self):
         p = self._selected()
         if not p:
             QMessageBox.information(self, "Bilgi", "Lütfen bir ürün seçin."); return
         dlg = ProductDialog(self, p)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
+        while dlg.exec() == QDialog.DialogCode.Accepted:
             try:
                 self.service.update(dlg.get_product())
-                self._load()
-            except Exception as e:
-                QMessageBox.warning(self, "Hata", f"Ürün güncellenemedi:\n{e}")
+            except Exception as exc:
+                op_hata.logla(exc, "Ürün güncelleme", kayit_id=p.id)
+                QMessageBox.warning(
+                    self, "Hata", op_hata.guvenli_mesaj(exc, "Ürün"))
+                continue
+            logger.info("Ürün güncellendi (id=%s).", p.id)
+            self._load()
+            return
 
     def _delete(self):
         """Seçili ürün(leri) siler — Shift/Ctrl ile çoklu seçim desteklenir."""
@@ -485,10 +497,12 @@ class ProductsPage(QWidget):
         try:
             # Tek transaction'da toplu silme — çok sayıda üründe hızlı
             self.service.delete_many([p.id for p in selected])
-            logger.info("%d ürün silindi.", len(selected))
-        except Exception as e:
-            logger.error("Ürün toplu silme hatası: %s", e, exc_info=True)
-            QMessageBox.warning(self, "Hata", f"Ürünler silinemedi:\n{e}")
+        except Exception as exc:
+            op_hata.logla(exc, "Ürün silme")
+            QMessageBox.warning(
+                self, "Hata", op_hata.guvenli_mesaj(exc, "Ürün", "sil"))
+            return          # başarısızken tabloyu başarı olmuş gibi yenileme
+        logger.info("%d ürün silindi.", len(selected))
         self._load_filtered()
 
     def eventFilter(self, obj, event):
