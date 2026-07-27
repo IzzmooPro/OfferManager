@@ -325,14 +325,20 @@ class ImportDuplicateScopeTests(unittest.TestCase):
             conn.execute("DELETE FROM customers")
 
     def test_duplicate_customer_rows_get_no_product_message(self):
+        """Müşteri satırına ÜRÜN mesajı verilmemeli.
+
+        O13'ten sonra müşteri dosya içi tekrarları da yakalanıyor; buradaki
+        sözleşme mesajın ürüne değil FİRMAYA ait olması. Tekrar davranışının
+        kendisi `tests/test_customer_import_duplicates.py` içinde sabitlenir.
+        """
         from ui.utils.excel_import import _validate_rows
         rows = [{"Firma Adı": "Aynı Firma"}, {"Firma Adı": "Aynı Firma"}]
         valid, dups, invalid = _validate_rows("customers", rows)
+        self.assertEqual(len(invalid), 1)
         for r in invalid:
             self.assertNotIn("ürün kodu", r.get("_error", "").lower(),
                              f"müşteri satırına ürün mesajı verildi: {r}")
-        self.assertEqual(len(valid) + len(dups), 2,
-                         "müşteri davranışı O6 kapsamında değişti")
+            self.assertIn("firma adı", r.get("_error", "").lower())
 
     def test_duplicate_product_rows_are_still_flagged(self):
         from ui.utils.excel_import import _validate_rows

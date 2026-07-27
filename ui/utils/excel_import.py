@@ -280,7 +280,8 @@ def _validate_rows(import_type: str, raw_rows: list,
         "product_code", "product_name")
 
     # Mevcut anahtarlar → id (TEK sorgu). Müşteri: firma adı (harfi harfine),
-    # Ürün: UPPER(ürün kodu) — eski sorgu davranışıyla birebir.
+    # Ürün: normalize_code() ile NFKC + casefold; en düşük id deterministik
+    # olarak kazanır.
     if import_type == "customers":
         existing = {(r["company_name"] or "").strip(): r["id"]
                     for r in db.fetchall("SELECT id, company_name FROM customers")}
@@ -303,7 +304,13 @@ def _validate_rows(import_type: str, raw_rows: list,
             existing[anahtar] = r["id"]
 
     valid, duplicates, invalid = [], [], []
-    dosyadaki = set()          # aynı dosyada tekrar eden anahtarlar
+    # Aynı dosyada tekrar eden anahtarlar. Müşteri anahtarı DB eşleşmesiyle
+    # BİREBİR aynıdır: (company_name or "").strip() — casefold/NFKC UYGULANMAZ,
+    # yani 'Acme' ile 'ACME' farklı müşteri sayılır (aynı isimli farklı gerçek
+    # müşteriler olabilir). Ürün anahtarı O6'daki normalize_code'dur.
+    # Sayaç sözleşmesi: dosya içi tekrar `invalid`e YALNIZ BİR KEZ yazılır;
+    # `duplicate` (DB'de zaten var) ile örtüşmez.
+    dosyadaki = set()
     total = len(raw_rows)
     for i, raw in enumerate(raw_rows):
         r = _map_row(raw, col_map)
@@ -318,18 +325,19 @@ def _validate_rows(import_type: str, raw_rows: list,
                 key = normalize_code(r.get("product_code", ""))
             else:
                 key = r.get("company_name", "").strip()
-            # Dosya içi tekrar kontrolü YALNIZ ürün dalında (O6). Müşteri
-            # tarafının davranışı bu kapsamda değiştirilmedi.
-            if urun and key in dosyadaki:
-                # Aynı kod dosyada birden fazla kez (abc/ABC/ürün/ÜRÜN dâhil):
-                # ilk satır işlenir, sonrakiler atlanır — sessizce ikinci bir
-                # kayıt oluşturmak veya yanlış ürünü güncellemek yerine bildirilir.
-                r["_error"] = ("Bu ürün kodu dosyada birden fazla kez var; "
-                               "yalnız ilk satır işlendi")
+            # Dosya içi tekrar: ilk GEÇERLİ satır anahtarı sahiplenir,
+            # sonrakiler işlenmez. Zorunlu alanı geçemeyen satırlar buraya hiç
+            # ulaşmadığı için adı/kodu sahiplenmez. Sessizce ikinci bir kayıt
+            # oluşturmak veya aynı hedefi iki kez güncellemek yerine bildirilir.
+            if key in dosyadaki:
+                r["_error"] = (
+                    "Bu ürün kodu dosyada birden fazla kez var; "
+                    "yalnız ilk satır işlendi" if urun else
+                    "Bu firma adı dosyada birden fazla kez var; "
+                    "yalnız ilk satır işlendi")
                 invalid.append(r)
             else:
-                if urun:
-                    dosyadaki.add(key)
+                dosyadaki.add(key)
                 ex_id = existing.get(key)
                 if ex_id is not None:
                     r["_duplicate"] = True
