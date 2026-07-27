@@ -273,14 +273,49 @@ def _aday_yok_mesaji(wb, import_type: str, gizli_dolu: bool) -> str:
     return mesaj
 
 
+def _sayfa_sec_onceden(path: str, import_type: str, parent) -> tuple:
+    """Sayfa seçimini İLERLEME PENCERESİ AÇILMADAN ÖNCE tamamlar.
+
+    Neden ayrı adım: `run_import_flow` ilerleme penceresini modal açtığı için,
+    okuma sırasında sorulan sayfa sorusu Windows'ta DEVRE DIŞI kalıyordu —
+    kullanıcı soruyu görüyor ama yanıtlayamıyordu (akış süresiz kilitleniyordu).
+
+    Döner: `(secilen_sayfa, hata)`.
+      * XLSX değilse / açılamıyorsa / aday sayısı 1'den fazla değilse
+        `(None, "")` döner; asıl karar ve hata metni `_read_file`'a kalır
+        (davranış değişmez, ikinci bir hata kaynağı oluşmaz).
+      * Kullanıcı iptal ederse `(None, SAYFA_SECIMI_IPTAL)`.
+    """
+    if Path(path).suffix.lower() not in (".xlsx", ".xls", ".xlsm"):
+        return None, ""
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    except Exception:
+        return None, ""          # hata mesajını _read_file üretir
+    try:
+        adaylar, gizli_dolu = _sayfa_adaylari(wb, import_type)
+        if len(adaylar) < 2:
+            return None, ""      # soru sorulmaz; tek aday/aday yok yolu aynı
+        secilen = _sayfa_sordur(parent, adaylar, wb.active.title, gizli_dolu)
+        if secilen is None:
+            return None, SAYFA_SECIMI_IPTAL
+        return secilen, ""
+    finally:
+        wb.close()
+
+
 def _read_file(path: str, progress=None, import_type: str = "products",
-               parent=None) -> tuple[list, str]:
+               parent=None, secilen_sayfa: str = None) -> tuple[list, str]:
     """Dosyayı okur, (rows, error) döndürür. rows = list of dicts.
 
     XLSX'te yalnız SEÇİLEN çalışma sayfası okunur; sayfalar otomatik
     BİRLEŞTİRİLMEZ. Tek geçerli görünür sayfa varsa otomatik seçilir; birden
     fazlaysa kullanıcıya sorulur. Kullanıcı iptal ederse hata alanı
     `SAYFA_SECIMI_IPTAL` olur ve çağıran sessizce çıkar.
+
+    `secilen_sayfa` verilirse (bkz. `_sayfa_sec_onceden`) soru TEKRAR sorulmaz;
+    verilmezse davranış eskisiyle birebir aynıdır.
 
     `progress(current, total)` verilirse xlsx okurken satır ilerlemesi bildirilir.
     """
@@ -301,7 +336,9 @@ def _read_file(path: str, progress=None, import_type: str = "products",
                 adaylar, gizli_dolu = _sayfa_adaylari(wb, import_type)
                 if not adaylar:
                     return [], _aday_yok_mesaji(wb, import_type, gizli_dolu)
-                if len(adaylar) == 1:
+                if secilen_sayfa in [a[0] for a in adaylar]:
+                    secilen = secilen_sayfa      # soru zaten sorulmuş
+                elif len(adaylar) == 1:
                     secilen = adaylar[0][0]
                 else:
                     secilen = _sayfa_sordur(parent, adaylar,
@@ -594,9 +631,15 @@ def run_import_flow(parent, import_type: str) -> bool:
     if not path:
         return False
 
+    # Sayfa sorusu İLERLEME PENCERESİNDEN ÖNCE sorulur: modal ilerleme
+    # penceresi açıkken sorulan soru Windows'ta devre dışı kalıyordu.
+    secilen_sayfa, sayfa_hatasi = _sayfa_sec_onceden(path, import_type, parent)
+    if sayfa_hatasi == SAYFA_SECIMI_IPTAL:
+        return False                       # sessiz iptal: pencere/DB yazımı yok
+
     prog = _ImportProgress(parent, "Dosya okunuyor…")
-    raw_rows, err = _read_file(path, progress=prog,
-                               import_type=import_type, parent=parent)
+    raw_rows, err = _read_file(path, progress=prog, import_type=import_type,
+                               parent=parent, secilen_sayfa=secilen_sayfa)
     if err == SAYFA_SECIMI_IPTAL:
         # Kullanıcı sayfa seçimini iptal etti: doğrulama, DB yazımı ve sonuç
         # mesajı YOK; işlem temiz biçimde iptal sayılır.
