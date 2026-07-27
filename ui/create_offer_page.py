@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QDate, QEvent, QTimer
 from services.customer_service import CustomerService
-from services.product_service import ProductService
+from services.product_service import ProductService, normalize_code
 from services.offer_service import OfferService
 from models.customer import Customer
 from models.offer import calculate_discount
@@ -1409,9 +1409,11 @@ class CreateOfferPage(QWidget):
             return
         # Şablonlar maliyet taşımaz (yalnızca ürün/miktar/fiyat) — kâr paneli
         # için güncel maliyet, ürün kataloğundan kod eşleşmesiyle aranır.
-        product_svc = ProductService()
+        # Kalem başına ayrı sorgu YERİNE tek toplu arama (bkz. get_by_codes).
+        maliyetler = ProductService().get_by_codes(
+            [it.product_code for it in tmpl.items])
         for item in tmpl.items:
-            product = product_svc.get_by_code(item.product_code) \
+            product = maliyetler.get(normalize_code(item.product_code)) \
                 if item.product_code else None
             self._add_row(
                 code=item.product_code, name=item.product_name,
@@ -1873,10 +1875,12 @@ class CreateOfferPage(QWidget):
         # Maliyet teklifle birlikte SAKLANMAZ (Faz 1 kararı) — kâr paneli
         # için ürünün GÜNCEL alış fiyatı kod eşleşmesiyle canlı aranır.
         # Ürün silinmiş/kod değişmişse sessizce 0 kabul edilir.
-        product_svc = ProductService()
+        # Kalem başına ayrı sorgu YERİNE tek toplu arama (bkz. get_by_codes).
+        maliyetler = ProductService().get_by_codes(
+            [it.product_code for it in offer.items])
         self.prod_table.setRowCount(0)
         for item in offer.items:
-            product = product_svc.get_by_code(item.product_code) \
+            product = maliyetler.get(normalize_code(item.product_code)) \
                 if item.product_code else None
             self._add_row(
                 code=item.product_code or "", name=item.product_name or "",

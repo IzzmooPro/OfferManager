@@ -44,6 +44,11 @@ class DuplicateProductCodeError(ValueError):
 # içermez — SQL enjeksiyonu söz konusu değildir.
 _NON_ASCII_GLOB = "*[^ -~]*"
 
+# Toplu aramada tek sorguya konacak EN FAZLA parametre. SQLite'ın varsayılan
+# SQLITE_MAX_VARIABLE_NUMBER sınırı (eski sürümlerde 999) aşılmasın diye pay
+# bırakılır; daha fazlası parçalara bölünür.
+_SQL_PARAM_SINIRI = 400
+
 
 class ProductService:
     """Ürün CRUD işlemleri."""
@@ -107,6 +112,83 @@ class ProductService:
         if row is None:          # kazanan yalnız yedek taramada bulundu
             row = db.fetchone("SELECT * FROM products WHERE id = ?", (eslesen[0],))
         return Product.from_row(row) if row else None
+
+    def get_by_codes(self, codes) -> dict:
+        """Birden çok ürün kodunu TEK taramada çözer (N+1 yerine sabit sorgu).
+
+        Teklif/şablon yüklemede kalem başına `get_by_code()` çağrılıyordu;
+        her çağrı 2 SQL sorgusu ürettiği için 500 kalemde 1000 sorgu / ~1 sn
+        maliyet çıkıyordu. Burada aynı iş yükleme başına sabit sayıda sorguyla
+        yapılır.
+
+        Dönüş: `{normalize_code(kod): Product}`. BULUNAMAYAN kodlar sözlükte
+        YER ALMAZ — çağıran eksikliği açıkça ayırt eder. Aynı kod birden çok
+        kez verilse bile bir kez sorgulanır; çağıran kalem sırasını kendi
+        listesinden korur.
+
+        O6 sözleşmesi aynen geçerlidir: NFKC + casefold anahtar, hem ham hem
+        normalize yazım NOCASE adayı, ASCII dışı kodlar için kısmi index
+        taraması (yükleme başına BİR kez) ve çakışmada en düşük id + uyarı.
+        """
+        istenen = {}          # normalize anahtar -> aday sorgu değerleri
+        for code in codes or []:
+            key = normalize_code(code)
+            if not key:
+                continue
+            istenen.setdefault(key, set()).update({(code or "").strip(), key})
+        if not istenen:
+            return {}
+
+        db = get_db()
+        # 1) NOCASE eşitlik adayları — index araması, tam satır.
+        tam_satir = {}
+        aday_kodlar = sorted({d for kume in istenen.values() for d in kume})
+        for bas in range(0, len(aday_kodlar), _SQL_PARAM_SINIRI):
+            parca = aday_kodlar[bas:bas + _SQL_PARAM_SINIRI]
+            isaretler = ", ".join("?" * len(parca))
+            for r in db.fetchall(
+                    "SELECT * FROM products "
+                    f"WHERE product_code COLLATE NOCASE IN ({isaretler})",
+                    tuple(parca)):
+                tam_satir[r["id"]] = r
+
+        # 2) ASCII dışı satırlar — kısmi index üzerinden, YÜKLEME BAŞINA BİR KEZ.
+        kod_haritasi = {pid: r["product_code"] for pid, r in tam_satir.items()}
+        for r in db.fetchall(
+                f"SELECT id, product_code FROM products "
+                f"WHERE product_code GLOB '{_NON_ASCII_GLOB}'"):
+            kod_haritasi.setdefault(r["id"], r["product_code"])
+
+        # 3) Eşleştir; id sırası deterministikliği sağlar.
+        gruplar = {}
+        for pid in sorted(kod_haritasi):
+            key = normalize_code(kod_haritasi[pid])
+            if key in istenen:
+                gruplar.setdefault(key, []).append(pid)
+        if not gruplar:
+            return {}
+
+        # 4) Kazanan id'lerden tam satırı olmayanları tek seferde çek.
+        eksik = sorted({idler[0] for idler in gruplar.values()
+                        if idler[0] not in tam_satir})
+        for bas in range(0, len(eksik), _SQL_PARAM_SINIRI):
+            parca = eksik[bas:bas + _SQL_PARAM_SINIRI]
+            isaretler = ", ".join("?" * len(parca))
+            for r in db.fetchall(
+                    f"SELECT * FROM products WHERE id IN ({isaretler})",
+                    tuple(parca)):
+                tam_satir[r["id"]] = r
+
+        sonuc = {}
+        for key, idler in gruplar.items():
+            if len(idler) > 1:
+                logger.warning(
+                    "Aynı ürün kodu (%r) %d kayıtta bulundu; en düşük id (%s) "
+                    "kullanılıyor: %s", key, len(idler), idler[0], idler)
+            satir = tam_satir.get(idler[0])
+            if satir is not None:
+                sonuc[key] = Product.from_row(satir)
+        return sonuc
 
     def _category_clause(self, category_id):
         """(sql_parça, params) — kategori filtresi. -1=yok, None=kategorisiz."""
