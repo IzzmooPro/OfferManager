@@ -330,10 +330,44 @@ class AutoBackupService(QObject):
         d = self._meta.get("auto_backup_dir", str(_DEFAULT_BACKUP_DIR))
         if not d:
             d = str(_DEFAULT_BACKUP_DIR)
-        self._worker = _BackupWorker(d, reason, self)
-        self._worker.completed.connect(self._on_backup_done)
-        self._worker.failed.connect(self._on_backup_failed)
-        self._worker.start()
+        worker = _BackupWorker(d, reason, self)
+        worker.completed.connect(self._on_backup_done)
+        worker.failed.connect(self._on_backup_failed)
+        # Temizlik, sonuç sinyaline DEĞİL, QThread'in YERLEŞİK finished()
+        # sinyaline bağlanır: completed/failed run() içinden, thread hâlâ
+        # çalışırken emit edilir. deleteLater olmadan worker servise parent
+        # olarak bağlı kaldığı için uygulama ömrü boyunca birikiyordu.
+        worker.finished.connect(self._on_worker_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._worker = worker
+        worker.start()
+
+    def _on_worker_finished(self):
+        """Thread GERÇEKTEN bitti — güçlü referansı bırak.
+
+        Eski bir worker'ın gecikmiş sinyali yeni worker'ın referansını
+        silmemeli; bu yüzden kimlik karşılaştırması yapılır.
+        """
+        biten = self.sender()
+        if biten is self._worker:
+            self._worker = None
+
+    def active_worker(self):
+        """ÇALIŞAN yedek thread'i döndürür; yoksa None.
+
+        MainWindow kapanışta (K6) bu worker'ı da beklemek zorundadır. Salt
+        okunurdur ve silinmiş C++ nesnesinde istisna sızdırmaz.
+        """
+        worker = self._worker
+        if worker is None:
+            return None
+        try:
+            if worker.isRunning():
+                return worker
+        except RuntimeError:
+            # C++ nesnesi deleteLater ile silinmiş.
+            self._worker = None
+        return None
 
     def _run_sync(self, reason: str = ""):
         d = self._meta.get("auto_backup_dir", str(_DEFAULT_BACKUP_DIR)) or str(
@@ -352,12 +386,12 @@ class AutoBackupService(QObject):
         self._cleanup(str(Path(path).parent))
         if reason:
             logger.info("Yedek alındı (%s): %s", reason, path)
-        self._worker = None
+        # `self._worker` BURADA bırakılmaz: bu slot çağrıldığında thread hâlâ
+        # çalışıyor olabilir. Bırakma _on_worker_finished'de yapılır.
 
     def _on_backup_failed(self, error: str, reason: str = ""):
         self.backup_failed.emit(error)
         logger.error("Otomatik yedek hatası (%s): %s", reason, error)
-        self._worker = None
 
     def _cleanup(self, d: str, keep: int = 20):
         """En fazla `keep` adet yedek tut, eskilerini sil."""

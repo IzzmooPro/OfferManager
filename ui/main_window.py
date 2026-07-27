@@ -201,9 +201,23 @@ class MainWindow(QMainWindow):
             if sayfa is not None:
                 adaylar.append(getattr(sayfa, alan, None))
 
+        # Çalışan otomatik yedek de beklenmeli: restart kapanışında kapanma
+        # yedeği ATLANDIĞI için bu thread hiç beklenmiyordu ve süreç
+        # 0xC0000409 ile fast-fail veriyordu (ölçüldü).
+        yedek_svc = getattr(self, "_backup_svc", None)
+        if yedek_svc is not None and hasattr(yedek_svc, "active_worker"):
+            try:
+                adaylar.append(yedek_svc.active_worker())
+            except RuntimeError:
+                pass      # servis nesnesi zaten silinmiş
+
         calisan = []
         for worker in adaylar:
             if worker is None:
+                continue
+            # Aynı worker birden çok kaynaktan görünebilir; KİMLİKLE tekilleştir
+            # ki iki kez wait()/connect() yapılmasın.
+            if any(worker is mevcut for mevcut in calisan):
                 continue
             try:
                 if worker.isRunning():
