@@ -103,6 +103,10 @@ def _norm(s: str) -> str:
 
 _CSV_ENCODINGS = ("utf-8-sig", "utf-8", "cp1254", "latin-1")
 _CSV_DELIMITERS = ",;\t"
+# Kullanıcı sayfa seçimini iptal ettiğinde `_read_file`'ın döndürdüğü işaret:
+# hata mesajı GÖSTERİLMEZ, akış sessizce sonlanır.
+SAYFA_SECIMI_IPTAL = "__sayfa_secimi_iptal__"
+
 _CSV_OKUMA_HATASI = (
     "Dosya okunamadı — içeriği bozuk ya da CSV değil.\n"
     "Dosyayı Excel'de açıp 'CSV UTF-8' biçiminde yeniden kaydedip deneyin.")
@@ -185,8 +189,98 @@ def _read_csv(path: Path) -> tuple[list, str]:
     return [], _CSV_OKUMA_HATASI
 
 
-def _read_file(path: str, progress=None) -> tuple[list, str]:
+def _sayfa_alanlari(headers, import_type: str) -> set:
+    """Başlık satırındaki TANINAN alan adları — mevcut eşleme mekanizmasıyla."""
+    col_map = CUSTOMER_MAP if import_type == "customers" else PRODUCT_MAP
+    return {col_map.get(_norm(h)) for h in headers} - {None}
+
+
+def _sayfa_adaylari(wb, import_type: str):
+    """(adaylar, gizli_dolu_sayfa_var_mi) döndürür.
+
+    Aday ölçütü: GÖRÜNÜR sayfa + zorunlu başlıkların tamamı + en az bir gerçek
+    veri satırı. Yalnız başlık, boş ve açıklama sayfaları aday olmaz; gizli
+    sayfalar hiç değerlendirilmez (otomatik alınmaz, listelenmez).
+    """
+    gerekli = ({"company_name"} if import_type == "customers"
+               else {"product_code", "product_name"})
+    adaylar, gizli_dolu = [], False
+    for ws in wb.worksheets:
+        gorunur = getattr(ws, "sheet_state", "visible") == "visible"
+        ilk = None
+        veri_var = False
+        for idx, row in enumerate(ws.iter_rows(values_only=True)):
+            if idx == 0:
+                ilk = [str(c or "").strip() for c in row]
+                continue
+            if any(c is not None and str(c).strip() for c in row):
+                veri_var = True
+                break
+        if not ilk or not veri_var:
+            continue
+        if not gerekli.issubset(_sayfa_alanlari(ilk, import_type)):
+            continue
+        if gorunur:
+            adaylar.append((ws.title, max(0, (ws.max_row or 1) - 1)))
+        else:
+            gizli_dolu = True
+    return adaylar, gizli_dolu
+
+
+def _gizli_notu(gizli_dolu: bool) -> str:
+    return "\nGizli çalışma sayfaları içe aktarılmaz." if gizli_dolu else ""
+
+
+def _sayfa_sordur(parent, adaylar, aktif_ad, gizli_dolu):
+    """Birden çok aday varsa kullanıcıya sordurur. İptalde None döner.
+
+    Satır sayısı YAKLAŞIKTIR: `ws.max_row` üzerinden hesaplanır, kesin sayım
+    için büyük sayfa ikinci kez taranmaz. Seçim, görünen metinden ad
+    ayrıştırılarak değil, metin→sayfa adı eşlemesiyle çözülür.
+    """
+    from PySide6.QtWidgets import QInputDialog
+    eslesme = {}
+    secenekler = []
+    for ad, n in adaylar:
+        metin = f"{ad} — yaklaşık {n} satır"
+        eslesme[metin] = ad
+        secenekler.append(metin)
+    varsayilan = next((i for i, (ad, _) in enumerate(adaylar)
+                       if ad == aktif_ad), 0)
+    mesaj = ("Bu dosyada birden fazla uygun veri sayfası var.\n"
+             "Yalnız seçtiğiniz sayfa içe aktarılacaktır."
+             + _gizli_notu(gizli_dolu))
+    secim, ok = QInputDialog.getItem(parent, "Çalışma Sayfası Seç", mesaj,
+                                     secenekler, varsayilan, False)
+    if not ok:
+        return None
+    # Beklenmedik bir dönüş gelirse ham ValueError sızdırma; güvenli iptal.
+    return eslesme.get(secim)
+
+
+def _aday_yok_mesaji(wb, import_type: str, gizli_dolu: bool) -> str:
+    tur = "müşteri" if import_type == "customers" else "ürün"
+    gorunur = sum(1 for ws in wb.worksheets
+                  if getattr(ws, "sheet_state", "visible") == "visible")
+    mesaj = (f"Bu dosyada içe aktarılabilir bir {tur} sayfası bulunamadı.\n"
+             f"Görünür çalışma sayfası sayısı: {gorunur}.\n"
+             "Sayfanın ilk satırında beklenen başlıklar ve altında en az bir "
+             "veri satırı olmalıdır.")
+    if gizli_dolu:
+        mesaj += ("\n\nDosyada uygun görünen GİZLİ sayfa var; gizli çalışma "
+                  "sayfaları içe aktarılmaz. Aktarmak için sayfayı Excel'de "
+                  "görünür yapın.")
+    return mesaj
+
+
+def _read_file(path: str, progress=None, import_type: str = "products",
+               parent=None) -> tuple[list, str]:
     """Dosyayı okur, (rows, error) döndürür. rows = list of dicts.
+
+    XLSX'te yalnız SEÇİLEN çalışma sayfası okunur; sayfalar otomatik
+    BİRLEŞTİRİLMEZ. Tek geçerli görünür sayfa varsa otomatik seçilir; birden
+    fazlaysa kullanıcıya sorulur. Kullanıcı iptal ederse hata alanı
+    `SAYFA_SECIMI_IPTAL` olur ve çağıran sessizce çıkar.
 
     `progress(current, total)` verilirse xlsx okurken satır ilerlemesi bildirilir.
     """
@@ -197,8 +291,24 @@ def _read_file(path: str, progress=None) -> tuple[list, str]:
         if ext in (".xlsx", ".xls", ".xlsm"):
             try:
                 import openpyxl
-                wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-                ws = wb.active
+            except ImportError:
+                return [], ("openpyxl kütüphanesi bulunamadı.\n"
+                            "Lütfen dosyayı CSV olarak kaydedin veya\n"
+                            "komut satırında: pip install openpyxl")
+            # Workbook TEK kez açılır: aday tespiti ve okuma aynı nesneden.
+            wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+            try:
+                adaylar, gizli_dolu = _sayfa_adaylari(wb, import_type)
+                if not adaylar:
+                    return [], _aday_yok_mesaji(wb, import_type, gizli_dolu)
+                if len(adaylar) == 1:
+                    secilen = adaylar[0][0]
+                else:
+                    secilen = _sayfa_sordur(parent, adaylar,
+                                            wb.active.title, gizli_dolu)
+                    if secilen is None:
+                        return [], SAYFA_SECIMI_IPTAL
+                ws = wb[secilen]
                 # Satır satır akış — büyük dosyada belleğe komple almak yerine
                 # okurken ilerleme bildir (toplam ws.max_row'dan tahmin edilir).
                 total = ws.max_row or 0
@@ -208,17 +318,16 @@ def _read_file(path: str, progress=None) -> tuple[list, str]:
                         headers = [str(c or "").strip() for c in row]
                         continue
                     if all(c is None for c in row): continue
-                    rows.append({headers[i]: (str(v) if v is not None else "")
-                                 for i, v in enumerate(row) if i < len(headers)})
+                    satir = {headers[i]: (str(v) if v is not None else "")
+                             for i, v in enumerate(row) if i < len(headers)}
+                    satir["_source_sheet"] = secilen
+                    rows.append(satir)
                     if progress and total and (idx & 0x3FF) == 0:
                         progress(idx, total)
                 if headers is None:
-                    wb.close(); return [], "Dosya boş."
+                    return [], "Dosya boş."
+            finally:
                 wb.close()
-            except ImportError:
-                return [], ("openpyxl kütüphanesi bulunamadı.\n"
-                            "Lütfen dosyayı CSV olarak kaydedin veya\n"
-                            "komut satırında: pip install openpyxl")
         elif ext == ".csv":
             return _read_csv(p)
         else:
@@ -314,6 +423,11 @@ def _validate_rows(import_type: str, raw_rows: list,
     total = len(raw_rows)
     for i, raw in enumerate(raw_rows):
         r = _map_row(raw, col_map)
+        # Kaynak sayfa adı `_map_row` sütun eşlemesinden geçmez; hata
+        # mesajlarında gösterilebilmesi için elle taşınır.
+        sayfa = raw.get("_source_sheet") if isinstance(raw, dict) else None
+        if sayfa:
+            r["_source_sheet"] = sayfa
         missing = [k for k in required if not str(r.get(k, "")).strip()]
         if missing:
             r["_error"] = f"Zorunlu alan eksik: {', '.join(missing)}"
@@ -349,6 +463,11 @@ def _validate_rows(import_type: str, raw_rows: list,
             progress(i + 1, total)
     if progress:
         progress(total, total)
+    # Hata metnine kaynak sayfa adını okunur biçimde ekle (iç alan adı değil).
+    for r in invalid:
+        sayfa = r.get("_source_sheet")
+        if sayfa and r.get("_error"):
+            r["_error"] = f"{r['_error']} (sayfa: {sayfa})"
     return valid, duplicates, invalid
 
 
@@ -476,7 +595,13 @@ def run_import_flow(parent, import_type: str) -> bool:
         return False
 
     prog = _ImportProgress(parent, "Dosya okunuyor…")
-    raw_rows, err = _read_file(path, progress=prog)
+    raw_rows, err = _read_file(path, progress=prog,
+                               import_type=import_type, parent=parent)
+    if err == SAYFA_SECIMI_IPTAL:
+        # Kullanıcı sayfa seçimini iptal etti: doğrulama, DB yazımı ve sonuç
+        # mesajı YOK; işlem temiz biçimde iptal sayılır.
+        prog.close()
+        return False
     if err:
         prog.close()
         QMessageBox.warning(parent, "Dosya Hatası", err)

@@ -211,7 +211,8 @@ class FileFormatParityTests(_Temel):
     """CSV ve XLSX aynı sonucu vermeli."""
 
     def _dosyadan(self, yol):
-        satirlar, hata = ei._read_file(str(yol))
+        # O15 sonrası XLSX'te sayfa adayları içe aktarma TÜRÜNE göre seçilir.
+        satirlar, hata = ei._read_file(str(yol), import_type="customers")
         self.assertEqual(hata, "")
         return self._aktar(satirlar)
 
