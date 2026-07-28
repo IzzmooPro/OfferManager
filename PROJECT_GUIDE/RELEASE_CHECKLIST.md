@@ -62,7 +62,19 @@ Sıra atlanmaz. Her adım kanıtla kapatılır; kanıt sınıfları [VERIFICATIO
 
 GitHub'da yalnız kaynak kod, `tests/`, `README.md`, `docs/CHANGELOG.md`, `requirements.txt`, `.gitignore`, `CLAUDE.md`, `AGENTS.md` ve `PROJECT_GUIDE/` bulunur. `packaging/`, `assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` ve `.bat` başlatıcılar yereldir; bu yüzden **release yalnız bu makinede üretilebilir** ([BUILD_AND_PACKAGING.md](BUILD_AND_PACKAGING.md)).
 
+## Sürüm yükseltmesinden sonraki ara durum
+
+Sürüm alanları yeni sürüme çekilip **yeni build alınmadan önce** proje bilerek "yayına hazır değil" durumundadır:
+
+- `project_manifest.json` → `version` = hedef sürüm, `artifact_built_for_version` = eski sürüm, `artifact_verification_status = stale_for_target_version`, `release_ready = false`
+- Eski artifact'ların hash'leri **baseline olarak korunur**, yeni sürüm gibi etiketlenmez
+- `verify_project_guide.py --artifacts` → exit 0 + "eldeki derleme … hedef sürüm …" uyarısı
+- `verify_project_guide.py --release` → **exit 1** (beklenen)
+
+Bu durum ancak 3–5. adımlar yeni sürüm için tekrarlanıp manifest güncellenince kapanır.
+
 ## Açık kararlar
 
 - Kod imzası yok → SmartScreen uyarısı sürer.
-- `060baf3` için sürüm numarası/tag/release kararı **henüz verilmedi** ([CURRENT_STATUS.md](CURRENT_STATUS.md)).
+- Mevcut hedef sürüm ve kalan adımlar: [CURRENT_STATUS.md](CURRENT_STATUS.md).
+- Yayınlanmış bir tag (ör. `v4.0`) **değiştirilmez ve yeniden kullanılmaz**.

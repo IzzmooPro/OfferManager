@@ -390,6 +390,25 @@ def kontrol_artifacts(kok: Path, zorunlu: bool = False) -> tuple[list[str],
     hatalar: list[str] = []
     uyarilar: list[str] = []
     snapshot = veri.get("snapshot") or {}
+
+    # Hedef sürüm ile artifact'ın derlendiği sürüm ayrı olabilir: sürüm
+    # yükseltmesinden sonra, yeni build alınana kadar eldeki dist/installer
+    # ESKİ sürüme aittir. Bu durum `--artifacts` için uyarı, `--release` için
+    # hatadır; eski artifact ASLA yeni sürüm gibi kabul edilmez.
+    hedef = str(snapshot.get("version", "")).strip()
+    artifact_surum = str(snapshot.get("artifact_built_for_version", "")).strip()
+    eski_artifact = bool(hedef and artifact_surum and hedef != artifact_surum)
+    if eski_artifact:
+        mesaj = (f"artifact: eldeki derleme {artifact_surum} sürümüne ait, "
+                 f"hedef sürüm {hedef} — hedef sürüm için yeniden build gerekli")
+        if zorunlu:
+            hatalar.append(mesaj)
+        else:
+            uyarilar.append(mesaj)
+    if zorunlu and snapshot.get("release_ready") is False:
+        hatalar.append("artifact: manifest release_ready=false "
+                       "(hedef sürüm için doğrulama tamamlanmadı)")
+
     for anahtar in HASHLI_ARTIFACT:
         bilgi = snapshot.get(anahtar) or {}
         hedef = kok / str(bilgi.get("path", ""))

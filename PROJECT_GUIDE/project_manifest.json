@@ -41,7 +41,11 @@
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_commit": "060baf3",
-    "version": "v4.0",
+    "version": "v4.1",
+    "version_note": "hedef/kaynak sürümü v4.1; aşağıdaki dist ve installer HÂLÂ v4.0 derlemesidir",
+    "artifact_built_for_version": "v4.0",
+    "artifact_verification_status": "stale_for_target_version",
+    "release_ready": false,
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -67,17 +71,22 @@
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
       "sha256": "4679D76842D3F1E16E670623105F209673E726C9EDABF6DD298FDEAB76AFFC2D",
-      "size": 9431984
+      "size": 9431984,
+      "built_for_version": "v4.0",
+      "note": "v4.0 baseline artifact'ı — v4.1 için yeniden derlenecek, yeniden etiketlenmeyecek"
     },
     "installer": {
       "path": "installer_output/TeklifYonetim_Setup_v4.0.exe",
       "sha256": "6A42102763D1A687DA9A736F22079031891E1E91CBF7FCDDDFE8132DC3D8DD14",
-      "size": 52496379
+      "size": 52496379,
+      "built_for_version": "v4.0",
+      "expected_path_for_target": "installer_output/TeklifYonetim_Setup_v4.1.exe"
     },
     "installed_exe": {
       "path": "<INSTALL_DIR>/TeklifYonetim.exe",
       "sha256": "4679D76842D3F1E16E670623105F209673E726C9EDABF6DD298FDEAB76AFFC2D",
       "size": 9431984,
+      "built_for_version": "v4.0",
       "note": "kurulum dizini yerel makineye özgüdür; yol temsilidir"
     },
     "signing": {
@@ -87,6 +96,7 @@
     },
     "frozen_smoke": {
       "result": "GECTI",
+      "verified_for_version": "v4.0",
       "date": "2026-07-28",
       "scope": [
         "başlangıç ve asset çözümü",
@@ -101,6 +111,7 @@
     },
     "installer_test": {
       "result": "GECTI",
+      "verified_for_version": "v4.0",
       "date": "2026-07-28",
       "scope": [
         "yerinde upgrade",
@@ -111,9 +122,11 @@
       "user_data_preserved": true
     },
     "release": {
+      "target_version": "v4.1",
       "tag_created": false,
       "github_release_created": false,
-      "note": "060baf3 için sürüm numarası/tag/release kararı henüz verilmedi"
+      "existing_remote_tag": "v4.0",
+      "note": "v4.1 kaynak hazırlığı yapıldı; yeni build alınmadı, tag/release oluşturulmadı. v4.0 tag'i değiştirilmez."
     }
   }
 }

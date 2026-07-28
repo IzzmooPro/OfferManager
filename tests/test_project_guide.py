@@ -271,6 +271,20 @@ class TemizCloneTests(_GeciciRehber):
 class ArtifactUyariTests(_GeciciRehber):
     """Artifact eksikliği: --artifacts uyarır (exit 0), --release hata verir."""
 
+    def _surumleri_esitle(self):
+        """Hedef sürüm = artifact sürümü (sürüm uyuşmazlığı uyarısını kapatır).
+
+        Böylece artifact testleri YALNIZ hash/boyut davranışını ölçer.
+        """
+        y = self._belge("project_manifest.json")
+        veri = json.loads(y.read_text(encoding="utf-8"))
+        veri["snapshot"]["artifact_built_for_version"] = \
+            veri["snapshot"].get("version")
+        veri["snapshot"]["artifact_verification_status"] = "current"
+        veri["snapshot"]["release_ready"] = True
+        y.write_text(json.dumps(veri, ensure_ascii=False, indent=2),
+                     encoding="utf-8")
+
     def _artifact_yaz(self, dogru: bool):
         veri = json.loads(
             self._belge("project_manifest.json").read_text(encoding="utf-8"))
@@ -311,12 +325,43 @@ class ArtifactUyariTests(_GeciciRehber):
 
     def test_dogru_hash_uyari_uretmez(self):
         self._artifact_yaz(dogru=True)
+        self._surumleri_esitle()
         hatalar, uyarilar = self.modul.kontrol_artifacts(self.kok, zorunlu=False)
         self.assertEqual(hatalar, [])
         self.assertEqual(uyarilar, [], f"doğru artifact gereksiz uyardı: {uyarilar}")
 
+    def test_hedef_surum_farkliysa_uyarir(self):
+        """Sürüm yükseltmesi sonrası eski artifact: uyarı (exit 0 korunur)."""
+        self._artifact_yaz(dogru=True)
+        y = self._belge("project_manifest.json")
+        veri = json.loads(y.read_text(encoding="utf-8"))
+        veri["snapshot"]["version"] = "v9.9"
+        veri["snapshot"]["artifact_built_for_version"] = "v9.8"
+        y.write_text(json.dumps(veri, ensure_ascii=False, indent=2),
+                     encoding="utf-8")
+        hatalar, uyarilar = self.modul.kontrol_artifacts(self.kok, zorunlu=False)
+        self.assertEqual(hatalar, [], "sürüm farkı normal modda hata olmamalı")
+        self.assertTrue(any("v9.9" in u and "v9.8" in u for u in uyarilar),
+                        f"sürüm farkı uyarısı yok: {uyarilar}")
+
+    def test_hedef_surum_farkliysa_release_hata(self):
+        self._artifact_yaz(dogru=True)
+        y = self._belge("project_manifest.json")
+        veri = json.loads(y.read_text(encoding="utf-8"))
+        veri["snapshot"]["version"] = "v9.9"
+        veri["snapshot"]["artifact_built_for_version"] = "v9.8"
+        veri["snapshot"]["release_ready"] = False
+        y.write_text(json.dumps(veri, ensure_ascii=False, indent=2),
+                     encoding="utf-8")
+        hatalar, _ = self.modul.kontrol_artifacts(self.kok, zorunlu=True)
+        self.assertTrue(any("v9.8" in h for h in hatalar),
+                        "release modunda eski artifact hata vermedi")
+        self.assertTrue(any("release_ready" in h for h in hatalar),
+                        "release_ready=false hata olarak raporlanmadı")
+
     def test_yanlis_hash_her_iki_modda_hata(self):
         self._artifact_yaz(dogru=False)
+        self._surumleri_esitle()
         for zorunlu in (False, True):
             hatalar, _ = self.modul.kontrol_artifacts(self.kok, zorunlu=zorunlu)
             self.assertTrue(any("dist_exe" in h for h in hatalar),

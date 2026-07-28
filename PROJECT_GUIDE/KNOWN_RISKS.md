@@ -15,7 +15,8 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 |---|---|---|---|
 | R1 | **Kod imzası yok** — SmartScreen "bilinmeyen yayımcı" uyarısı sürüyor | Orta | İmzalama sertifikası kararı; alınmazsa kullanıcıya beklenen uyarı anlatılır |
 | R2 | **Temiz clone'dan build alınamaz** (`packaging/`, `assets/` local-only) | Orta | Bilinçli karar; tek makine bağımlılığını azaltmak için bu girdilerin yedeği ayrı tutulmalı |
-| R3 | **Yeni tag/release kararı verilmedi**; uzaktaki `v4.0` tag'i eski commit'i gösteriyor | Orta | Sürüm numarası kararı + [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) |
+| R3 | **v4.1 kaynak hazırlığı yapıldı ama artifact yok** — eldeki `dist/` ve `installer_output/` hâlâ v4.0 derlemesi; `release_ready = false`, `--release` bilerek başarısız | Orta | v4.1 temiz build → frozen smoke → installer doğrulaması → tag + release ([RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)) |
+| R3b | **Kurulu uygulama ve uzaktaki tag hâlâ v4.0** — v4.1 yayınlanana kadar kullanıcılar eski sürümde | Düşük | v4.1 release'i sonrası güncelleme akışıyla dağıtılır; `v4.0` tag'i değiştirilmez |
 | R4 | **Mock'lu UI testleri gerçek modal davranışı kanıtlamaz** — O16 tam da bu boşlukta doğdu | Orta | Modal + ilerleme penceresi birleşen başka akışlar (dışa aktarma, yedek geri yükleme) aynı gözle taranmalı |
 | R5 | **Güncelleme akışı uçtan uca denenmedi** — indirme + `_apply_update` yalnız mock ile örtülü | Orta | Yayın sonrası izole makinede gerçek güncelleme denemesi |
 | R6 | **Gerçek geri yükleme → restart zinciri** paketli sürümde uçtan uca denenmedi; yalnız güvenli mutex senaryosu doğrulandı | Düşük-orta | İzole profilde gerçek yedekten geri yükleme senaryosu |

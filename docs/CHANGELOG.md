@@ -2,6 +2,66 @@
 
 ---
 
+## [v4.1] — hazırlanıyor (yayınlanmadı)
+
+Bu sürüm baştan sona bir güvenilirlik turudur: veri kaybına, sessiz hatalara ve
+kapanış çökmelerine yol açabilecek durumlar tek tek bulunup kapatıldı.
+
+### Veri bütünlüğü ve teklif akışları
+- **Aynı ürün kodu artık iki kez kaydedilemiyor.** Büyük/küçük harf ve Türkçe
+  karakter farkı olan kodlar (ör. `abc` / `ABC`) aynı ürün sayılıyor.
+- Teklif kaydı ve numara üretimi tek işlemde tamamlanıyor; yarım kayıt kalmıyor.
+- Teklif silinince ona ait arşiv PDF'i de kaldırılıyor.
+
+### Kapanış, arka plan işleri ve yeniden başlatma
+- **Program kapanırken artık çökmüyor.** Arka planda çalışan yedekleme veya
+  güncelleme işi bitmeden uygulama kapanmıyor.
+- Yedekten geri yükleme sonrası yeniden başlatma güvenli hâle getirildi;
+  gereksiz ikinci yedek alınmıyor, program kendini düzgün açıyor.
+- İkinci kez açmaya çalışıldığında tek kopya kuralı güvenilir çalışıyor.
+
+### Excel / CSV içe aktarma
+- **Çok sayfalı Excel dosyalarında hangi sayfanın aktarılacağı size soruluyor.**
+  Önceden yalnız açık olan sayfa okunuyor, diğer sayfalardaki veriler sessizce
+  atlanıyordu.
+- Sayfa seçim penceresi artık ilerleme penceresinin arkasında kilitlenmiyor;
+  seçim yapabiliyor veya iptal edebiliyorsunuz. İptal ederseniz hiçbir kayıt
+  yazılmıyor.
+- Aynı dosyada tekrar eden müşteri satırları iki kez eklenmiyor; hatalı satır
+  uyarısında hangi sayfadan geldiği yazıyor.
+- Bozuk veya desteklenmeyen dosyada anlaşılır bir hata mesajı veriliyor.
+
+### Kayıtlı şifre ve güvenli hata mesajları
+- E-posta (SMTP) şifresi yalnız Windows Kimlik Bilgisi Yöneticisi'nde tutuluyor;
+  ayar dosyasına düz metin yazılmıyor.
+- **Şifre okunamazsa artık sessizce boş görünmüyor:** kısa bir uyarı çıkıyor ve
+  boş alan yanlışlıkla "şifre silindi" olarak kaydedilmiyor.
+- Kaydetme/silme hatalarında teknik hata metni yerine anlaşılır bir mesaj
+  gösteriliyor; pencere kapanmıyor, düzeltip yeniden deneyebiliyorsunuz.
+- Kurulu (paketlenmiş) sürümde beklenmeyen bir hata artık sessizce kaybolmuyor;
+  hata penceresi ve log dosyasının yeri gösteriliyor.
+
+### Performans
+- Ürün seçme penceresi büyük kataloglarda anında açılıyor; arama yazarken
+  takılma olmuyor ve kaç sonuç gösterildiği yazıyor.
+- Kayıtlı teklif ve şablonlar tek sorguyla yükleniyor.
+
+### Paketli sürüm ve kurulum doğrulamaları
+- Kurulum, güncelleme (üzerine kurma), kaldırma ve yeniden kurma uçtan uca
+  denendi; **kaldırma işlemi kullanıcı verilerine dokunmuyor**.
+- Kurulu sürüm izole ortamda baştan sona çalıştırılarak açılış, kapanış,
+  yeniden başlatma ve hata bildirimi doğrulandı.
+
+### Proje altyapısı
+- Otomatik test sayısı belirgin şekilde arttı; her düzeltme kendi regresyon
+  testiyle korunuyor.
+- Proje bilgisi tek bir kaynakta toplandı (`PROJECT_GUIDE`), böylece sonraki
+  değişiklikler daha güvenli yapılabiliyor.
+
+> Not: Bu sürüm henüz yayınlanmadı; yayın tarihi release oluşturulduğunda yazılır.
+
+---
+
 ## [v4.0] — 2026-07-10
 
 ### Performans
