@@ -1,0 +1,64 @@
+---
+purpose: Test çalıştırma kuralları ve konu → test dosyası matrisi.
+read_when: Test yazarken, test seçerken, düzeltme sonrası doğrulamada.
+covers:
+  - tests/conftest.py
+  - tests/test_env_isolation.py
+  - tests/test_offer_service.py
+  - tests/test_product_code_uniqueness.py
+  - tests/test_import_sheet_dialog_modality.py
+  - tests/test_xlsx_sheet_selection.py
+  - tests/test_shutdown_workers.py
+  - tests/test_restart_flow.py
+  - tests/test_credential_store.py
+  - tests/test_save_error_handling.py
+last_verified_commit: 060baf3
+last_verified_date: 2026-07-28
+volatile: false
+---
+
+# Test rehberi
+
+## Kurallar
+
+- **Daima** `python -m pytest tests -q`. `unittest discover` **kullanılmaz**: `tests/conftest.py` izolasyonunu atlar ve gerçek kullanıcı verisine yazar.
+- UI testleri `QT_QPA_PLATFORM=offscreen` ile çalışır; test modülü bunu kendi başında ayarlar.
+- Yeni davranış için önce **kırmızı** regresyon testi yaz; yalnız `py_compile` ile "tamamlandı" deme.
+- Gerçek SMTP, ağ, tarayıcı, installer ve Credential Manager testte kullanılmaz; bloklayan işler sahte worker/sunucularla temsil edilir.
+- Geçici dosyalar `TemporaryDirectory` ile üretilir ve testten sonra kalmaz.
+
+## Konu → test dosyası
+
+| Konu | Test dosyası |
+|---|---|
+| Ortam izolasyonu (K/O ön koşulu) | `tests/test_env_isolation.py`, `tests/conftest.py` |
+| Teklif numarası, atomiklik, teklif servisi | `tests/test_offer_service.py`, `tests/test_regressions.py` |
+| Arşiv PDF adı | `tests/test_offer_archive_naming.py` |
+| Kâr/maliyet gizliliği | `tests/test_profit.py`, `tests/test_export_service.py` |
+| Ürün kodu normalizasyonu (O6, O13-ürün) | `tests/test_product_code_uniqueness.py` |
+| Ürün seçici sınırı/debounce (O10) | `tests/test_product_select_dialog.py` |
+| Toplu ürün çözümü (O11) | `tests/test_product_batch_lookup.py` |
+| CSV içe aktarma hataları | `tests/test_csv_import_errors.py` |
+| Müşteri mükerrer satırları (O13-müşteri) | `tests/test_customer_import_duplicates.py` |
+| XLSX sayfa seçim mantığı (O15) | `tests/test_xlsx_sheet_selection.py` |
+| XLSX sayfa seçiminde modal sırası (O16) | `tests/test_import_sheet_dialog_modality.py` |
+| Kaydetme/silme hata yolları (O14) | `tests/test_save_error_handling.py` |
+| Worker kapanışı (K6, O12) | `tests/test_shutdown_workers.py`, `tests/test_thread_lifecycle.py`, `tests/test_backup_worker_lifecycle.py` |
+| Restart ve tek örnek kilidi (O5) | `tests/test_restart_flow.py` |
+| Credential / SMTP gizliliği (O9) | `tests/test_credential_store.py`, `tests/test_smtp_credential_ui.py`, `tests/test_smtp_security.py` |
+| Windowed hata bildirimi (O8) | `tests/test_windowed_error_reporting.py` |
+| E-posta diyalogu yaşam döngüsü | `tests/test_email_dialog_lifecycle.py` |
+| Güncelleme diyalogu yaşam döngüsü | `tests/test_update_dialog_lifecycle.py` |
+| Şablon / kategori / müşteri / ürün servisleri | adı eşleşen `tests/test_*_service.py` |
+| Süresi geçen teklif uyarısı | `tests/test_expired_offer_prompt.py` |
+| Rehber tutarlılığı | `tests/test_project_guide.py` |
+
+## Yalnız kaynakta test edilenler
+
+Aşağıdakiler kaynak testiyle örtülür ama **paketli sürümde doğrulanmamıştır**; bunları frozen kanıtı gibi sunma:
+
+- Güncelleme indirme ve kurulum başlatma (`_apply_update`)
+- Gerçek SMTP gönderimi
+- O14 retry döngüsünün gerçek modal `exec()` davranışı
+
+Paketli/installer doğrulaması: [VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md).

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "snapshot_notice": "snapshot alanları zamanla eskir; doğrulanmadan kesin gerçek sayma. Yenileme: PROJECT_GUIDE/scripts/verify_project_guide.py --artifacts",
+  "stable": {
+    "project_name": "Teklif Yönetim Sistemi",
+    "entry_point": "main.py",
+    "test_command": "python -m pytest tests -q",
+    "build_command": "packaging/Kurulum-Yap.bat --no-pause",
+    "version_sources": [
+      "core/constants.py:APP_VERSION",
+      "packaging/TeklifYonetim.iss:MyAppVersion",
+      "packaging/TeklifYonetim.iss:VersionInfoVersion",
+      "packaging/version_info.txt",
+      "installer_output/TeklifYonetim_Setup_<version>.exe"
+    ],
+    "data_safety_boundary": {
+      "user_data_root": "<USER_DATA_ROOT>",
+      "backup_root": "<BACKUP_ROOT>",
+      "rule": "gerçek kullanıcı verisi, yedekleri ve Credential Manager yalnız açık izinle değiştirilir; testler <TEMP_ROOT> altında izole çalışır"
+    },
+    "release_stages": [
+      "kaynak hazır (temiz ağaç + yeşil suite + py_compile)",
+      "sürüm alanları eşleşmesi",
+      "temiz build",
+      "paketli EXE doğrulaması (frozen smoke)",
+      "installer doğrulaması (upgrade/uninstall/reinstall)",
+      "commit / push / tag / release + read-back"
+    ],
+    "local_only_paths": [
+      "packaging/",
+      "assets/",
+      "dist/",
+      "installer_output/",
+      "build/",
+      "Import_Test/"
+    ],
+    "clean_clone_buildable": false
+  },
+  "snapshot": {
+    "captured_at": "2026-07-28",
+    "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
+    "source_baseline_commit": "060baf3",
+    "source_commit": "060baf3",
+    "version": "v4.0",
+    "source_test_result": {
+      "command": "python -m pytest tests -q",
+      "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
+      "baseline_commit": "060baf3",
+      "passed": 648,
+      "subtests_passed": 29,
+      "date": "2026-07-28"
+    },
+    "guide_integrated_test_result": {
+      "command": "python -m pytest tests -q",
+      "scope": "PROJECT_GUIDE testleri dahil son tam suite",
+      "passed": 689,
+      "subtests_passed": 29,
+      "date": "2026-07-28"
+    },
+    "test_result": {
+      "command": "python -m pytest tests -q",
+      "passed": 689,
+      "subtests_passed": 29,
+      "date": "2026-07-28",
+      "note": "guide_integrated_test_result ile aynı; source_test_result kaynak davranışı baseline'ını ayrı tutar"
+    },
+    "dist_exe": {
+      "path": "dist/TeklifYonetim/TeklifYonetim.exe",
+      "sha256": "4679D76842D3F1E16E670623105F209673E726C9EDABF6DD298FDEAB76AFFC2D",
+      "size": 9431984
+    },
+    "installer": {
+      "path": "installer_output/TeklifYonetim_Setup_v4.0.exe",
+      "sha256": "6A42102763D1A687DA9A736F22079031891E1E91CBF7FCDDDFE8132DC3D8DD14",
+      "size": 52496379
+    },
+    "installed_exe": {
+      "path": "<INSTALL_DIR>/TeklifYonetim.exe",
+      "sha256": "4679D76842D3F1E16E670623105F209673E726C9EDABF6DD298FDEAB76AFFC2D",
+      "size": 9431984,
+      "note": "kurulum dizini yerel makineye özgüdür; yol temsilidir"
+    },
+    "signing": {
+      "signed": false,
+      "status": "NotSigned",
+      "note": "SmartScreen 'bilinmeyen yayımcı' uyarısı beklenir"
+    },
+    "frozen_smoke": {
+      "result": "GECTI",
+      "date": "2026-07-28",
+      "scope": [
+        "başlangıç ve asset çözümü",
+        "tek örnek kilidi",
+        "normal kapanış",
+        "uzun worker ile kapanış",
+        "restart + sınırlı mutex beklemesi",
+        "credential hata yolu",
+        "bozuk veritabanı ile hata penceresi",
+        "manuel içe aktarma akışı (O16 sonrası)"
+      ]
+    },
+    "installer_test": {
+      "result": "GECTI",
+      "date": "2026-07-28",
+      "scope": [
+        "yerinde upgrade",
+        "kurulu uygulama smoke",
+        "kaldırma",
+        "temiz yeniden kurulum"
+      ],
+      "user_data_preserved": true
+    },
+    "release": {
+      "tag_created": false,
+      "github_release_created": false,
+      "note": "060baf3 için sürüm numarası/tag/release kararı henüz verilmedi"
+    }
+  }
+}
