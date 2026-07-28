@@ -61,9 +61,41 @@ Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı öl
 - [ ] Tag `vX.Y` oluşturuldu ve push edildi
 - [ ] GitHub Release oluşturuldu; **setup `.exe` asset olarak yüklendi** (updater ilk `.exe` asset'ini indirir)
 - [ ] Yayın sonrası read-back: tag, release ve indirilebilir asset doğrulandı
-- [ ] Eski sürümden **canlı güncelleme denemesi** (updater uçtan uca)
+- [ ] Eski sürümden **canlı güncelleme denemesi** ([VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) — updater uçtan uca)
 - [ ] `docs/CHANGELOG.md` sürüm başlığı yayın tarihiyle güncellendi
 - [ ] Rollback klasörleri (`<ROLLBACK_ROOT>`) açık onayla temizlendi
+
+### GitHub release işlemleri (`gh`)
+
+> Aşağıdakiler **örnektir**. Çalıştırmadan önce sürüm, dosya adı ve depo hedefi
+> yeniden doğrulanır; komut körlemesine kopyalanmaz.
+
+**Ön kontrol** — mevcut tag/release var mı:
+
+```bash
+gh release list -R <OWNER>/<REPO>
+```
+
+**Yeni release** (tag yoksa `gh` tag'i de oluşturur):
+
+```bash
+gh release create vX.Y "installer_output/TeklifYonetim_Setup_vX.Y.exe" -R <OWNER>/<REPO> --title "Teklif Yönetim Sistemi vX.Y" --notes "<CHANGELOG özeti>"
+```
+
+**Mevcut release'e asset yükleme / değiştirme:**
+
+```bash
+gh release upload vX.Y "installer_output/TeklifYonetim_Setup_vX.Y.exe" --clobber -R <OWNER>/<REPO>
+```
+
+- Release başlığı biçimi: **`Teklif Yönetim Sistemi vX.Y`**
+- Asset **installer `.exe`** olmalı; updater release'teki **ilk `.exe` asset'ini** indirir, bu yüzden release'te başka `.exe` bulundurma.
+- **Mevcut bir tag veya release üzerine yazmak** (`--clobber`, tag taşıma, release silme) **açık kullanıcı izni gerektirir**; yayınlanmış tag varsayılan olarak değiştirilmez.
+- **Read-back zorunlu:** `gh release view vX.Y -R <OWNER>/<REPO>` ile tag'in doğru commit'i gösterdiği, release'in yayında olduğu ve asset'in indirilebilir olduğu doğrulanır; indirilen dosyanın SHA256'sı [project_manifest.json](project_manifest.json) ile karşılaştırılır.
+
+## Temiz dağıtım kopyası (isteğe bağlı)
+
+Sıfır veriyle bir kurulum dağıtılacaksa `scripts/clear_for_distribution.py` kullanılır — **gerçek veriyi siler, açık izin ve ön yedek ister, rutin release adımı değildir**. Koşullar: [CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md#dağıtım-öncesi-veri-temizliği-tehlikeli-araç).
 
 ## Depo gerçeği
 

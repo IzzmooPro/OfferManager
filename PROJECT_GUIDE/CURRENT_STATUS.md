@@ -18,7 +18,7 @@ volatile: true
 - Sürüm: **v4.1** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` ve `version_info.txt` eşitlendi
 - İşlevsel sürüm değişikliği commit'i: **`a63f981`** · v4.1 build'inin alındığı commit: **`de64a75`**
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE ve sürüm tutarlılık testleri dâhil son tam suite: **720 passed, 29 subtests**
+- PROJECT_GUIDE ve sürüm tutarlılık testleri dâhil son tam suite: **737 passed, 29 subtests**
 - `py_compile` tüm proje dosyalarında temiz
 - v4.1 kaynak commit'lerinin upstream durumu **release öncesinde canlı git komutlarıyla doğrulanmalıdır**; bu belgede canlı remote hash tutulmaz
 

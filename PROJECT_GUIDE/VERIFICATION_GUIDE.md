@@ -52,6 +52,26 @@ Sıra: **işlem öncesi manifest + DB `integrity_check`** → **rollback yedeği
 - Yeniden kurulumda mevcut gerçek veritabanı açılır; boş DB oluşturulmaz.
 - Rollback yedeği son rapordan sonra, açık izinle silinir.
 
+## D — Canlı updater doğrulaması (yayın sonrası)
+
+Kanıt sınıfı C'nin devamıdır ve **ancak tag + release + asset yayınlandıktan sonra** yapılabilir. Bu test geçmeden [project_manifest.json](project_manifest.json) içindeki **`updater_end_to_end_verified` `true` yapılmaz**.
+
+Senaryo:
+
+1. **Önceki sürüm kurulu** olsun (izole/test makinesi ya da geri dönüşü hazır kurulum).
+2. Yeni **tag + GitHub Release + installer `.exe` asset'i** yayınlanmış olsun.
+3. Uygulama açılır → güncelleme kontrolü yeni sürümü **görmeli** (sürüm karşılaştırması `v` önekinden etkilenmez).
+4. "Güncelle" → asset **indirilir** ve kurulum `os.startfile` ile başlar; Inno çalışan uygulamayı kapatıp üzerine kurar.
+5. Yeni sürüm açılır; **UI'da sürüm** (kenar çubuğu / Hakkında) ve log satırı doğrulanır.
+
+Güvenlik koşulları:
+
+- Tercihen **izole/test ortamı**; gerçek makinede yapılacaksa önce **kullanıcı verisi yedeği** alınır.
+- İndirilen asset'in **SHA256'sı** manifest ile karşılaştırılır (read-back).
+- Release'te **birden fazla `.exe` bulundurulmaz** — updater ilk `.exe` asset'ini seçer.
+- Başarısızlıkta **eski sürüme geri dönüş** yolu hazır tutulur (rollback kopyası / önceki installer).
+- Gerçek SMTP, gerçek müşteri verisi ve kurulu üretim kurulumu bu testin kapsamı dışındadır.
+
 ## Sürüm yükseltmesinde kapsam
 
 Yeni bir sürüm için **B ve C sınıfları tekrarlanır**; hangi senaryoların atlandığı açıkça yazılır. Örnek: yalnız sürüm numarası ve doğrulanmış düzeltmeler değiştiyse B'de uzun patolojik senaryolar (büyük DB ile worker beklemesi, restart mutex beklemesi) ve C'de uninstall/reinstall tekrarlanmayabilir — bu durumda manifestteki `not_repeated` alanına hangi turda geçtiği yazılır.

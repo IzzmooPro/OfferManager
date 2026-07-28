@@ -28,7 +28,23 @@ Bu belgede **gerçek makine yolu yazılmaz**; temsili kökler kullanılır.
 ## Kalıcı kullanıcı verisi
 
 - `<USER_DATA_ROOT>\data\` — veritabanı, `company.cfg`, logo/imza görselleri, `logs\`, `offers_pdf\`
-- `<BACKUP_ROOT>\` — otomatik ve manuel ZIP yedekler (rotasyon: son 20 tutulur)
+- `<BACKUP_ROOT>\` — otomatik ve manuel ZIP yedekler (rotasyon: son 20 tutulur), dosya adı `backup_%Y_%m_%d_%H%M%S_%f.zip`
+
+### `<USER_DATA_ROOT>\data\` envanteri
+
+| Dosya | Sınıf | Kim oluşturur / okur |
+|---|---|---|
+| `database.db` | **Gerçek kullanıcı verisi** | `database/db_manager.py`; yedeğe girer |
+| `company.cfg` | Ayar | `core/config.py` — firma bilgileri, PDF metinleri, SMTP ayarları (parola **burada değil**); yedeğe girer |
+| `logo.png`, `signature1..4.png` | Kullanıcı varlığı | `ui/settings_page.py`; yedeğe girer |
+| `logo.disabled` | İşaret dosyası | Kullanıcı logoyu tamamen kaldırınca oluşur |
+| `theme.txt` | **Ayar/metadata** | `ui/utils/theme_manager.py` yazar ve okur; açık/koyu tema tercihi. Kullanıcı verisi değildir, yedeğe girmez |
+| `backup_meta.json` | **Ayar/metadata** | `ui/dialogs/backup_manager.py` yazar ve okur; otomatik yedek açık mı, aralık (varsayılan 30 dk), hedef klasör, son yedek zamanı. Yedeğin kendi içeriğine dahil değildir |
+| `.migrated` | İşaret dosyası | `core/app_paths.py` — eski konumdan tek seferlik veri taşımasının yapıldığını işaretler |
+| `logs\app_YYYYMMDD.log` | Günlük | `main.py`; 30 günden eskiler silinir |
+| `offers_pdf\<teklif_no>.pdf` | Arşiv çıktısı | Teklif kaydında üretilir, teklif silinince kaldırılır |
+
+**Test izolasyonu:** bu dosyaların tamamı `<USER_DATA_ROOT>` altında olduğundan, `tests/conftest.py` ortam değişkenlerini geçici köke yönlendirdiğinde testler kendi `theme.txt` ve `backup_meta.json` dosyalarını üretir; gerçek kullanıcı tercihleri okunmaz ve değiştirilmez.
 - Klasör adı `OfferManagementSystem` **değiştirilmez**; kurulum dizininden bağımsızdır ve kaldırma işleminden etkilenmez.
 - Program dosyaları (asset, şema, font) kurulum dizininde; frozen'da `sys._MEIPASS` altında çözülür.
 

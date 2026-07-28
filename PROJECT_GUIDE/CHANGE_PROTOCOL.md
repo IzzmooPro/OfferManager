@@ -72,3 +72,17 @@ Küçük bir değişiklikte bütün uzun smoke turlarını tekrarlama; tablodaki
 - **Legacy belge:** `docs/` altındaki eski yol haritaları, `GITHUB_IS_AKISI_LOCAL.md`, `SORUN_COZUM_NOTLARI.md` — **karşılaştırmalı onay** turu olmadan silinmez/taşınmaz.
 - **Bilinmeyen** → dokunulmaz. **Git tarafından izlenen** → yalnız normal değişiklik akışıyla.
 - Silmeden önce kapsam listelenir, sonrasında doğrulanır; geniş glob veya çözülmemiş değişkenle recursive silme yapılmaz.
+
+## Dağıtım öncesi veri temizliği (tehlikeli araç)
+
+`python scripts/clear_for_distribution.py --yes`
+
+**Gerçek kullanıcı verisini siler.** Koddan doğrulanan sözleşme: müşteri, ürün, teklif, teklif kalemleri, teklif sayacı ve kategoriler silinir; **şirket ayarları, logo, imzalar ve tema korunur**; silmeden **önce otomatik ZIP yedeği** alınır (`create_backup`).
+
+Kurallar:
+
+- Yalnız **açık kullanıcı izniyle** çalıştırılır. `--yes` onay sorusunu atlar; izin yoksa kullanılmaz.
+- Çalıştırmadan önce **ayrı bir veri yedeği** alınır (aracın kendi yedeği tek güvence sayılmaz).
+- **Dry-run seçeneği yoktur.** Ön envanter elle yapılır: DB salt-okunur açılıp müşteri/ürün/teklif sayıları ve yedek klasörü kaydedilir; işlem sonrası aynı sayımlar karşılaştırılır.
+- **Rutin bir release adımı değildir.** Sırf sürüm alınıyor diye çalıştırılmaz; yalnız temiz bir dağıtım kopyası hazırlanırken gerekir ([RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)).
+- Geliştirme makinesindeki gerçek veride kullanılacaksa kapsam, yedek yolu ve geri dönüş planı önceden yazılır.

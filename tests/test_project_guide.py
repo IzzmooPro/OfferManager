@@ -519,6 +519,77 @@ class SnapshotDiliTests(unittest.TestCase):
                       "rehber dahil test sayısı CURRENT_STATUS ile uyuşmuyor")
 
 
+class KanonikBilgiTests(unittest.TestCase):
+    """Legacy belgelerden aktarılan benzersiz bilgiler kanonik yerinde olmalı.
+
+    Kırılgan tam metin karşılaştırması YAPILMAZ; her madde için birkaç ayırt
+    edici anahtar aranır.
+    """
+
+    def _oku(self, ad):
+        return (REHBER / ad).read_text(encoding="utf-8")
+
+    def test_release_checklist_github_release_yolu(self):
+        m = self._oku("RELEASE_CHECKLIST.md")
+        for anahtar in ("gh release create", "gh release upload", "asset",
+                        "read-back"):
+            self.assertIn(anahtar, m, f"RELEASE_CHECKLIST '{anahtar}' içermiyor")
+
+    def test_release_checklist_mevcut_release_uzerine_yazma_izni(self):
+        m = self._oku("RELEASE_CHECKLIST.md").lower()
+        self.assertIn("--clobber", m)
+        self.assertIn("açık", m)
+
+    def test_verification_guide_canli_updater_senaryosu(self):
+        m = self._oku("VERIFICATION_GUIDE.md")
+        for anahtar in ("updater", "asset", "geri dönüş",
+                        "updater_end_to_end_verified"):
+            self.assertIn(anahtar, m, f"VERIFICATION_GUIDE '{anahtar}' içermiyor")
+
+    def test_dagitim_temizligi_araci_belgelenmis(self):
+        m = self._oku("CHANGE_PROTOCOL.md")
+        self.assertIn("clear_for_distribution.py", m)
+        self.assertIn("--yes", m)
+        for anahtar in ("izin", "yedek"):
+            self.assertIn(anahtar, m.lower(),
+                          f"temizlik aracı '{anahtar}' koşulu yazılmamış")
+
+    def test_veri_dosyasi_envanteri(self):
+        m = self._oku("DATA_AND_PATHS.md")
+        self.assertIn("theme.txt", m)
+        self.assertIn("backup_meta.json", m)
+
+    def test_decisions_kar_sinirini_adr_ye_baglar(self):
+        m = self._oku("DECISIONS.md")
+        self.assertIn("decisions/0001-profit-data-boundary.md", m,
+                      "DECISIONS kâr sınırı ADR'sine bağlantı vermiyor")
+
+    def test_kar_siniri_adr_icerigi(self):
+        yol = REHBER / "decisions" / "0001-profit-data-boundary.md"
+        self.assertTrue(yol.is_file(), "kâr sınırı ADR'si yok")
+        m = yol.read_text(encoding="utf-8")
+        self.assertTrue(m.startswith("---"), "ADR frontmatter'ı yok")
+        veri = _dogrulayici().frontmatter_oku(yol) or {}
+        for alan in ("purpose", "read_when", "covers", "last_verified_commit",
+                     "last_verified_date", "volatile"):
+            self.assertIn(alan, veri, f"ADR frontmatter '{alan}' eksik")
+        for anahtar in ("offer_items", "cost_price", "export"):
+            self.assertIn(anahtar, m, f"ADR '{anahtar}' konusunu içermiyor")
+
+    def test_ertelenmis_fikirler_taahhut_degil(self):
+        m = self._oku("DECISIONS.md")
+        self.assertIn("Ertelenmiş fikirler", m)
+        self.assertIn("taahhüt değil", m.lower().replace("i̇", "i")
+                      if "taahhüt değil" not in m else m)
+        for fikir in ("i18n", "Web", "Inter"):
+            self.assertIn(fikir, m, f"ertelenmiş fikir '{fikir}' yok")
+
+    def test_kucuk_teknik_kararlar(self):
+        m = self._oku("DECISIONS.md")
+        for anahtar in ("pt", "ON DELETE", "F1", "backup_%Y"):
+            self.assertIn(anahtar, m, f"teknik karar '{anahtar}' yok")
+
+
 class GizlilikTests(unittest.TestCase):
     """Depodaki gerçek rehber içeriği gizli veri barındırmamalı."""
 
