@@ -42,11 +42,14 @@
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
     "source_commit": "a63f981",
+    "source_commit_note": "işlevsel sürüm değişikliğinin (v4.0 → v4.1) yapıldığı commit",
+    "built_from_commit": "de64a75",
+    "built_from_commit_note": "v4.1 temiz build'inin alındığı gerçek HEAD",
     "version": "v4.1",
-    "version_note": "hedef/kaynak sürümü v4.1; aşağıdaki dist ve installer HÂLÂ v4.0 derlemesidir",
-    "artifact_built_for_version": "v4.0",
-    "artifact_verification_status": "stale_for_target_version",
-    "release_ready": false,
+    "artifact_built_for_version": "v4.1",
+    "artifact_verification_status": "verified",
+    "release_candidate_ready": true,
+    "release_readiness_note": "teknik kapılar (temiz build + frozen smoke + gerçek in-place upgrade) geçti; bu YAYINLANDI anlamına GELMEZ — tag, GitHub Release ve updater read-back henüz yapılmadı",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -57,38 +60,46 @@
     },
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
-      "scope": "PROJECT_GUIDE testleri dahil son tam suite",
-      "passed": 689,
+      "scope": "PROJECT_GUIDE ve sürüm tutarlılık testleri dahil son tam suite",
+      "passed": 720,
       "subtests_passed": 29,
       "date": "2026-07-28"
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 689,
+      "passed": 720,
       "subtests_passed": 29,
       "date": "2026-07-28",
       "note": "guide_integrated_test_result ile aynı; source_test_result kaynak davranışı baseline'ını ayrı tutar"
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
-      "sha256": "4679D76842D3F1E16E670623105F209673E726C9EDABF6DD298FDEAB76AFFC2D",
-      "size": 9431984,
-      "built_for_version": "v4.0",
-      "note": "v4.0 baseline artifact'ı — v4.1 için yeniden derlenecek, yeniden etiketlenmeyecek"
+      "sha256": "AB100076DE98703D1F7E9D51457611D5B628EDFFFD1FCE5BBC4314C84DA0F3DF",
+      "size": 9431985,
+      "built_for_version": "v4.1",
+      "file_version": "4.1.0.0",
+      "product_version": "v4.1"
     },
     "installer": {
-      "path": "installer_output/TeklifYonetim_Setup_v4.0.exe",
-      "sha256": "6A42102763D1A687DA9A736F22079031891E1E91CBF7FCDDDFE8132DC3D8DD14",
-      "size": 52496379,
-      "built_for_version": "v4.0",
-      "expected_path_for_target": "installer_output/TeklifYonetim_Setup_v4.1.exe"
+      "path": "installer_output/TeklifYonetim_Setup_v4.1.exe",
+      "sha256": "0EE3E2C7F2E9842BD231DE0B0D82F6B8158E14055AA0ED638F43800513D5533E",
+      "size": 52496621,
+      "built_for_version": "v4.1",
+      "version": "4.1.0.0"
     },
     "installed_exe": {
       "path": "<INSTALL_DIR>/TeklifYonetim.exe",
-      "sha256": "4679D76842D3F1E16E670623105F209673E726C9EDABF6DD298FDEAB76AFFC2D",
-      "size": 9431984,
-      "built_for_version": "v4.0",
+      "sha256": "AB100076DE98703D1F7E9D51457611D5B628EDFFFD1FCE5BBC4314C84DA0F3DF",
+      "size": 9431985,
+      "built_for_version": "v4.1",
+      "product_version": "v4.1",
       "note": "kurulum dizini yerel makineye özgüdür; yol temsilidir"
+    },
+    "upgrade_baseline": {
+      "from_version": "v4.0",
+      "artifact_built_from_commit": "060baf3",
+      "captured_from_repo_commit": "746da84",
+      "note": "v4.0 artifact 060baf3 üzerinde üretildi; 746da84 yalnız rehber commit'ini içerir ve artifact davranışını değiştirmez. Kopyalar <ROLLBACK_ROOT> altında release sonuna kadar korunuyor."
     },
     "signing": {
       "signed": false,
@@ -97,37 +108,40 @@
     },
     "frozen_smoke": {
       "result": "GECTI",
-      "verified_for_version": "v4.0",
+      "verified_for_version": "v4.1",
       "date": "2026-07-28",
       "scope": [
+        "UI sürüm göstergesi (kenar çubuğu, Hakkında, log)",
         "başlangıç ve asset çözümü",
         "tek örnek kilidi",
-        "normal kapanış",
-        "uzun worker ile kapanış",
-        "restart + sınırlı mutex beklemesi",
-        "credential hata yolu",
+        "teklif + PDF (arşiv adı = teklif no, maliyet sızıntısı yok)",
+        "O16 çok sayfalı XLSX seçimi ve iptal yolu",
         "bozuk veritabanı ile hata penceresi",
-        "manuel içe aktarma akışı (O16 sonrası)"
+        "normal kapanış"
       ]
     },
     "installer_test": {
       "result": "GECTI",
-      "verified_for_version": "v4.0",
+      "verified_for_version": "v4.1",
       "date": "2026-07-28",
       "scope": [
-        "yerinde upgrade",
-        "kurulu uygulama smoke",
-        "kaldırma",
-        "temiz yeniden kurulum"
+        "gerçek v4.0 → v4.1 yerinde (in-place) upgrade",
+        "aynı AppId ve kurulum dizini",
+        "kurulu v4.1 smoke (sürüm + mevcut veri)",
+        "normal kapanış"
       ],
-      "user_data_preserved": true
+      "user_data_preserved": true,
+      "user_data_evidence": "database.db upgrade öncesi rollback kopyasıyla byte-eşit; sayımlar ve teklif numaraları değişmedi",
+      "not_repeated": "uninstall ve temiz yeniden kurulum bu turda tekrarlanmadı; v4.0 installer doğrulamasında (2026-07-28) geçmişti"
     },
     "release": {
       "target_version": "v4.1",
       "tag_created": false,
       "github_release_created": false,
+      "updater_end_to_end_verified": false,
       "existing_remote_tag": "v4.0",
-      "note": "v4.1 kaynak hazırlığı yapıldı; yeni build alınmadı, tag/release oluşturulmadı. v4.0 tag'i değiştirilmez."
+      "upstream_sync_must_be_verified_live": true,
+      "note": "v4.1 artifact'ı üretildi ve doğrulandı; tag, GitHub Release ve updater read-back YAPILMADI. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; release öncesi canlı git komutlarıyla ölçülür."
     }
   }
 }

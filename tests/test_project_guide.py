@@ -350,14 +350,14 @@ class ArtifactUyariTests(_GeciciRehber):
         veri = json.loads(y.read_text(encoding="utf-8"))
         veri["snapshot"]["version"] = "v9.9"
         veri["snapshot"]["artifact_built_for_version"] = "v9.8"
-        veri["snapshot"]["release_ready"] = False
+        veri["snapshot"]["release_candidate_ready"] = False
         y.write_text(json.dumps(veri, ensure_ascii=False, indent=2),
                      encoding="utf-8")
         hatalar, _ = self.modul.kontrol_artifacts(self.kok, zorunlu=True)
         self.assertTrue(any("v9.8" in h for h in hatalar),
                         "release modunda eski artifact hata vermedi")
-        self.assertTrue(any("release_ready" in h for h in hatalar),
-                        "release_ready=false hata olarak raporlanmadı")
+        self.assertTrue(any("release_candidate_ready" in h for h in hatalar),
+                        "release_candidate_ready=false hata olarak raporlanmadı")
 
     def test_yanlis_hash_her_iki_modda_hata(self):
         self._artifact_yaz(dogru=False)

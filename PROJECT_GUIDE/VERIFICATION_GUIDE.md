@@ -52,6 +52,10 @@ Sıra: **işlem öncesi manifest + DB `integrity_check`** → **rollback yedeği
 - Yeniden kurulumda mevcut gerçek veritabanı açılır; boş DB oluşturulmaz.
 - Rollback yedeği son rapordan sonra, açık izinle silinir.
 
+## Sürüm yükseltmesinde kapsam
+
+Yeni bir sürüm için **B ve C sınıfları tekrarlanır**; hangi senaryoların atlandığı açıkça yazılır. Örnek: yalnız sürüm numarası ve doğrulanmış düzeltmeler değiştiyse B'de uzun patolojik senaryolar (büyük DB ile worker beklemesi, restart mutex beklemesi) ve C'de uninstall/reinstall tekrarlanmayabilir — bu durumda manifestteki `not_repeated` alanına hangi turda geçtiği yazılır.
+
 ## Doğrulanmış son sonuçlar
 
-Bu üç sınıfın en son sonuçları ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
+Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).

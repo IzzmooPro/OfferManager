@@ -10,48 +10,49 @@ volatile: true
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-07-28 · temel commit: `060baf3`.**
+> **Yakalama tarihi: 2026-07-28 · hedef sürüm: `v4.1`.**
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
-## Sürüm geçişi (v4.0 → v4.1)
+## Sürüm ve kaynak
 
-**Hedef sürüm: `v4.1`** — kaynak alanları (`core/constants.py`, Inno `.iss`, `version_info.txt`) v4.1'e eşitlendi ve `docs/CHANGELOG.md`'ye v4.1 bölümü eklendi.
-
-> **Eldeki `dist/` ve `installer_output/` hâlâ v4.0 derlemesidir.** Bu artifact'lar v4.1 için geçerli sayılmaz, yeniden etiketlenmez; hash'leri baseline olarak korunur. `verify_project_guide.py --release` bu ara durumda **bilerek başarısızdır**; v4.1 için temiz build + frozen smoke + installer doğrulaması tamamlanana kadar `release_ready = false`.
-
-## Kaynak
-
-- Sürüm: **v4.1 (hedef)** — tek kaynak `core/constants.py:APP_VERSION`
-- Temel commit (`source_baseline_commit`): **060baf3**
-- Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests**
-- PROJECT_GUIDE testleri dâhil son tam suite: **689 passed, 29 subtests** (~3 dk 33 sn)
+- Sürüm: **v4.1** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` ve `version_info.txt` eşitlendi
+- İşlevsel sürüm değişikliği commit'i: **`a63f981`** · v4.1 build'inin alındığı commit: **`de64a75`**
+- Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
+- PROJECT_GUIDE ve sürüm tutarlılık testleri dâhil son tam suite: **720 passed, 29 subtests**
 - `py_compile` tüm proje dosyalarında temiz
+- v4.1 kaynak commit'lerinin upstream durumu **release öncesinde canlı git komutlarıyla doğrulanmalıdır**; bu belgede canlı remote hash tutulmaz
 
 ## Denetim
 
 K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanlış pozitif olarak kapandı; O5'in özgün yarış iddiası yanlış pozitifti, komşu kusurlar düzeltildi; O10 ve O11 "olası ölçekleme bulgusu, düzeltildi" sınıfındadır.
 
-## Paketli sürüm — **v4.0 baseline**
+## v4.1 doğrulama durumu
 
-Aşağıdaki kanıtların tamamı **v4.0 derlemesine** aittir; v4.1 için tekrarlanmalıdır.
-
-- Build: `packaging/Kurulum-Yap.bat --no-pause` → exit 0 (testler + PyInstaller + Inno)
-- Yerel makinede kurulu sürüm, aynı yakalamadaki dist derlemesiyle **aynı hash'e** sahipti; değerler [project_manifest.json](project_manifest.json) `snapshot` bölümünde
+- **Temiz build: GEÇTİ** — `packaging/Kurulum-Yap.bat --no-pause` exit 0 (build anında 713 test + PyInstaller + Inno; suite o günden bu yana sürüm testleriyle 720'ye çıktı)
+- **Frozen smoke (kanıt sınıfı B): GEÇTİ** — UI sürüm göstergesi, başlangıç/asset, tek örnek kilidi, teklif + PDF, O16 sayfa seçimi ve iptal, bozuk DB hata penceresi, normal kapanış
+- **Installer (kanıt sınıfı C): GEÇTİ** — gerçek **v4.0 → v4.1 yerinde upgrade**; aynı AppId ve kurulum dizini; **kullanıcı verisi byte-birebir korundu**; kurulu sürüm **v4.1**
+- Bu turda **uninstall/reinstall tekrarlanmadı** (v4.0 doğrulamasında geçmişti)
 - **Kod imzası yok** → SmartScreen uyarısı beklenir
-- **Frozen smoke (kanıt sınıfı B): GEÇTİ (v4.0)** — başlangıç, tek örnek kilidi, normal kapanış, uzun worker ile kapanış, restart + mutex beklemesi, credential hata yolu, bozuk DB ile hata penceresi, manuel içe aktarma akışı
-- **Installer (kanıt sınıfı C): GEÇTİ (v4.0)** — yerinde upgrade, uygulama smoke, kaldırma, temiz yeniden kurulum; kaldırmada kullanıcı verisi bit-bit korundu
+- Artifact hash/boyutları: [project_manifest.json](project_manifest.json)
 
-## Yayın
-
-- Uzaktaki son tag **v4.0**; **değiştirilmez ve yeniden kullanılmaz**
-- v4.1 için tag/release **oluşturulmadı**; `release_ready = false`
-- **Kalan adımlar:** v4.1 temiz build → frozen smoke → installer doğrulaması → tag + release
-- **Açık karar:** kod imzalama yapılacak mı
-- Yayın adımları: [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
+`release_candidate_ready = true`: teknik kapılar geçti. **Bu "yayınlandı" demek değildir** — tag, GitHub Release ve updater read-back yapılmadı.
 
 ## Bilinen sınır
 
 `packaging/`, `assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` depo dışıdır → **temiz clone'dan build tekrarlanabilir değildir** ([BUILD_AND_PACKAGING.md](BUILD_AND_PACKAGING.md)).
+
+v4.0 artifact ve kurulum kopyaları `<ROLLBACK_ROOT>` altında **release tamamlanana kadar korunuyor**; temizlik ayrı ve açık onayla yapılacak.
+
+## Sıradaki aşamalar
+
+1. Manifest/rehber güncellemesinin commit'i
+2. Yerel commit'lerin push'u
+3. Legacy bilgi aktarımı ve temizlik
+4. Boş bağlamlı Claude/Codex devir testi
+5. [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) son geçiş
+6. v4.1 tag + GitHub Release
+7. Updater uçtan uca read-back
+8. Rollback klasörlerinin temizliği
 
 ## Bu yakalamayı yenilerken
 

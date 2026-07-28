@@ -405,8 +405,14 @@ def kontrol_artifacts(kok: Path, zorunlu: bool = False) -> tuple[list[str],
             hatalar.append(mesaj)
         else:
             uyarilar.append(mesaj)
-    if zorunlu and snapshot.get("release_ready") is False:
-        hatalar.append("artifact: manifest release_ready=false "
+    # `release_candidate_ready` teknik kapıların (build + frozen smoke +
+    # installer) geçtiğini söyler; YAYINLANDI anlamına gelmez. Eski sözleşme
+    # `release_ready` da desteklenir.
+    hazir = snapshot.get("release_candidate_ready")
+    if hazir is None:
+        hazir = snapshot.get("release_ready")
+    if zorunlu and hazir is False:
+        hatalar.append("artifact: manifest release_candidate_ready=false "
                        "(hedef sürüm için doğrulama tamamlanmadı)")
 
     for anahtar in HASHLI_ARTIFACT:

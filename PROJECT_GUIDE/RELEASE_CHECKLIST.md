@@ -18,7 +18,12 @@ Sıra atlanmaz. Her adım kanıtla kapatılır; kanıt sınıfları [VERIFICATIO
 
 ## 1. Kaynak hazır
 
-- [ ] `git status` temiz, `HEAD == origin/main`
+Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı ölçülür**:
+
+- [ ] `git fetch origin` çalıştırıldı
+- [ ] `git rev-parse HEAD` ve `git rev-parse origin/main` karşılaştırıldı
+- [ ] `git rev-list --left-right --count origin/main...HEAD` ile ahead/behind ölçüldü (yayın için **0 geride** olmalı)
+- [ ] `git status --short --untracked-files=all` boş (çalışma ağacı temiz)
 - [ ] `python -m pytest tests -q` yeşil
 - [ ] `py_compile` tüm proje dosyalarında temiz
 - [ ] Açık riskler gözden geçirildi ([KNOWN_RISKS.md](KNOWN_RISKS.md))
@@ -56,22 +61,25 @@ Sıra atlanmaz. Her adım kanıtla kapatılır; kanıt sınıfları [VERIFICATIO
 - [ ] Tag `vX.Y` oluşturuldu ve push edildi
 - [ ] GitHub Release oluşturuldu; **setup `.exe` asset olarak yüklendi** (updater ilk `.exe` asset'ini indirir)
 - [ ] Yayın sonrası read-back: tag, release ve indirilebilir asset doğrulandı
-- [ ] `docs/CHANGELOG.md` güncellendi
+- [ ] Eski sürümden **canlı güncelleme denemesi** (updater uçtan uca)
+- [ ] `docs/CHANGELOG.md` sürüm başlığı yayın tarihiyle güncellendi
+- [ ] Rollback klasörleri (`<ROLLBACK_ROOT>`) açık onayla temizlendi
 
 ## Depo gerçeği
 
 GitHub'da yalnız kaynak kod, `tests/`, `README.md`, `docs/CHANGELOG.md`, `requirements.txt`, `.gitignore`, `CLAUDE.md`, `AGENTS.md` ve `PROJECT_GUIDE/` bulunur. `packaging/`, `assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` ve `.bat` başlatıcılar yereldir; bu yüzden **release yalnız bu makinede üretilebilir** ([BUILD_AND_PACKAGING.md](BUILD_AND_PACKAGING.md)).
 
-## Sürüm yükseltmesinden sonraki ara durum
+## Sürüm yükseltmesinin üç durumu
 
-Sürüm alanları yeni sürüme çekilip **yeni build alınmadan önce** proje bilerek "yayına hazır değil" durumundadır:
+| Durum | Manifest | `--artifacts` | `--release` |
+|---|---|---|---|
+| **Ara durum** — sürüm alanları yükseltildi, yeni build yok | `artifact_built_for_version` = eski sürüm, `artifact_verification_status = stale_for_target_version`, `release_candidate_ready = false` | exit 0 + "eldeki derleme … hedef sürüm …" uyarısı | **exit 1** (beklenen) |
+| **Aday** — build + frozen smoke + installer geçti | `artifact_built_for_version` = hedef sürüm, `artifact_verification_status = verified`, `release_candidate_ready = true` | exit 0, uyarı yok | exit 0 |
+| **Yayınlandı** | `tag_created`, `github_release_created`, `updater_end_to_end_verified` = true | exit 0 | exit 0 |
 
-- `project_manifest.json` → `version` = hedef sürüm, `artifact_built_for_version` = eski sürüm, `artifact_verification_status = stale_for_target_version`, `release_ready = false`
-- Eski artifact'ların hash'leri **baseline olarak korunur**, yeni sürüm gibi etiketlenmez
-- `verify_project_guide.py --artifacts` → exit 0 + "eldeki derleme … hedef sürüm …" uyarısı
-- `verify_project_guide.py --release` → **exit 1** (beklenen)
+Eski artifact'ların hash'leri yeni sürüm gibi **etiketlenmez**; tarihsel bilgi yalnız `upgrade_baseline` alanında tutulur.
 
-Bu durum ancak 3–5. adımlar yeni sürüm için tekrarlanıp manifest güncellenince kapanır.
+> **`release_candidate_ready = true` yayınlandı demek değildir.** Yalnız 1–5. adımların geçtiğini söyler; 6. adım ayrıdır.
 
 ## Açık kararlar
 
