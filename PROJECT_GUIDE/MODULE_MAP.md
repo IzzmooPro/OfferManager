@@ -16,7 +16,7 @@ covers:
   - ui/utils/excel_import.py
   - ui/utils/operation_error.py
   - pdf/pdf_generator.py
-last_verified_commit: 060baf3
+last_verified_commit: a63f981
 last_verified_date: 2026-07-28
 volatile: false
 ---

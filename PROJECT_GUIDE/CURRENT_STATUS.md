@@ -3,7 +3,7 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: 060baf3
+last_verified_commit: a63f981
 last_verified_date: 2026-07-28
 volatile: true
 ---
