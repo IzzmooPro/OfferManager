@@ -13,6 +13,7 @@ volatile: false
 
 | Görev türü | Oku |
 |---|---|
+| **Proje ne yapar?** (kanonik amaç tanımı) | [ARCHITECTURE.md](ARCHITECTURE.md) → *Proje ne yapar* |
 | Genel yönelim / "proje nerede?" | [CURRENT_STATUS.md](CURRENT_STATUS.md) + [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Kod düzeltmesi (genel) | [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) + [TESTING_GUIDE.md](TESTING_GUIDE.md) + [MODULE_MAP.md](MODULE_MAP.md) ilgili bölüm |
 | Import (CSV/XLSX, mükerrer, sayfa seçimi) | [DATA_AND_PATHS.md](DATA_AND_PATHS.md) + [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) + [TESTING_GUIDE.md](TESTING_GUIDE.md) |

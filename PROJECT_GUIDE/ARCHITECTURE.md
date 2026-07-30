@@ -16,7 +16,15 @@ volatile: false
 
 # Mimari
 
-Windows masaüstü uygulaması: **PySide6 (Qt6) + SQLite**, tek süreç, tek pencere + modal diyaloglar. Dağıtım **PyInstaller onedir + Inno Setup**. Dosya→sorumluluk eşlemesi: [MODULE_MAP.md](MODULE_MAP.md).
+## Proje ne yapar (kanonik tanım)
+
+> **Teklif Yönetim Sistemi; müşteri ve ürün kataloğunu yönetmek, fiyatlandırılmış teklifler oluşturmak, PDF/e-posta çıktıları üretmek ve tekliflerin yaşam döngüsünü güvenli biçimde takip etmek için geliştirilmiş Windows masaüstü uygulamasıdır.**
+
+Bu tanım **yalnız burada** tutulur; diğer belgeler tekrar etmez, bu bölüme bağlantı verir.
+
+## Teknoloji ve dağıtım
+
+**PySide6 (Qt6) + SQLite**, tek süreç, tek pencere + modal diyaloglar. Dağıtım **PyInstaller onedir + Inno Setup**. Dosya→sorumluluk eşlemesi: [MODULE_MAP.md](MODULE_MAP.md).
 
 ## Katmanlar
 

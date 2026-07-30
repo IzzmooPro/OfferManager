@@ -590,6 +590,114 @@ class KanonikBilgiTests(unittest.TestCase):
             self.assertIn(anahtar, m, f"teknik karar '{anahtar}' yok")
 
 
+class ProjeAmaciTests(unittest.TestCase):
+    """Yeni bir ajan projenin ne işe yaradığını çıkarım yapmadan bulmalı."""
+
+    ANAHTARLAR = ("müşteri", "ürün", "teklif", "PDF", "Windows masaüstü")
+    ANA_KAYNAK = "ARCHITECTURE.md"
+
+    def test_kanonik_amac_ana_kaynakta(self):
+        metin = (REHBER / self.ANA_KAYNAK).read_text(encoding="utf-8")
+        for anahtar in self.ANAHTARLAR:
+            self.assertIn(anahtar, metin,
+                          f"{self.ANA_KAYNAK} amaç tanımında '{anahtar}' yok")
+
+    def test_amac_tek_ana_kaynakta_tanimli(self):
+        """Aynı tanım paragrafı birden çok belgede kopyalanmamalı."""
+        imza = "yaşam döngüsünü güvenli biçimde takip etmek"
+        tasiyan = [p.name for p in sorted((REHBER).glob("*.md"))
+                   if imza in p.read_text(encoding="utf-8")]
+        self.assertEqual(tasiyan, [self.ANA_KAYNAK],
+                         f"amaç tanımı birden çok yerde: {tasiyan}")
+
+    def test_index_amaca_yonlendiriyor(self):
+        metin = (REHBER / "INDEX.md").read_text(encoding="utf-8")
+        self.assertIn("Proje ne yapar", metin,
+                      "INDEX amaç tanımına yönlendirmiyor")
+        self.assertIn(self.ANA_KAYNAK, metin)
+
+
+class CanliRemoteIddiaTests(unittest.TestCase):
+    """Snapshot belgeleri değişken git durumunu iddia etmemeli."""
+
+    SNAPSHOT_BELGELERI = ("KNOWN_RISKS.md", "CURRENT_STATUS.md")
+    # "origin/main geride", "origin/main = <hash>", "N commit önde" gibi
+    YASAK = (
+        re.compile(r"origin/main[^\n]{0,40}\b(geride|önde|ahead|behind)\b",
+                   re.IGNORECASE),
+        re.compile(r"origin/main\s*[=:]\s*`?[0-9a-f]{7,40}`?", re.IGNORECASE),
+        re.compile(r"\b\d+\s*commit\s*(önde|geride)\b", re.IGNORECASE),
+    )
+
+    def test_snapshot_belgelerinde_canli_remote_iddiasi_yok(self):
+        for ad in self.SNAPSHOT_BELGELERI:
+            metin = (REHBER / ad).read_text(encoding="utf-8")
+            for kalip in self.YASAK:
+                m = kalip.search(metin)
+                self.assertIsNone(
+                    m, f"{ad} canlı remote iddiası içeriyor: {kalip.pattern}")
+
+    def test_known_risks_r3_degismez_gercekleri_yaziyor(self):
+        metin = (REHBER / "KNOWN_RISKS.md").read_text(encoding="utf-8")
+        satir = [s for s in metin.splitlines() if s.startswith("| R3 ")]
+        self.assertTrue(satir, "R3 satırı bulunamadı")
+        r3 = satir[0]
+        for anahtar in ("doğrulandı", "tag", "release", "updater"):
+            self.assertIn(anahtar, r3.lower(),
+                          f"R3 '{anahtar}' gerçeğini içermiyor")
+
+    # 2026-07-28'de kaldırılan legacy belgeler. Bunlar düz metin olarak geçtiği
+    # için Markdown bağlantı denetimi yakalamaz; boş bağlam devir testinde
+    # "bu dosya nerede?" çelişkisi üretirler.
+    KALDIRILAN_LEGACY = (
+        "GITHUB_IS_AKISI_LOCAL.md",
+        "docs/README.md",
+        "docs/PROJE_GECMISI.md",
+        "docs/ROADMAP.md",
+        "docs/YOL_HARITASI_KAR_ANALIZI.md",
+    )
+
+    def test_kaldirilan_legacy_belgelere_atif_yok(self):
+        hatalar = []
+        dosyalar = list(REHBER.rglob("*.md")) + [KOK / a for a in ZORUNLU_KOK]
+        for yol in dosyalar:
+            for satir_no, satir in enumerate(
+                    yol.read_text(encoding="utf-8").splitlines(), 1):
+                for ad in self.KALDIRILAN_LEGACY:
+                    if ad in satir:
+                        hatalar.append(f"{yol.name}:{satir_no} → {ad}")
+        self.assertEqual(hatalar, [],
+                         f"kaldırılmış legacy belgeye atıf: {hatalar}")
+
+    def test_kaldirilan_legacy_belgeler_gercekten_yok(self):
+        """Test listesi gerçekle uyumlu kalsın (dosya geri gelirse fark edilir)."""
+        for ad in self.KALDIRILAN_LEGACY:
+            self.assertFalse((KOK / ad).exists(),
+                             f"{ad} yeniden ortaya çıktı — test listesi güncellenmeli")
+
+    def test_current_status_tekil_test_sayisi_iddiasi(self):
+        """Aynı belgede çelişen iki tam suite sayısı bulunmamalı."""
+        metin = (REHBER / "CURRENT_STATUS.md").read_text(encoding="utf-8")
+        veri = json.loads(
+            (REHBER / "project_manifest.json").read_text(encoding="utf-8"))
+        guncel = str(veri["snapshot"]["guide_integrated_test_result"]["passed"])
+        baseline = str(veri["snapshot"]["source_test_result"]["passed"])
+        sayilar = set(re.findall(r"\b(\d{3})\s+(?:passed|test)\b", metin))
+        beklenen = {guncel, baseline, "713"}   # 713: build anındaki tarihsel sayı
+        fazla = sayilar - beklenen
+        self.assertEqual(fazla, set(),
+                         f"CURRENT_STATUS eskimiş test sayısı iddia ediyor: {fazla}")
+
+    def test_upstream_dogrulamasi_release_checkliste_yonlendiriyor(self):
+        metin = (REHBER / "KNOWN_RISKS.md").read_text(encoding="utf-8")
+        self.assertIn("RELEASE_CHECKLIST.md", metin,
+                      "upstream doğrulaması için yönlendirme yok")
+        kontrol = (REHBER / "RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
+        for adim in ("git fetch origin", "rev-parse", "rev-list"):
+            self.assertIn(adim, kontrol,
+                          f"RELEASE_CHECKLIST '{adim}' adımını içermiyor")
+
+
 class GizlilikTests(unittest.TestCase):
     """Depodaki gerçek rehber içeriği gizli veri barındırmamalı."""
 

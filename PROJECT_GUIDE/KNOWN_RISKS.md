@@ -15,7 +15,7 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 |---|---|---|---|
 | R1 | **Kod imzası yok** — SmartScreen "bilinmeyen yayımcı" uyarısı sürüyor | Orta | İmzalama sertifikası kararı; alınmazsa kullanıcıya beklenen uyarı anlatılır |
 | R2 | **Temiz clone'dan build alınamaz** (`packaging/`, `assets/` local-only) | Orta | Bilinçli karar; tek makine bağımlılığını azaltmak için bu girdilerin yedeği ayrı tutulmalı |
-| R3 | **v4.1 artifact hazır ve doğrulandı ama yayınlanmadı** — tag, GitHub Release ve updater read-back yok; uzaktaki tag hâlâ `v4.0`, `origin/main` geride | Orta | [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) 6. adım; `v4.0` tag'i değiştirilmez |
+| R3 | **v4.1 artifact üretildi ve doğrulandı, ama yayınlanmadı** — v4.1 için tag, GitHub Release ve indirilen asset read-back'i yok; updater ile dağıtım başlamadı. Upstream senkronu bu belgeden okunmaz, **release öncesi canlı git komutlarıyla doğrulanır** | Orta | [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) 1. adım (canlı `git fetch` + `rev-parse` + `rev-list`) ve 6. adım; yayınlanmış `v4.0` tag'i değiştirilmez |
 | R3b | **Gerçek updater akışı uçtan uca doğrulanmadı** — indirme + kurulum başlatma yalnız mock ile örtülü | Orta | v4.1 release'i sonrası eski sürümden canlı güncelleme denemesi |
 | R3c | **Rollback klasörleri diskte duruyor** (`<ROLLBACK_ROOT>`, ~249 MB) | Düşük | Release ve updater doğrulaması bitince açık onayla silinir |
 | R4 | **Mock'lu UI testleri gerçek modal davranışı kanıtlamaz** — O16 tam da bu boşlukta doğdu | Orta | Modal + ilerleme penceresi birleşen başka akışlar (dışa aktarma, yedek geri yükleme) aynı gözle taranmalı |

@@ -69,7 +69,7 @@ Küçük bir değişiklikte bütün uzun smoke turlarını tekrarlama; tablodaki
 - **Generated ve yeniden üretilebilir:** `__pycache__/`, `.pytest_cache/`, `build/` — istenirse silinebilir; `dist/` ve `installer_output/` **geçerli release adayıysa silinmez**.
 - **Local-only build girdisi:** `packaging/`, `assets/`, `.bat` başlatıcılar — **silinmez**.
 - **Gerçek kullanıcı verisi:** `Import_Test/` ve `<USER_DATA_ROOT>` / `<BACKUP_ROOT>` — yalnız açık izinle ve yedekle.
-- **Legacy belge:** `docs/` altındaki eski yol haritaları, `GITHUB_IS_AKISI_LOCAL.md`, `SORUN_COZUM_NOTLARI.md` — **karşılaştırmalı onay** turu olmadan silinmez/taşınmaz.
+- **Legacy belge:** `SORUN_COZUM_NOTLARI.md` (yaşayan yerel tarihçe, kanonik değil) — **karşılaştırmalı onay** turu olmadan silinmez/taşınmaz. Aynı kural ileride ortaya çıkacak yerel notlar için de geçerlidir: önce benzersiz bilgi PROJECT_GUIDE'a taşınır, sonra kaldırma değerlendirilir.
 - **Bilinmeyen** → dokunulmaz. **Git tarafından izlenen** → yalnız normal değişiklik akışıyla.
 - Silmeden önce kapsam listelenir, sonrasında doğrulanır; geniş glob veya çözülmemiş değişkenle recursive silme yapılmaz.
 

@@ -61,13 +61,13 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE ve sürüm tutarlılık testleri dahil son tam suite",
-      "passed": 737,
+      "passed": 746,
       "subtests_passed": 29,
       "date": "2026-07-28"
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 737,
+      "passed": 746,
       "subtests_passed": 29,
       "date": "2026-07-28",
       "note": "guide_integrated_test_result ile aynı; source_test_result kaynak davranışı baseline'ını ayrı tutar"

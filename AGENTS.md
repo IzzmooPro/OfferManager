@@ -30,4 +30,4 @@ Yalnız **karar, doğrulanan kanıt, eksik/şüpheli kanıt, risk, Claude'a veri
 
 ## Yerel ek kaynaklar (kanonik değil)
 
-`.claude/`, `SORUN_COZUM_NOTLARI.md`, `GITHUB_IS_AKISI_LOCAL.md` ve `docs/` altındaki eski belgeler yereldir. Çelişki hâlinde PROJECT_GUIDE geçerlidir.
+`.claude/` skill ve kuralları ile `SORUN_COZUM_NOTLARI.md` yereldir ve **kanonik değildir**. Çelişki hâlinde PROJECT_GUIDE geçerlidir.

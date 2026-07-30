@@ -18,7 +18,7 @@ volatile: true
 - Sürüm: **v4.1** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` ve `version_info.txt` eşitlendi
 - İşlevsel sürüm değişikliği commit'i: **`a63f981`** · v4.1 build'inin alındığı commit: **`de64a75`**
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE ve sürüm tutarlılık testleri dâhil son tam suite: **737 passed, 29 subtests**
+- PROJECT_GUIDE ve sürüm tutarlılık testleri dâhil son tam suite: **746 passed, 29 subtests**
 - `py_compile` tüm proje dosyalarında temiz
 - v4.1 kaynak commit'lerinin upstream durumu **release öncesinde canlı git komutlarıyla doğrulanmalıdır**; bu belgede canlı remote hash tutulmaz
 
@@ -28,7 +28,7 @@ K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanl�
 
 ## v4.1 doğrulama durumu
 
-- **Temiz build: GEÇTİ** — `packaging/Kurulum-Yap.bat --no-pause` exit 0 (build anında 713 test + PyInstaller + Inno; suite o günden bu yana sürüm testleriyle 720'ye çıktı)
+- **Temiz build: GEÇTİ** — `packaging/Kurulum-Yap.bat --no-pause` exit 0 (build anında 713 test + PyInstaller + Inno). Suite o tarihten sonra rehber/sürüm testleriyle büyüdü; güncel sayı yukarıdaki "Sürüm ve kaynak" bölümündedir.
 - **Frozen smoke (kanıt sınıfı B): GEÇTİ** — UI sürüm göstergesi, başlangıç/asset, tek örnek kilidi, teklif + PDF, O16 sayfa seçimi ve iptal, bozuk DB hata penceresi, normal kapanış
 - **Installer (kanıt sınıfı C): GEÇTİ** — gerçek **v4.0 → v4.1 yerinde upgrade**; aynı AppId ve kurulum dizini; **kullanıcı verisi byte-birebir korundu**; kurulu sürüm **v4.1**
 - Bu turda **uninstall/reinstall tekrarlanmadı** (v4.0 doğrulamasında geçmişti)
@@ -43,16 +43,16 @@ K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanl�
 
 v4.0 artifact ve kurulum kopyaları `<ROLLBACK_ROOT>` altında **release tamamlanana kadar korunuyor**; temizlik ayrı ve açık onayla yapılacak.
 
-## Sıradaki aşamalar
+## Tamamlananlar (bu yakalama itibarıyla)
 
-1. Manifest/rehber güncellemesinin commit'i
-2. Yerel commit'lerin push'u
-3. Legacy bilgi aktarımı ve temizlik
-4. Boş bağlamlı Claude/Codex devir testi
-5. [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) son geçiş
-6. v4.1 tag + GitHub Release
-7. Updater uçtan uca read-back
-8. Rollback klasörlerinin temizliği
+v4.1 kaynak hazırlığı · temiz build · frozen smoke · gerçek in-place upgrade · artifact kanıtlarının manifeste işlenmesi · legacy bilgi aktarımı ve temizliği · boş bağlamlı devir testi.
+
+## Kalan aşamalar
+
+1. [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) son geçiş (1. adım: canlı upstream ölçümü)
+2. v4.1 tag + GitHub Release
+3. Updater uçtan uca read-back → `updater_end_to_end_verified`
+4. Rollback klasörlerinin (`<ROLLBACK_ROOT>`) açık onayla temizliği
 
 ## Bu yakalamayı yenilerken
 
