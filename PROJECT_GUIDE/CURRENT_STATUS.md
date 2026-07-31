@@ -18,7 +18,7 @@ volatile: true
 - Sürüm: **v4.1** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` ve `version_info.txt` eşitlendi
 - Commit ayrımı: v4.1 **sürüm hazırlığı** `a63f981` · **U17 dâhil güncel işlevsel kaynak** `7395561` · **eldeki artifact'ın build edildiği HEAD** `d359137` (7395561'i içerir → artifact güncel)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dâhil son tam suite: **813 passed, 1 skipped, 105 subtests** (2026-07-31, temiz ağaç). Tek skip, artifact stale olmadığı için stale-senaryosu testinin uygulanmamasıdır; `verify_project_guide.py --release` temiz ağaçta **exit 0** verir.
+- PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dâhil son tam suite: **817 passed, 1 skipped, 105 subtests** (2026-07-31, temiz ağaç). Tek skip, artifact stale olmadığı için stale-senaryosu testinin uygulanmamasıdır; `verify_project_guide.py --release` temiz ağaçta **exit 0** verir.
 - `py_compile` tüm proje dosyalarında temiz
 - v4.1 kaynak commit'lerinin upstream durumu **release öncesinde canlı git komutlarıyla doğrulanmalıdır**; bu belgede canlı remote hash tutulmaz
 
@@ -49,6 +49,12 @@ K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanl�
 
 **Kod imzası yok** → Windows SmartScreen "Bilinmeyen yayımcı" uyarısı beklenir ([KNOWN_RISKS.md](KNOWN_RISKS.md) R1).
 
+## R4 modal/progress incelemesi (2026-07-31)
+
+Salt okunur tarama tamamlandı: **ürün kusuru bulunamadı**. Kaynak envanterinde `WindowModal` yalnız `ui/utils/excel_import.py` içinde; sayfa seçimi progress penceresinden önce sorulur; dışa aktarma, yedekleme, e-posta, SMTP ve updater akışlarında **ikinci riskli modal/progress birleşimi yok**. Gerçek Windows platformunda native `IsWindowEnabled` ile ölçüldü.
+
+**Ancak** O16 deseni kaynak modunda (offscreen ve gerçek platform, iki deneme) **yeniden üretilemedi** — özgün kanıt paketli EXE'de alınmıştı. Bu yüzden kalıcı kural korunuyor: modal/progress/import sırası değişirse kanıt **frozen EXE** üzerinde alınır ([VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) B sınıfı 9. senaryo, [KNOWN_RISKS.md](KNOWN_RISKS.md) R4).
+
 ## Bilinen sınır
 
 `packaging/`, `assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` depo dışıdır → **temiz clone'dan build tekrarlanabilir değildir** ([BUILD_AND_PACKAGING.md](BUILD_AND_PACKAGING.md)).
@@ -61,7 +67,7 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 ## Kalan aşamalar
 
-1. Bu temizlik commit'inin upstream'e gönderilmesi
+1. Bu belge commit'inin upstream'e gönderilmesi
 2. **v4.2 turunda paketli U17 → sonraki sürüm doğrulaması** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b) — v4.2 hazırlanırken yapılacak, şu anda açık bir işlem değil
 
 ## Bu yakalamayı yenilerken

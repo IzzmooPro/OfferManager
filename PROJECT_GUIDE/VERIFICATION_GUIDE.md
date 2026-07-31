@@ -39,8 +39,19 @@ Senaryolar:
 6. **Uzun worker ile kapanış** — DB'yi şişirip kapanış yedeğini uzat; süreç worker bitmeden teardown yapmamalı.
 7. **Restart** — yardımcı süreç mutex'i tutarken EXE'yi `--restarted-from <pid>` ile başlat; sınırlı bekleme sonrası kilit alınır, komut satırında EXE yolu bir kez geçer.
 8. **Hata penceresi** — geçici profile bozuk veritabanı koy; "… - Hata" penceresi log yolunu göstermeli, süreç temiz kod ile çıkmalı. (Üretim artifact'ine hook **eklenmez**.)
+9. **Modal / progress entegrasyonu (O16 sınıfı)** — modal diyalog ile ilerleme (`QProgressDialog`) penceresinin birleştiği akışlar. Zorunlu ölçüm: **çok sayfalı XLSX** içe aktarımında `Çalışma Sayfası Seç` penceresi açıkken
+   - seçim penceresi native **`IsWindowEnabled == true`** olmalı (kullanıcı yanıtlayabilmeli),
+   - `İçe Aktarma` **progress penceresi o anda hiç bulunmamalı** (soru progress'ten **önce** sorulur),
+   - iptal edilirse DB'ye yazım olmamalı.
+   Ölçüm Qt `isEnabled()` ile değil, **native `IsWindowEnabled`** (Win32 `EnumWindows` + `IsWindowEnabled`) ile alınır; pencere başlığı, `HWND`, owner ve açılış sırası kaydedilir.
 
 Kapanış: yalnız bu turda açılan PID'ler yönetilir, geçici kök proje ve gerçek profil dışında olduğu doğrulanıp silinir, gerçek kullanıcı verisi parmak izi değişmemiş olmalı.
+
+### Neden paketli kanıt zorunlu — O16 dersi
+
+**Mock'lu, offscreen ve kaynak-modu testleri paketli modal davranışın yerine geçemez.** 2026-07-31'de O16 deseni (WindowModal `QProgressDialog` açıkken aynı parent'a `QInputDialog.getItem`) **pozitif kontrol** olarak iki kez yeniden kuruldu — hem offscreen hem gerçek Windows Qt platformunda, kaynak modunda — ve **kilitlenme üretilemedi**; seçim penceresi her iki denemede de `enabled=true` ölçüldü. Oysa O16'nın özgün kanıtı **paketli EXE** üzerinde `IsWindowEnabled == 0` olarak alınmıştı.
+
+Sonuç: modal/progress sırası, `QInputDialog`/`QMessageBox` yerleşimi veya içe aktarma akışı değişirse kanıt **yalnız frozen EXE üzerinde** (B sınıfı, 9. senaryo) geçerlidir. Kaynak testleri sırayı korur, davranışı kanıtlamaz.
 
 ## C — Installer doğrulaması
 

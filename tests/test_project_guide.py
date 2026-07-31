@@ -825,6 +825,89 @@ class CanliRemoteIddiaTests(unittest.TestCase):
                           f"RELEASE_CHECKLIST '{adim}' adımını içermiyor")
 
 
+def _bolum(metin: str, bas_kalip: str, bit_kalip: str) -> str:
+    """Belgeden YALNIZ ilgili bölümü keser.
+
+    Böylece test, belgenin başka bir yerinde geçen ilgisiz bir kelimeyle
+    yanlışlıkla geçemez. Bölüm bulunamazsa boş string döner (test düşer).
+    """
+    bas = re.search(bas_kalip, metin, re.M)
+    if not bas:
+        return ""
+    kalan = metin[bas.start():]
+    bit = re.search(bit_kalip, kalan[len(bas.group(0)):], re.M)
+    return kalan if not bit else kalan[:len(bas.group(0)) + bit.start()]
+
+
+class R4KaliciDogrulamaTests(unittest.TestCase):
+    """R4 → kalıcı kural: modal/progress kanıtı PAKETLİ EXE'de alınır.
+
+    Testler belgenin tamamında kelime aramaz; ilgili bölümü başlık/satır
+    sınırıyla keser ve yalnız orada ölçer. Sayı gömülmez.
+    """
+
+    def setUp(self):
+        vg = (REHBER / "VERIFICATION_GUIDE.md").read_text(encoding="utf-8")
+        cs = (REHBER / "CURRENT_STATUS.md").read_text(encoding="utf-8")
+        kr = (REHBER / "KNOWN_RISKS.md").read_text(encoding="utf-8")
+        # B sınıfı 9. senaryo: sonraki numaralı madde veya sonraki başlığa kadar
+        self.b9 = _bolum(vg, r"^9\.\s+\*\*Modal\s*/\s*progress", r"^(#{2,3} |\d+\. )")
+        self.ders = _bolum(vg, r"^### .*paketli kanıt zorunlu", r"^#{2,3} ")
+        self.cs_r4 = _bolum(cs, r"^## R4 ", r"^## ")
+        satir = [s for s in kr.splitlines() if s.startswith("| R4 ")]
+        self.r4 = satir[0] if satir else ""
+
+    # 1 ─────────────────────────────────────────────────────────────────
+    def test_frozen_b9_olcum_sartlari(self):
+        self.assertTrue(self.b9, "VERIFICATION_GUIDE B/9 modal/progress bölümü yok")
+        self.assertRegex(self.b9, r"(?i)çok sayfal.*XLSX|XLSX",
+                         "B/9 çok sayfalı XLSX kontrolünü tanımlamıyor")
+        self.assertIn("IsWindowEnabled", self.b9,
+                      "B/9 native IsWindowEnabled ölçümünü şart koşmuyor")
+        self.assertRegex(self.b9, r"(?is)progress.{0,80}(bulunmamal|a[çc][ıi]k de[ğg]il|yok)",
+                         "B/9 'seçim sırasında progress bulunmamalı' şartını içermiyor")
+        self.assertRegex(self.b9, r"(?is)iptal.{0,80}olmamal",
+                         "B/9 iptalde DB yazımı olmama şartını içermiyor")
+
+    # 2 ─────────────────────────────────────────────────────────────────
+    def test_o16_dersi_paketli_kaniti_zorunlu_kiliyor(self):
+        self.assertTrue(self.ders, "'Neden paketli kanıt zorunlu' bölümü yok")
+        for anahtar in ("mock", "offscreen", "kaynak"):
+            self.assertRegex(self.ders, rf"(?i){anahtar}",
+                             f"ders bölümü '{anahtar}' sınırını yazmıyor")
+        self.assertRegex(self.ders, r"(?i)yerine ge[çc]emez|kan[ıi]tlamaz",
+                         "mock/offscreen/kaynak ölçümünün yetersizliği yazılmamış")
+        self.assertRegex(self.ders, r"(?is)pozitif kontrol.{0,400}üretilemedi",
+                         "pozitif kontrolün üretilemediği yazılmamış")
+        self.assertRegex(self.ders, r"(?i)frozen|paketli",
+                         "kanıtın paketli EXE'de alınacağı yazılmamış")
+
+    # 3 ─────────────────────────────────────────────────────────────────
+    def test_r4_risk_satiri_kalici_kural(self):
+        self.assertTrue(self.r4, "KNOWN_RISKS R4 satırı yok")
+        self.assertNotRegex(self.r4, r"(?i)taranmal[ıi]",
+                            "R4 hâlâ 'taranmalı' diyor — tarama tamamlandı")
+        self.assertIn("2026-07-31", self.r4, "R4 tarama tarihi yok")
+        self.assertRegex(self.r4, r"(?i)bulunmad",
+                         "R4 'ikinci riskli akış bulunmadı' sonucunu yazmıyor")
+        self.assertRegex(self.r4, r"\|\s*D[üu][şs][üu]k\s*\|",
+                         "R4 şiddeti Düşük değil")
+        self.assertRegex(self.r4, r"(?i)(de[ğg]i[şs]irse|yaln[ıi]z).{0,120}(frozen|paketli)",
+                         "R4 sonraki adımı koşullu paketli smoke demiyor")
+
+    # 4 ─────────────────────────────────────────────────────────────────
+    def test_current_status_ve_rehber_baglantisi_tutarli(self):
+        self.assertTrue(self.cs_r4, "CURRENT_STATUS 'R4 …' bölümü yok")
+        self.assertRegex(self.cs_r4, r"(?i)kusur bulunmad|envanter",
+                         "CURRENT_STATUS R4 sonucunu yazmıyor")
+        self.assertRegex(self.cs_r4, r"(?i)frozen|paketli",
+                         "CURRENT_STATUS R4 paketli kanıt kuralını yazmıyor")
+        self.assertIn("VERIFICATION_GUIDE.md", self.cs_r4,
+                      "CURRENT_STATUS R4 doğrulama rehberine bağlanmıyor")
+        self.assertIn("VERIFICATION_GUIDE.md", self.r4,
+                      "KNOWN_RISKS R4 doğrulama rehberine bağlanmıyor")
+
+
 class GizlilikTests(unittest.TestCase):
     """Depodaki gerçek rehber içeriği gizli veri barındırmamalı."""
 

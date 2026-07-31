@@ -61,7 +61,7 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dahil son tam suite",
-      "passed": 813,
+      "passed": 817,
       "subtests_passed": 105,
       "date": "2026-07-31",
       "skipped": 1,
@@ -69,7 +69,7 @@
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 813,
+      "passed": 817,
       "subtests_passed": 105,
       "date": "2026-07-31",
       "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. temiz çalışma ağacında alınan gerçek sonuç. Tek skip: artifact stale olmadığı için stale-senaryosu testi uygulanmaz.",
