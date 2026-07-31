@@ -2,7 +2,7 @@
 
 ---
 
-## [v4.1] — hazırlanıyor (yayınlanmadı)
+## [v4.1] — 2026-07-31
 
 Bu sürüm baştan sona bir güvenilirlik turudur: veri kaybına, sessiz hatalara ve
 kapanış çökmelerine yol açabilecek durumlar tek tek bulunup kapatıldı.
@@ -52,13 +52,22 @@ kapanış çökmelerine yol açabilecek durumlar tek tek bulunup kapatıldı.
 - Kurulu sürüm izole ortamda baştan sona çalıştırılarak açılış, kapanış,
   yeniden başlatma ve hata bildirimi doğrulandı.
 
+### Otomatik güncelleme güvenliği
+- Otomatik güncelleme artık yalnız sürüme ait tam kurulum dosyası adını kabul
+  ediyor.
+- İndirme adresi resmî GitHub release alanıyla sınırlandırılıyor.
+- Dosya çalıştırılmadan önce boyutu ve SHA-256 özeti doğrulanıyor.
+- Eksik, bozuk veya doğrulanamayan kurulum dosyası çalıştırılmıyor; güvenli hata
+  mesajı gösteriliyor.
+
+Bilinen sınır: Kurulum dosyası dijital olarak imzalı değildir; Windows
+SmartScreen "Bilinmeyen yayımcı" uyarısı gösterebilir.
+
 ### Proje altyapısı
 - Otomatik test sayısı belirgin şekilde arttı; her düzeltme kendi regresyon
   testiyle korunuyor.
 - Proje bilgisi tek bir kaynakta toplandı (`PROJECT_GUIDE`), böylece sonraki
   değişiklikler daha güvenli yapılabiliyor.
-
-> Not: Bu sürüm henüz yayınlanmadı; yayın tarihi release oluşturulduğunda yazılır.
 
 ---
 

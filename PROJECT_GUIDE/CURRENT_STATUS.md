@@ -18,7 +18,7 @@ volatile: true
 - Sürüm: **v4.1** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` ve `version_info.txt` eşitlendi
 - Commit ayrımı: v4.1 **sürüm hazırlığı** `a63f981` · **U17 dâhil güncel işlevsel kaynak** `7395561` · **eldeki artifact'ın build edildiği HEAD** `d359137` (7395561'i içerir → artifact güncel)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dâhil son tam suite: **798 passed, 1 skipped, 98 subtests** (2026-07-31, temiz ağaç). Tek skip, artifact stale olmadığı için stale-senaryosu testinin uygulanmamasıdır; `verify_project_guide.py --release` temiz ağaçta **exit 0** verir.
+- PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dâhil son tam suite: **804 passed, 1 skipped, 105 subtests** (2026-07-31, temiz ağaç). Tek skip, artifact stale olmadığı için stale-senaryosu testinin uygulanmamasıdır; `verify_project_guide.py --release` temiz ağaçta **exit 0** verir.
 - `py_compile` tüm proje dosyalarında temiz
 - v4.1 kaynak commit'lerinin upstream durumu **release öncesinde canlı git komutlarıyla doğrulanmalıdır**; bu belgede canlı remote hash tutulmaz
 
@@ -51,12 +51,11 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 ## Kalan aşamalar
 
-1. Canlı release ön kontrolü — [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) 1. adım (canlı `git fetch` + `rev-parse` + `rev-list`)
-2. Metadata commit ve push
-3. v4.1 tag + GitHub Release (asset adı **tam olarak** `TeklifYonetim_Setup_v4.1.exe`, tek `.exe`)
-4. Canlı updater uçtan uca read-back
-5. `updater_end_to_end_verified` metadata güncellemesi
-6. Rollback/baseline klasörlerinin (`<ROLLBACK_ROOT>`) açık onayla temizliği
+1. Release öncesi canlı git/GitHub kontrolünü tekrarla — [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) 1. adım
+2. v4.1 tag + GitHub Release (asset adı **tam olarak** `TeklifYonetim_Setup_v4.1.exe`, tek `.exe`)
+3. Canlı updater uçtan uca doğrulaması
+4. Yayın metadata güncellemesi (`tag_created`, `github_release_created`, `updater_end_to_end_verified`)
+5. Rollback/baseline klasörlerinin (`<ROLLBACK_ROOT>`) açık onayla temizliği
 
 ## Bu yakalamayı yenilerken
 

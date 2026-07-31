@@ -444,6 +444,72 @@ def kontrol_yerel_girdiler(kok: Path) -> list[str]:
     return hatalar
 
 
+CHANGELOG = "docs/CHANGELOG.md"
+_CL_BASLIK = re.compile(r"^##\s*\[(?P<surum>[^\]]+)\]\s*(?:[—–-]\s*)?(?P<kalan>.*)$")
+_CL_TARIH = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_CL_TASLAK = ("hazırlanıyor", "hazirlaniyor", "yayınlanmadı", "yayinlanmadi",
+              "unreleased", "taslak", "tbd")
+
+
+def kontrol_changelog(kok: Path, zorunlu: bool = False) -> list[str]:
+    """--release kapısı: hedef sürümün CHANGELOG bölümü yayına hazır olmalı.
+
+    Tag'in konduğu commit'in kendi içinde "yayınlanmadı" demesi kabul edilemez.
+    Kural yalnız `zorunlu` (release) modunda ve `release_candidate_ready=true`
+    iken uygulanır; sürüm hazırlığı sırasında taslak başlık serbesttir.
+    Yalnız HEDEF sürümün bölümü incelenir — eski sürümlerin tarihsel metni
+    (ör. geçmişte yazılmış "henüz yayınlanmadı" notu) sonucu etkilemez.
+    """
+    if not zorunlu:
+        return []
+    manifest = _rehber(kok) / "project_manifest.json"
+    if not manifest.is_file():
+        return []                       # eksikliği kontrol_manifest raporlar
+    try:
+        veri = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []                       # bozukluğu kontrol_manifest raporlar
+    snapshot = veri.get("snapshot", {})
+    if snapshot.get("release_candidate_ready") is not True:
+        return []                       # release adayı değil → kapı uygulanmaz
+    hedef = str((snapshot.get("release") or {}).get("target_version")
+                or snapshot.get("version") or "").strip()
+    if not hedef:
+        return ["changelog: hedef sürüm manifestten okunamadı"]
+
+    yol = kok / CHANGELOG
+    if not yol.exists():
+        return [f"changelog: {CHANGELOG} bulunamadı"]
+    satirlar = yol.read_text(encoding="utf-8").splitlines()
+
+    bas = kalan = None
+    for i, satir in enumerate(satirlar):
+        m = _CL_BASLIK.match(satir.strip())
+        if m and m.group("surum").strip() == hedef:
+            bas, kalan = i, m.group("kalan").strip()
+            break
+    if bas is None:
+        return [f"changelog: {hedef} bölümü yok — yayın öncesi eklenmeli"]
+
+    hatalar = []
+    if not _CL_TARIH.match(kalan):
+        hatalar.append(
+            f"changelog: {hedef} başlığı '## [{hedef}] — YYYY-MM-DD' biçiminde "
+            f"değil (bulunan: {kalan!r})")
+
+    son = bas + 1
+    while son < len(satirlar) and not _CL_BASLIK.match(satirlar[son].strip()):
+        son += 1
+    govde = "\n".join(satirlar[bas:son]).lower()
+    for isaret in _CL_TASLAK:
+        if isaret in govde:
+            hatalar.append(
+                f"changelog: {hedef} bölümünde taslak işareti var ({isaret!r}) — "
+                f"yayınlanan commit kendi içinde 'yayınlanmadı' diyemez")
+            break
+    return hatalar
+
+
 # ── Sürücü ──────────────────────────────────────────────────────────────────
 
 def calistir(kok: Path, artifacts: bool = False, release: bool = False,
@@ -470,6 +536,7 @@ def calistir(kok: Path, artifacts: bool = False, release: bool = False,
 
     if release:
         hatalar += kontrol_yerel_girdiler(kok)
+        hatalar += kontrol_changelog(kok, zorunlu=True)
 
     return hatalar, uyarilar
 

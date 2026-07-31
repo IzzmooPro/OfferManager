@@ -563,6 +563,89 @@ class SnapshotDiliTests(unittest.TestCase):
                             "baseline sayısı tam suite ile aynı yazılmış")
 
 
+class ChangelogReleaseKapisiTests(_GeciciRehber):
+    """`--release` kapısı: hedef sürümün CHANGELOG bölümü yayına hazır olmalı.
+
+    Tag'in konduğu commit'in kendi içinde "yayınlanmadı" demesi kabul edilemez.
+    Kural YALNIZ release kapısında zorunludur; sürüm hazırlığı sırasında
+    normal / --stale / --artifacts modları taslak changelog'a izin verir.
+    """
+
+    TASLAK = "## [v4.1] — hazırlanıyor (yayınlanmadı)"
+    YAYIN = "## [v4.1] — 2026-07-31"
+    GOVDE = "\n- Bir değişiklik.\n"
+    ESKI = "\n## [v4.0] — 2026-07-10\n\n- Eski sürüm notu.\n"
+
+    def _changelog(self, metin):
+        y = self.kok / "docs" / "CHANGELOG.md"
+        y.parent.mkdir(parents=True, exist_ok=True)
+        y.write_text("# Değişiklik Geçmişi\n\n" + metin, encoding="utf-8")
+        return y
+
+    def _hedefi_ayarla(self, surum="v4.1", hazir=True):
+        y = self._belge("project_manifest.json")
+        veri = json.loads(y.read_text(encoding="utf-8"))
+        veri["snapshot"]["version"] = surum
+        veri["snapshot"]["release_candidate_ready"] = hazir
+        veri["snapshot"].setdefault("release", {})["target_version"] = surum
+        y.write_text(json.dumps(veri, ensure_ascii=False, indent=2),
+                     encoding="utf-8")
+
+    def _release_hatalari(self):
+        return self.modul.kontrol_changelog(self.kok, zorunlu=True)
+
+    # 1 — taslak başlık release kapısını düşürür
+    def test_taslak_baslik_release_kapisini_dusurur(self):
+        self._hedefi_ayarla()
+        self._changelog(self.TASLAK + self.GOVDE + self.ESKI)
+        self.assertTrue(self._release_hatalari(),
+                        "taslak changelog başlığı release kapısını geçti")
+
+    # 2 — hedef sürüm bölümü yok
+    def test_hedef_surum_bolumu_yoksa_kirmizi(self):
+        self._hedefi_ayarla()
+        self._changelog(self.ESKI.lstrip())
+        self.assertTrue(any("v4.1" in h for h in self._release_hatalari()),
+                        "eksik sürüm bölümü yakalanmadı")
+
+    # 3 — tarih biçimi yanlış
+    def test_bozuk_tarih_bicimi_kirmizi(self):
+        self._hedefi_ayarla()
+        for kotu in ("31.07.2026", "2026/07/31", "Temmuz 2026", "2026-7-31"):
+            with self.subTest(tarih=kotu):
+                self._changelog(f"## [v4.1] — {kotu}"
+                                + self.GOVDE + self.ESKI)
+                self.assertTrue(self._release_hatalari(),
+                                f"bozuk tarih kabul edildi: {kotu}")
+
+    # 4 — yayın başlığı geçer
+    def test_yayin_basligi_gecer(self):
+        self._hedefi_ayarla()
+        self._changelog(self.YAYIN + self.GOVDE + self.ESKI)
+        self.assertEqual(self._release_hatalari(), [])
+
+    # 5 — eski sürümdeki tarihsel taslak metni hedefi etkilemez
+    def test_eski_surumdeki_yayinlanmadi_metni_etkilemez(self):
+        self._hedefi_ayarla()
+        eski = ("\n## [v4.0] — 2026-07-10\n\n"
+                "> Not: Bu sürüm henüz yayınlanmadı; tarih sonra yazılacaktı.\n")
+        self._changelog(self.YAYIN + self.GOVDE + eski)
+        self.assertEqual(self._release_hatalari(), [],
+                         "eski sürümün tarihsel metni hedef bölümü düşürdü")
+
+    # Mod kapısı — hazırlık sırasında taslak changelog serbest
+    def test_taslak_yalniz_release_modunda_hata(self):
+        self._hedefi_ayarla()
+        self._changelog(self.TASLAK + self.GOVDE + self.ESKI)
+        self.assertEqual(self.modul.kontrol_changelog(self.kok, zorunlu=False),
+                         [], "taslak changelog release DIŞI modda hata üretti")
+        for kw in ({}, {"stale": True}, {"artifacts": True}):
+            with self.subTest(mod=kw or "normal"):
+                hatalar, _ = self.modul.calistir(self.kok, **kw)
+                self.assertFalse([h for h in hatalar if "changelog" in h],
+                                 f"{kw or 'normal'} modunda changelog hatası")
+
+
 class KanonikBilgiTests(unittest.TestCase):
     """Legacy belgelerden aktarılan benzersiz bilgiler kanonik yerinde olmalı.
 
