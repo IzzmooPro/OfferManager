@@ -7,8 +7,8 @@ covers:
   - packaging/version_info.txt
   - packaging/Kurulum-Yap.bat
   - ui/utils/updater.py
-last_verified_commit: a63f981
-last_verified_date: 2026-07-28
+last_verified_commit: 7395561
+last_verified_date: 2026-07-31
 volatile: false
 ---
 
@@ -59,7 +59,8 @@ Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı öl
 - [ ] Commit (yalnız açık istek üzerine)
 - [ ] Push → `origin/main` ile senkron doğrulandı
 - [ ] Tag `vX.Y` oluşturuldu ve push edildi
-- [ ] GitHub Release oluşturuldu; **setup `.exe` asset olarak yüklendi** (updater ilk `.exe` asset'ini indirir)
+- [ ] GitHub Release oluşturuldu; asset **tam olarak `TeklifYonetim_Setup_vX.Y.exe`** adıyla yüklendi (updater yalnız bu adı kabul eder)
+- [ ] `gh release view --json assets` ile asset'in `size` ve `digest` (`sha256:<64 hex>`) alanlarının dolu olduğu doğrulandı — biri eksikse updater fail-closed davranır ve otomatik güncelleme çalışmaz
 - [ ] Yayın sonrası read-back: tag, release ve indirilebilir asset doğrulandı
 - [ ] Eski sürümden **canlı güncelleme denemesi** ([VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) — updater uçtan uca)
 - [ ] `docs/CHANGELOG.md` sürüm başlığı yayın tarihiyle güncellendi
@@ -89,7 +90,8 @@ gh release upload vX.Y "installer_output/TeklifYonetim_Setup_vX.Y.exe" --clobber
 ```
 
 - Release başlığı biçimi: **`Teklif Yönetim Sistemi vX.Y`**
-- Asset **installer `.exe`** olmalı; updater release'teki **ilk `.exe` asset'ini** indirir, bu yüzden release'te başka `.exe` bulundurma.
+- Asset adı **tam olarak `TeklifYonetim_Setup_vX.Y.exe`** olmalı. Updater yalnız bu ada birebir uyan **tek** asset'i indirir; başka `.exe`'ler seçilmez, aynı ad iki kez varsa güncelleme sunulmaz (fail-closed). Büyük/küçük harf farkı kabul edilmez.
+- Updater indirmeden önce API `size` ve `digest` alanlarını, indirme sonrası gerçek bayt sayısı + SHA-256 değerini doğrular. Bu alanlar release'te eksikse **otomatik güncelleme hiç başlamaz**.
 - **Mevcut bir tag veya release üzerine yazmak** (`--clobber`, tag taşıma, release silme) **açık kullanıcı izni gerektirir**; yayınlanmış tag varsayılan olarak değiştirilmez.
 - **Read-back zorunlu:** `gh release view vX.Y -R <OWNER>/<REPO>` ile tag'in doğru commit'i gösterdiği, release'in yayında olduğu ve asset'in indirilebilir olduğu doğrulanır; indirilen dosyanın SHA256'sı [project_manifest.json](project_manifest.json) ile karşılaştırılır.
 

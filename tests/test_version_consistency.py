@@ -57,31 +57,70 @@ class KaynakSurumTests(unittest.TestCase):
         self.assertEqual(veri["snapshot"]["version"], HEDEF)
 
     def test_manifest_artifact_hedef_surumle_ayni(self):
-        """Artifact hedef sürüm için üretildi ve doğrulandı."""
+        """Artifact hedef sürüm için üretildi; durumu dürüstçe yazıldı.
+
+        `artifact_verification_status` sabit "verified" olmak ZORUNDA değildir:
+        kaynak artifact üretildikten sonra değişirse doğru değer
+        "stale_source_changed"dır. Sınanan şey, durumun tutarlı ve gerekçeli
+        olmasıdır — sahte "verified" yazılamaz.
+        """
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
         self.assertEqual(s.get("artifact_built_for_version"), HEDEF)
-        self.assertEqual(s.get("artifact_verification_status"), "verified")
+        durum = s.get("artifact_verification_status")
+        self.assertIn(durum, ("verified", "stale_source_changed"))
+        if durum == "stale_source_changed":
+            self.assertTrue(str(s.get("artifact_stale_reason", "")).strip(),
+                            "artifact eskidi ama gerekçe yazılmamış")
+            self.assertIs(s.get("release_candidate_ready"), False,
+                          "artifact eskimişken release adayı sayılamaz")
         for anahtar in ("dist_exe", "installer", "installed_exe"):
             self.assertEqual(s[anahtar].get("built_for_version"), HEDEF,
                              f"{anahtar}.built_for_version hedef sürüm değil")
 
-    def test_manifest_release_candidate_hazir_ama_yayinlanmamis(self):
+    def test_manifest_release_candidate_durumu_durust(self):
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        self.assertIs(s.get("release_candidate_ready"), True)
+        hazir = s.get("release_candidate_ready")
+        self.assertIsInstance(hazir, bool)
         self.assertIs(s["release"].get("tag_created"), False)
         self.assertIs(s["release"].get("github_release_created"), False)
         self.assertTrue(str(s.get("release_readiness_note", "")).strip(),
                         "release_candidate_ready'nin anlamı yazılmamış")
+        if hazir:
+            self.assertEqual(s.get("artifact_verification_status"), "verified",
+                             "doğrulanmamış artifact ile release adaylığı iddia edilemez")
 
     def test_manifest_commit_ayrimi_durust(self):
+        """Üçlü provenance ayrı ayrı tutulur ve birbirine karıştırılmaz.
+
+        * `version_prepare_commit` — v4.1 sürüm alanlarının hazırlandığı commit
+        * `source_commit`         — güncel işlevsel kaynak (U17 dâhil)
+        * `built_from_commit`     — eldeki artifact'ın alındığı gerçek HEAD
+        """
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        self.assertEqual(s.get("source_commit"), "a63f981",
-                         "işlevsel sürüm değişikliği commit'i")
+        self.assertEqual(s.get("version_prepare_commit"), "a63f981",
+                         "v4.1 sürüm hazırlığı commit'i")
         self.assertEqual(s.get("built_from_commit"), "de64a75",
                          "build'in alındığı gerçek HEAD")
+        kaynak = str(s.get("source_commit", "")).strip()
+        self.assertRegex(kaynak, r"^[0-9a-f]{7,40}$",
+                         "source_commit gerçek bir commit hash'i değil")
+        for alan in ("version_prepare_commit_note", "source_commit_note",
+                     "built_from_commit_note"):
+            self.assertTrue(str(s.get(alan, "")).strip(),
+                            f"{alan} boş — provenance açıklanmamış")
+
+    def test_artifact_staleyken_kaynak_ve_build_commiti_farkli(self):
+        s = json.loads(
+            (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
+        if s.get("artifact_verification_status") != "stale_source_changed":
+            self.skipTest("artifact stale değil")
+        self.assertNotEqual(s.get("source_commit"), s.get("built_from_commit"),
+                            "artifact stale iddiası var ama kaynak ve build "
+                            "commit'i aynı yazılmış")
+        self.assertIs(s.get("release_candidate_ready"), False)
 
     def test_manifest_installer_yolu_hedef_surumu_gosterir(self):
         s = json.loads(
@@ -306,6 +345,18 @@ class ReleaseDogrulamaTests(unittest.TestCase):
     """Artifact hedef sürüm için doğrulandığında --release geçmeli."""
 
     def test_release_modu_gecer(self):
+        # --release yalnız gerçek yayın kapısıdır: artifact hedef sürüm için
+        # doğrulanmış VE çalışma ağacı temiz olmalıdır. Kaynak değişikliği
+        # sürerken kırmızı olması TASARIM GEREĞİDİR, regresyon değil.
+        s = json.loads(
+            (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
+        if s.get("release_candidate_ready") is not True:
+            self.skipTest("release adayı değil: artifact yeniden build bekliyor")
+        kirli = subprocess.run(["git", "status", "--porcelain",
+                                "--untracked-files=all"], cwd=str(KOK),
+                               capture_output=True, text=True, timeout=60)
+        if kirli.returncode == 0 and kirli.stdout.strip():
+            self.skipTest("çalışma ağacı temiz değil: commit öncesi stale beklenir")
         sonuc = subprocess.run([sys.executable, str(VERIFY), "--release"],
                                capture_output=True, text=True, timeout=180)
         self.assertEqual(sonuc.returncode, 0,

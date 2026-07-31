@@ -6,8 +6,8 @@ covers:
   - core/restart.py
   - core/app_paths.py
   - ui/dialogs/backup_manager.py
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: 7395561
+last_verified_date: 2026-07-31
 volatile: false
 ---
 
@@ -68,7 +68,8 @@ Güvenlik koşulları:
 
 - Tercihen **izole/test ortamı**; gerçek makinede yapılacaksa önce **kullanıcı verisi yedeği** alınır.
 - İndirilen asset'in **SHA256'sı** manifest ile karşılaştırılır (read-back).
-- Release'te **birden fazla `.exe` bulundurulmaz** — updater ilk `.exe` asset'ini seçer.
+- Asset adı **tam olarak `TeklifYonetim_Setup_<tag>.exe`** olmalı; updater yalnız bu ada birebir uyan tek asset'i indirir. Adı tutmayan release'te güncelleme **hiç sunulmaz** (fail-closed) — canlı testte "güncelleme çıkmadı" belirtisi önce asset adı, `size` ve `digest` alanlarıyla açıklanır.
+- API `digest` (`sha256:<64 hex>`) ve `size` alanları dolu olmalı; updater indirilen dosyanın SHA-256'sını ve bayt sayısını bunlarla karşılaştırır.
 - Başarısızlıkta **eski sürüme geri dönüş** yolu hazır tutulur (rollback kopyası / önceki installer).
 - Gerçek SMTP, gerçek müşteri verisi ve kurulu üretim kurulumu bu testin kapsamı dışındadır.
 

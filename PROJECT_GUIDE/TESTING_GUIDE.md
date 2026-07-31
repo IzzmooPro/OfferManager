@@ -9,11 +9,12 @@ covers:
   - tests/test_import_sheet_dialog_modality.py
   - tests/test_xlsx_sheet_selection.py
   - tests/test_shutdown_workers.py
+  - tests/test_updater_asset_verification.py
   - tests/test_restart_flow.py
   - tests/test_credential_store.py
   - tests/test_save_error_handling.py
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: 7395561
+last_verified_date: 2026-07-31
 volatile: false
 ---
 
@@ -49,6 +50,7 @@ volatile: false
 | Windowed hata bildirimi (O8) | `tests/test_windowed_error_reporting.py` |
 | E-posta diyalogu yaşam döngüsü | `tests/test_email_dialog_lifecycle.py` |
 | Güncelleme diyalogu yaşam döngüsü | `tests/test_update_dialog_lifecycle.py` |
+| Updater güven zinciri (asset seçimi, URL/host, SHA-256, size) | `tests/test_updater_asset_verification.py` |
 | Şablon / kategori / müşteri / ürün servisleri | adı eşleşen `tests/test_*_service.py` |
 | Süresi geçen teklif uyarısı | `tests/test_expired_offer_prompt.py` |
 | Rehber tutarlılığı | `tests/test_project_guide.py` |
@@ -57,7 +59,7 @@ volatile: false
 
 Aşağıdakiler kaynak testiyle örtülür ama **paketli sürümde doğrulanmamıştır**; bunları frozen kanıtı gibi sunma:
 
-- Güncelleme indirme ve kurulum başlatma (`_apply_update`)
+- Güncelleme indirme ve kurulum başlatma (`_apply_update`) — asset seçimi ve içerik doğrulaması sahte release JSON'u ve sahte `urlopen` ile örtülür; **gerçek GitHub redirect host'u ve gerçek installer çalıştırma kaynak testinde doğrulanmaz** (KNOWN_RISKS R3b, R3d)
 - Gerçek SMTP gönderimi
 - O14 retry döngüsünün gerçek modal `exec()` davranışı
 

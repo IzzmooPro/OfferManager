@@ -37,19 +37,19 @@
     "clean_clone_buildable": false
   },
   "snapshot": {
-    "captured_at": "2026-07-28",
+    "captured_at": "2026-07-31",
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "a63f981",
-    "source_commit_note": "işlevsel sürüm değişikliğinin (v4.0 → v4.1) yapıldığı commit",
+    "source_commit": "7395561",
+    "source_commit_note": "güncel v4.1 işlevsel kaynak snapshot'ı — U17 updater güven zinciri (asset adı doğrulaması, URL/host allowlist, SHA-256 + size doğrulaması, fail-closed) bu commit'te yer alır",
     "built_from_commit": "de64a75",
-    "built_from_commit_note": "v4.1 temiz build'inin alındığı gerçek HEAD",
+    "built_from_commit_note": "eldeki v4.1 build'inin alındığı gerçek HEAD; U17 ÖNCESİ kaynağa aittir → artifact stale",
     "version": "v4.1",
     "artifact_built_for_version": "v4.1",
-    "artifact_verification_status": "verified",
-    "release_candidate_ready": true,
-    "release_readiness_note": "teknik kapılar (temiz build + frozen smoke + gerçek in-place upgrade) geçti; bu YAYINLANDI anlamına GELMEZ — tag, GitHub Release ve updater read-back henüz yapılmadı",
+    "artifact_verification_status": "stale_source_changed",
+    "release_candidate_ready": false,
+    "release_readiness_note": "U17 updater güven zinciri düzeltmesi kaynağa uygulandı (asset adı doğrulaması + URL/host allowlist + SHA-256/size doğrulaması). Eldeki v4.1 dist/installer artifact'ları BU DEĞİŞİKLİKTEN ÖNCE üretilmiştir; artık kaynakla aynı değildir. Yeniden build + frozen smoke + installer doğrulaması yapılmadan release adayı sayılmaz.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -60,17 +60,19 @@
     },
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
-      "scope": "PROJECT_GUIDE ve sürüm tutarlılık testleri dahil son tam suite",
-      "passed": 746,
-      "subtests_passed": 29,
-      "date": "2026-07-28"
+      "scope": "PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dahil son tam suite",
+      "passed": 794,
+      "subtests_passed": 98,
+      "date": "2026-07-31",
+      "skipped": 1
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 746,
-      "subtests_passed": 29,
-      "date": "2026-07-28",
-      "note": "guide_integrated_test_result ile aynı; source_test_result kaynak davranışı baseline'ını ayrı tutar"
+      "passed": 794,
+      "subtests_passed": 98,
+      "date": "2026-07-31",
+      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. 1 skip: --release kapısı, artifact yeniden build beklediği için atlanır.",
+      "skipped": 1
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
@@ -141,7 +143,18 @@
       "updater_end_to_end_verified": false,
       "existing_remote_tag": "v4.0",
       "upstream_sync_must_be_verified_live": true,
-      "note": "v4.1 artifact'ı üretildi ve doğrulandı; tag, GitHub Release ve updater read-back YAPILMADI. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; release öncesi canlı git komutlarıyla ölçülür."
-    }
+      "note": "v4.1 artifact'ı üretildi ve doğrulandı, ancak U17 kaynak değişikliğinden sonra yeniden build gerekir. Tag, GitHub Release ve updater read-back YAPILMADI. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; release öncesi canlı git komutlarıyla ölçülür.",
+      "updater_trust_chain": {
+        "asset_name_pinned": true,
+        "url_host_allowlisted": true,
+        "sha256_and_size_verified": true,
+        "fail_closed_when_metadata_missing": true,
+        "code_signing": false,
+        "note": "digest release metadata'sından gelir; bozuk/eksik indirmeyi ve yanlış asset seçimini engeller, ele geçirilmiş release metadata'sına karşı bağımsız güven kökü değildir (KNOWN_RISKS R5). CDN redirect host'u 2026-07-31 canlı API sorgusunda mevcut v4.0 asset'i için release-assets.githubusercontent.com olarak doğrulandı; GitHub ileride başka bir host kullanırsa updater fail-closed olur (güvenli ama çalışmaz) — KNOWN_RISKS R3d."
+      }
+    },
+    "artifact_stale_reason": "ui/utils/updater.py ve ui/dialogs/help_dialogs.py U17 turunda değişti; artifact hash'leri eski kaynağa aittir ve OLDUĞU GİBİ bırakılmıştır (sahte güncelleme yapılmadı)",
+    "version_prepare_commit": "a63f981",
+    "version_prepare_commit_note": "v4.1 sürüm alanlarının (APP_VERSION, .iss, version_info.txt, CHANGELOG) hazırlandığı commit"
   }
 }

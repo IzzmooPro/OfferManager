@@ -9,8 +9,8 @@ covers:
   - ui/main_window.py
   - ui/dialogs/backup_manager.py
   - ui/utils/updater.py
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: 7395561
+last_verified_date: 2026-07-31
 volatile: false
 ---
 
@@ -64,7 +64,19 @@ main.py  →  ui/  →  services/  →  database/db_manager.py  →  SQLite
 
 ## Güncelleme
 
-`ui/utils/updater.py` GitHub Releases API'sinden son tag'i okur, `.exe` asset'ini indirir ve `os.startfile` ile Inno kurulumunu başlatır (UAC yükseltmesi installer manifestinden gelir). Kaynak modda tarayıcıya yönlendirir. Onefile veya EXE üzerine kopyalama yoluna dönülmez.
+`ui/utils/updater.py` GitHub Releases API'sinden son tag'i okur, **yalnız `TeklifYonetim_Setup_<tag>.exe` adına birebir uyan tek asset'i** seçer, indirir ve `os.startfile` ile Inno kurulumunu başlatır (UAC yükseltmesi installer manifestinden gelir). Kaynak modda tarayıcıya yönlendirir. Onefile veya EXE üzerine kopyalama yoluna dönülmez.
+
+**Güven zinciri (fail-closed).** Seçim ve doğrulama Qt'den bağımsız saf yardımcılardadır (`select_update_asset`, `is_release_download_url`, `is_allowed_download_host`); `UpdateChecker` ve `StartupUpdateChecker` aynı yardımcıyı kullanır. İndirme yalnız şu koşulların tamamı sağlanırsa çalıştırılır:
+
+- URL `https://github.com/IzzmooPro/OfferManager/releases/download/<tag>/<beklenen ad>` ile birebir aynı (tam hostname eşleşmesi; suffix/prefix/userinfo/port hilesi reddedilir)
+- Aynı beklenen ada sahip **tek** asset var; başka `.exe`'ler **seçilmez**
+- API `size` pozitif tam sayı, `digest` tam olarak `sha256:<64 hex>`
+- Redirect sonrası son URL HTTPS ve `github.com` / `objects.githubusercontent.com` / `release-assets.githubusercontent.com`
+- Yazılan gerçek bayt sayısı = `size`, varsa `Content-Length` = `size`, SHA-256 = `digest`
+
+Doğrulama başarısızsa yarım dosya silinir, `os.startfile` / `os._exit` / tarayıcı **çalışmaz**, kullanıcıya tek kısa mesaj gösterilir; manuel GitHub sayfası ayrı bir kullanıcı seçimidir. Teknik neden yalnız log'a yazılır.
+
+**Sınır:** digest de release metadata'sından gelir → bozuk/eksik CDN indirmesini ve yanlış asset seçimini engeller, **ele geçirilmiş GitHub release metadata'sına karşı bağımsız güven kökü değildir** (kod imzası yok — [KNOWN_RISKS.md](KNOWN_RISKS.md) R5).
 
 ## Hata bildirimi
 

@@ -3,22 +3,22 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: a63f981
-last_verified_date: 2026-07-28
+last_verified_commit: 7395561
+last_verified_date: 2026-07-31
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-07-28 · hedef sürüm: `v4.1`.**
+> **Yakalama tarihi: 2026-07-31 · hedef sürüm: `v4.1`.**
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Sürüm: **v4.1** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` ve `version_info.txt` eşitlendi
-- İşlevsel sürüm değişikliği commit'i: **`a63f981`** · v4.1 build'inin alındığı commit: **`de64a75`**
+- Commit ayrımı: v4.1 **sürüm hazırlığı** `a63f981` · **U17 dâhil güncel işlevsel kaynak** `7395561` · **eldeki (stale) artifact build'i** `de64a75`
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE ve sürüm tutarlılık testleri dâhil son tam suite: **746 passed, 29 subtests**
+- PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dâhil son tam suite: **794 passed, 1 skipped, 98 subtests** (2026-07-31). Atlanan tek test `--release` kapısıdır; artifact yeniden build beklediği için bilerek atlanır.
 - `py_compile` tüm proje dosyalarında temiz
 - v4.1 kaynak commit'lerinin upstream durumu **release öncesinde canlı git komutlarıyla doğrulanmalıdır**; bu belgede canlı remote hash tutulmaz
 
@@ -35,7 +35,7 @@ K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanl�
 - **Kod imzası yok** → SmartScreen uyarısı beklenir
 - Artifact hash/boyutları: [project_manifest.json](project_manifest.json)
 
-`release_candidate_ready = true`: teknik kapılar geçti. **Bu "yayınlandı" demek değildir** — tag, GitHub Release ve updater read-back yapılmadı.
+> **U17 sonrası uyarı — `release_candidate_ready = false`.** Yukarıdaki build / frozen smoke / installer sonuçları **U17 updater güven zinciri düzeltmesinden ÖNCEKİ** kaynağa aittir. `ui/utils/updater.py` ve `ui/dialogs/help_dialogs.py` değiştiği için eldeki v4.1 `dist/` ve `installer_output/` artifact'ları artık kaynakla aynı değildir. Artifact dosyaları ve manifest hash'leri **bilerek olduğu gibi bırakılmıştır**; sahte güncelleme yapılmamıştır. Yeniden build + frozen smoke + installer doğrulaması ayrı bir turda yapılacaktır.
 
 ## Bilinen sınır
 
@@ -49,6 +49,7 @@ v4.1 kaynak hazırlığı · temiz build · frozen smoke · gerçek in-place upg
 
 ## Kalan aşamalar
 
+0. **U17 kaynak değişikliği için yeniden build + frozen smoke + installer doğrulaması** (artifact'lar eskidi)
 1. [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) son geçiş (1. adım: canlı upstream ölçümü)
 2. v4.1 tag + GitHub Release
 3. Updater uçtan uca read-back → `updater_end_to_end_verified`

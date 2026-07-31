@@ -518,6 +518,50 @@ class SnapshotDiliTests(unittest.TestCase):
         self.assertIn(str(rehber), self.metin,
                       "rehber dahil test sayısı CURRENT_STATUS ile uyuşmuyor")
 
+    # ── Güncel tam suite sayıları tek kaynaktan okunur ───────────────────
+    #
+    # Sayılar teste SABİTLENMEZ: manifest ve CURRENT_STATUS'ten okunup
+    # karşılaştırılır, böylece suite büyüdükçe test kendiliğinden geçerli
+    # kalır ama iki kanonik yer birbirinden ayrışamaz.
+
+    _SUITE_RE = re.compile(
+        r"\*\*(\d+)\s+passed,\s*(\d+)\s+skipped,\s*(\d+)\s+subtests\*\*")
+
+    def _manifest_snapshot(self):
+        return json.loads(
+            (REHBER / "project_manifest.json").read_text(encoding="utf-8")
+        )["snapshot"]
+
+    def test_current_status_tam_suite_manifestle_ayni(self):
+        m = self._SUITE_RE.search(self.metin)
+        self.assertIsNotNone(
+            m, "CURRENT_STATUS güncel tam suite satırı "
+               "'**N passed, N skipped, N subtests**' biçiminde değil")
+        passed, skipped, subtests = (int(x) for x in m.groups())
+        rehber = self._manifest_snapshot()["guide_integrated_test_result"]
+        self.assertEqual(passed, rehber.get("passed"),
+                         "passed CURRENT_STATUS ile manifestte farklı")
+        self.assertEqual(skipped, rehber.get("skipped"),
+                         "skipped CURRENT_STATUS ile manifestte farklı")
+        self.assertEqual(subtests, rehber.get("subtests_passed"),
+                         "subtests CURRENT_STATUS ile manifestte farklı")
+
+    def test_manifest_iki_tam_suite_alani_esit(self):
+        s = self._manifest_snapshot()
+        rehber, genel = s["guide_integrated_test_result"], s["test_result"]
+        for alan in ("passed", "skipped", "subtests_passed"):
+            self.assertEqual(rehber.get(alan), genel.get(alan),
+                             f"test_result.{alan} guide_integrated ile eşit değil")
+
+    def test_kaynak_baseline_ayri_kalir(self):
+        """Tarihsel baseline (648/29 · 060baf3) tam suite ile karışmaz."""
+        s = self._manifest_snapshot()
+        kaynak = s["source_test_result"]
+        self.assertEqual(kaynak.get("baseline_commit"), "060baf3")
+        self.assertNotEqual(kaynak.get("passed"),
+                            s["guide_integrated_test_result"].get("passed"),
+                            "baseline sayısı tam suite ile aynı yazılmış")
+
 
 class KanonikBilgiTests(unittest.TestCase):
     """Legacy belgelerden aktarılan benzersiz bilgiler kanonik yerinde olmalı.
