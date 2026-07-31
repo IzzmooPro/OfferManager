@@ -75,7 +75,7 @@ Güvenlik koşulları:
 
 ## Sürüm yükseltmesinde kapsam
 
-Yeni bir sürüm için **B ve C sınıfları tekrarlanır**; hangi senaryoların atlandığı açıkça yazılır. Örnek: yalnız sürüm numarası ve doğrulanmış düzeltmeler değiştiyse B'de uzun patolojik senaryolar (büyük DB ile worker beklemesi, restart mutex beklemesi) ve C'de uninstall/reinstall tekrarlanmayabilir — bu durumda manifestteki `not_repeated` alanına hangi turda geçtiği yazılır.
+Yeni bir sürüm için **B ve C sınıfları tekrarlanır**; hangi senaryoların atlandığı açıkça yazılır. Örnek: yalnız sürüm numarası ve doğrulanmış düzeltmeler değiştiyse B'de uzun patolojik senaryolar (büyük DB ile worker beklemesi, restart mutex beklemesi) ve C'de uninstall/reinstall tekrarlanmayabilir — bu durumda manifest `installer_test` kaydına atlanan senaryo ve hangi turda geçtiği açıkça yazılır. **v4.1 (U17) turunda hiçbir senaryo atlanmadı: upgrade, uninstall ve temiz reinstall yeniden yürütüldü.**
 
 ## Doğrulanmış son sonuçlar
 

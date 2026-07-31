@@ -43,13 +43,13 @@
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
     "source_commit": "7395561",
     "source_commit_note": "güncel v4.1 işlevsel kaynak snapshot'ı — U17 updater güven zinciri (asset adı doğrulaması, URL/host allowlist, SHA-256 + size doğrulaması, fail-closed) bu commit'te yer alır",
-    "built_from_commit": "de64a75",
-    "built_from_commit_note": "eldeki v4.1 build'inin alındığı gerçek HEAD; U17 ÖNCESİ kaynağa aittir → artifact stale",
+    "built_from_commit": "d359137",
+    "built_from_commit_note": "U17'li v4.1 temiz build'inin alındığı gerçek HEAD; kaynak commit 7395561 bu ağaçta bulunur",
     "version": "v4.1",
     "artifact_built_for_version": "v4.1",
-    "artifact_verification_status": "stale_source_changed",
-    "release_candidate_ready": false,
-    "release_readiness_note": "U17 updater güven zinciri düzeltmesi kaynağa uygulandı (asset adı doğrulaması + URL/host allowlist + SHA-256/size doğrulaması). Eldeki v4.1 dist/installer artifact'ları BU DEĞİŞİKLİKTEN ÖNCE üretilmiştir; artık kaynakla aynı değildir. Yeniden build + frozen smoke + installer doğrulaması yapılmadan release adayı sayılmaz.",
+    "artifact_verification_status": "verified",
+    "release_candidate_ready": true,
+    "release_readiness_note": "teknik kapılar U17'li kaynakla yeniden geçti: temiz build + izole frozen smoke + gerçek yerinde upgrade + uninstall + temiz reinstall. Bu YAYINLANDI anlamına GELMEZ — tag, GitHub Release ve updater uçtan uca read-back henüz yapılmadı.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -61,38 +61,39 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dahil son tam suite",
-      "passed": 794,
+      "passed": 798,
       "subtests_passed": 98,
       "date": "2026-07-31",
-      "skipped": 1
+      "skipped": 1,
+      "note": "temiz çalışma ağacında alınan gerçek sonuç. Tek skip: artifact stale olmadığı için stale-senaryosu testi uygulanmaz."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 794,
+      "passed": 798,
       "subtests_passed": 98,
       "date": "2026-07-31",
-      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. 1 skip: --release kapısı, artifact yeniden build beklediği için atlanır.",
+      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. temiz çalışma ağacında alınan gerçek sonuç. Tek skip: artifact stale olmadığı için stale-senaryosu testi uygulanmaz.",
       "skipped": 1
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
-      "sha256": "AB100076DE98703D1F7E9D51457611D5B628EDFFFD1FCE5BBC4314C84DA0F3DF",
-      "size": 9431985,
+      "sha256": "872DF3C11F82E1BD24740373F37A36B71E78E268397802CAEA582EDF4495A0DD",
+      "size": 9437741,
       "built_for_version": "v4.1",
       "file_version": "4.1.0.0",
       "product_version": "v4.1"
     },
     "installer": {
       "path": "installer_output/TeklifYonetim_Setup_v4.1.exe",
-      "sha256": "0EE3E2C7F2E9842BD231DE0B0D82F6B8158E14055AA0ED638F43800513D5533E",
-      "size": 52496621,
+      "sha256": "DE590641717E33B94748D2B8658A23DA2079EE6CFCCF05BCE9CE45A5C98AC98B",
+      "size": 52501243,
       "built_for_version": "v4.1",
       "version": "4.1.0.0"
     },
     "installed_exe": {
       "path": "<INSTALL_DIR>/TeklifYonetim.exe",
-      "sha256": "AB100076DE98703D1F7E9D51457611D5B628EDFFFD1FCE5BBC4314C84DA0F3DF",
-      "size": 9431985,
+      "sha256": "872DF3C11F82E1BD24740373F37A36B71E78E268397802CAEA582EDF4495A0DD",
+      "size": 9437741,
       "built_for_version": "v4.1",
       "product_version": "v4.1",
       "note": "kurulum dizini yerel makineye özgüdür; yol temsilidir"
@@ -111,30 +112,37 @@
     "frozen_smoke": {
       "result": "GECTI",
       "verified_for_version": "v4.1",
-      "date": "2026-07-28",
+      "date": "2026-07-31",
+      "artifact_sha256_prefix": "872DF3C1",
       "scope": [
-        "UI sürüm göstergesi (kenar çubuğu, Hakkında, log)",
-        "başlangıç ve asset çözümü",
-        "tek örnek kilidi",
-        "teklif + PDF (arşiv adı = teklif no, maliyet sızıntısı yok)",
-        "O16 çok sayfalı XLSX seçimi ve iptal yolu",
-        "bozuk veritabanı ile hata penceresi",
-        "normal kapanış"
-      ]
+        "null keyring ile gözetimsiz açılış — modal yok, ana pencere enabled, UI v4.1",
+        "fail keyring ile 'Güvenli Depo' modalı gerçekten açıldı; ana pencere modal arkasında disabled; mesaj kısa ve güvenli; Tamam otomasyonla basıldı",
+        "manuel güncelleme ağ-hata yolu: 'Güncelleme kontrol edilemedi.' — URL/proxy/traceback sızıntısı yok",
+        "yanlış 'uygulama güncel' mesajı gösterilmedi",
+        "indirme, tarayıcı, installer ve TeklifUpdate klasörü oluşmadı",
+        "tek örnek kilidi (ikinci süreç exit 0, ikinci pencere yok)",
+        "normal kapanış exit 0, tek izole kapanış yedeği, QThread/native crash izi yok"
+      ],
+      "isolation": "izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/TMP/TEMP + loopback proxy; gerçek kullanıcı verisi ve Credential Manager kullanılmadı"
     },
     "installer_test": {
       "result": "GECTI",
       "verified_for_version": "v4.1",
-      "date": "2026-07-28",
+      "date": "2026-07-31",
       "scope": [
-        "gerçek v4.0 → v4.1 yerinde (in-place) upgrade",
-        "aynı AppId ve kurulum dizini",
-        "kurulu v4.1 smoke (sürüm + mevcut veri)",
-        "normal kapanış"
+        "U17 öncesi v4.1 → U17'li v4.1 aynı dizinde yerinde upgrade (exit 0)",
+        "kurulu EXE hedef SHA256 ile birebir eşleşti",
+        "AppId, kurulum dizini, uninstall kaydı ve kısayollar korundu",
+        "kurulu uygulama izole null-keyring smoke (exit 0)",
+        "uninstall (exit 0) — kurulum dosyaları ve registry kaydı kalktı",
+        "aynı installer ile temiz reinstall (exit 0)",
+        "ikinci kurulu smoke (exit 0)",
+        "final durum: U17'li v4.1 kurulu ve çalışır"
       ],
       "user_data_preserved": true,
-      "user_data_evidence": "database.db upgrade öncesi rollback kopyasıyla byte-eşit; sayımlar ve teklif numaraları değişmedi",
-      "not_repeated": "uninstall ve temiz yeniden kurulum bu turda tekrarlanmadı; v4.0 installer doğrulamasında (2026-07-28) geçmişti"
+      "user_data_evidence": "gerçek veri kökü 29 ve yedek kökü 20 dosya, upgrade / uninstall / reinstall sonrası dosya bazında SHA256+boyut+mtime ile birebir aynı (YENİ=0, SİLİNEN=0, DEĞİŞEN=0)",
+      "credential_manager_access": "get/set/delete = 0 (izole smoke'lar null keyring backend ile çalıştı)",
+      "manual_user_intervention": "upgrade, uninstall ve reinstall için üç UAC onayı kullanıcı tarafından elle verildi (UAC güvenli masaüstü otomatikleştirilemez); UAC dışındaki tüm uygulama tıklamaları otomasyonla yapıldı"
     },
     "release": {
       "target_version": "v4.1",
@@ -143,7 +151,7 @@
       "updater_end_to_end_verified": false,
       "existing_remote_tag": "v4.0",
       "upstream_sync_must_be_verified_live": true,
-      "note": "v4.1 artifact'ı üretildi ve doğrulandı, ancak U17 kaynak değişikliğinden sonra yeniden build gerekir. Tag, GitHub Release ve updater read-back YAPILMADI. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; release öncesi canlı git komutlarıyla ölçülür.",
+      "note": "U17'li v4.1 artifact'ı üretildi ve üç kanıt sınıfında da doğrulandı. Tag, GitHub Release ve updater read-back YAPILMADI. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; release öncesi canlı git komutlarıyla ölçülür.",
       "updater_trust_chain": {
         "asset_name_pinned": true,
         "url_host_allowlisted": true,
@@ -153,7 +161,6 @@
         "note": "digest release metadata'sından gelir; bozuk/eksik indirmeyi ve yanlış asset seçimini engeller, ele geçirilmiş release metadata'sına karşı bağımsız güven kökü değildir (KNOWN_RISKS R5). CDN redirect host'u 2026-07-31 canlı API sorgusunda mevcut v4.0 asset'i için release-assets.githubusercontent.com olarak doğrulandı; GitHub ileride başka bir host kullanırsa updater fail-closed olur (güvenli ama çalışmaz) — KNOWN_RISKS R3d."
       }
     },
-    "artifact_stale_reason": "ui/utils/updater.py ve ui/dialogs/help_dialogs.py U17 turunda değişti; artifact hash'leri eski kaynağa aittir ve OLDUĞU GİBİ bırakılmıştır (sahte güncelleme yapılmadı)",
     "version_prepare_commit": "a63f981",
     "version_prepare_commit_note": "v4.1 sürüm alanlarının (APP_VERSION, .iss, version_info.txt, CHANGELOG) hazırlandığı commit"
   }

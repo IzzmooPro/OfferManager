@@ -101,16 +101,22 @@ class KaynakSurumTests(unittest.TestCase):
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
         self.assertEqual(s.get("version_prepare_commit"), "a63f981",
-                         "v4.1 sürüm hazırlığı commit'i")
-        self.assertEqual(s.get("built_from_commit"), "de64a75",
-                         "build'in alındığı gerçek HEAD")
-        kaynak = str(s.get("source_commit", "")).strip()
-        self.assertRegex(kaynak, r"^[0-9a-f]{7,40}$",
+                         "v4.1 sürüm hazırlığı commit'i (tarihsel, sabit)")
+        # v4.1 release artifact'ı DEĞİŞMEZ biçimde d359137 ağacından üretildi;
+        # bu alan sabittir. Yeni bir build alınırsa bilinçli olarak güncellenir.
+        self.assertEqual(s.get("built_from_commit"), "d359137",
+                         "v4.1 artifact'ının build edildiği gerçek HEAD")
+        self.assertRegex(str(s.get("source_commit", "")).strip(),
+                         r"^[0-9a-f]{7,40}$",
                          "source_commit gerçek bir commit hash'i değil")
         for alan in ("version_prepare_commit_note", "source_commit_note",
                      "built_from_commit_note"):
             self.assertTrue(str(s.get(alan, "")).strip(),
                             f"{alan} boş — provenance açıklanmamış")
+        self.assertIn(str(s.get("source_commit", "")).strip(),
+                      str(s.get("built_from_commit_note", "")),
+                      "built_from_commit_note, kaynak commit'in bu build ağacında "
+                      "bulunduğunu açıklamıyor")
 
     def test_artifact_staleyken_kaynak_ve_build_commiti_farkli(self):
         s = json.loads(
