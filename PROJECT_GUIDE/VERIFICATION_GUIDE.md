@@ -77,6 +77,20 @@ Güvenlik koşulları:
 
 Yeni bir sürüm için **B ve C sınıfları tekrarlanır**; hangi senaryoların atlandığı açıkça yazılır. Örnek: yalnız sürüm numarası ve doğrulanmış düzeltmeler değiştiyse B'de uzun patolojik senaryolar (büyük DB ile worker beklemesi, restart mutex beklemesi) ve C'de uninstall/reinstall tekrarlanmayabilir — bu durumda manifest `installer_test` kaydına atlanan senaryo ve hangi turda geçtiği açıkça yazılır. **v4.1 (U17) turunda hiçbir senaryo atlanmadı: upgrade, uninstall ve temiz reinstall yeniden yürütüldü.**
 
+## D1 / D2 ayrımı — canlı updater kanıtı
+
+Canlı updater doğrulaması **iki ayrı kanıt** üretir; biri diğerinin yerine geçmez:
+
+| | D1 — kaynak düzeyi güven zinciri | D2 — gerçek teslimat E2E |
+|---|---|---|
+| Çalışan kod | **güncel U17 kaynağı** | **yayımlanmış eski paketli istemci** |
+| Ağ | gerçek `releases/latest` + gerçek asset | gerçek release |
+| Kanıtladığı | asset adı seçimi, URL/host allowlist, redirect host, size + SHA-256 doğrulaması, fail-closed | eski istemcinin yeni sürümü görüp indirip kurabilmesi |
+| Kanıtlamadığı | paketli istemcide çalıştığı | U17 doğrulamalarının uygulandığı (eski updater bunları yapmaz) |
+| Installer | **çalıştırılmaz** | çalıştırılır (UAC kullanıcı onayı) |
+
+D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater bunu doğrulamaz. İkisi birlikte bile "paketli U17 E2E geçti" anlamına **gelmez** — bu ancak bir sonraki sürüm yayımlandığında, kurulu U17'li istemciden yükseltme yapılarak sınanabilir.
+
 ## Doğrulanmış son sonuçlar
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).

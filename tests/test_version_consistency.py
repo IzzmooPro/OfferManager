@@ -83,8 +83,13 @@ class KaynakSurumTests(unittest.TestCase):
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
         hazir = s.get("release_candidate_ready")
         self.assertIsInstance(hazir, bool)
-        self.assertIs(s["release"].get("tag_created"), False)
-        self.assertIs(s["release"].get("github_release_created"), False)
+        # Yayın bayrakları artık SABİT false değildir (v4.1 yayımlandı);
+        # sınanan şey bool olmaları ve yayın sırasının tutarlılığıdır.
+        for alan in ("tag_created", "github_release_created"):
+            self.assertIsInstance(s["release"].get(alan), bool, f"release.{alan} bool değil")
+        if s["release"].get("github_release_created") is True:
+            self.assertIs(s["release"].get("tag_created"), True,
+                          "release var ama tag yok — tutarsız yayın durumu")
         self.assertTrue(str(s.get("release_readiness_note", "")).strip(),
                         "release_candidate_ready'nin anlamı yazılmamış")
         if hazir:
@@ -375,6 +380,104 @@ class ReleaseDogrulamaTests(unittest.TestCase):
                          f"--artifacts exit 0 olmalıydı:\n{sonuc.stdout}")
         self.assertNotIn("uyari", sonuc.stdout.lower(),
                          f"beklenmeyen uyarı:\n{sonuc.stdout}")
+
+
+class YayinKanitiTests(unittest.TestCase):
+    """v4.1 yayını ve canlı updater doğrulaması (D1/D2) kanıt sözleşmesi.
+
+    Sayılar ve hash'ler burada tekrar sabitlenmez; sınanan şey kanıtın
+    **eksiksiz, tutarlı ve sınırı korunmuş** olmasıdır.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.s = json.loads(
+            (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
+        cls.r = cls.s["release"]
+
+    def test_tag_ve_release_olusturuldu(self):
+        self.assertIs(self.r.get("tag_created"), True)
+        self.assertIs(self.r.get("github_release_created"), True)
+        self.assertEqual(self.r.get("existing_remote_tag"), HEDEF)
+
+    def test_e2e_yalniz_tag_ve_release_ile_dogru_sayilir(self):
+        """updater_end_to_end_verified, tag+release olmadan true olamaz."""
+        if self.r.get("updater_end_to_end_verified") is True:
+            self.assertIs(self.r.get("tag_created"), True,
+                          "E2E true ama tag oluşturulmamış")
+            self.assertIs(self.r.get("github_release_created"), True,
+                          "E2E true ama GitHub Release yok")
+
+    def test_e2e_true_ise_iki_kanit_da_gecmis(self):
+        if self.r.get("updater_end_to_end_verified") is not True:
+            self.skipTest("E2E henüz doğrulanmadı")
+        d = self.r.get("live_updater_verification") or {}
+        for anahtar in ("D1_source_trust_chain", "D2_real_delivery_e2e"):
+            self.assertIn(anahtar, d, f"{anahtar} kanıt nesnesi yok")
+            self.assertEqual(d[anahtar].get("result"), "GECTI",
+                             f"{anahtar} sonucu GECTI değil")
+            self.assertTrue(str(d[anahtar].get("date", "")).strip(),
+                            f"{anahtar} tarihi yok")
+
+    def test_d1_ve_d2_ayrimi_korunuyor(self):
+        d = self.r.get("live_updater_verification") or {}
+        d1, d2 = d.get("D1_source_trust_chain", {}), d.get("D2_real_delivery_e2e", {})
+        self.assertNotEqual(d1.get("scope"), d2.get("scope"),
+                            "D1 ve D2 kapsamları ayrışmıyor")
+        self.assertIn("release-assets.githubusercontent.com",
+                      json.dumps(d1, ensure_ascii=False),
+                      "D1 canlı redirect host kanıtı yok")
+        self.assertIn("v4.0", json.dumps(d2, ensure_ascii=False),
+                      "D2 gerçek public v4.0 istemci kanıtı yok")
+
+    def test_release_read_back_alanlari_dolu(self):
+        for alan in ("tag_commit", "release_url", "published_at"):
+            self.assertTrue(str(self.r.get(alan, "")).strip(), f"{alan} boş")
+        self.assertRegex(self.r["tag_commit"], r"^[0-9a-f]{40}$",
+                         "tag_commit tam hash değil")
+        self.assertIn(f"/releases/tag/{HEDEF}", self.r["release_url"])
+        a = self.r.get("asset_readback") or {}
+        self.assertEqual(a.get("name"), HEDEF_INSTALLER)
+        self.assertIsInstance(a.get("size"), int)
+        self.assertGreater(a.get("size", 0), 0)
+        self.assertRegex(str(a.get("digest", "")), r"^sha256:[0-9a-f]{64}$",
+                         "asset digest sha256:<64 hex> biçiminde değil")
+        self.assertEqual(a.get("size"), self.s["installer"]["size"],
+                         "yayınlanan asset boyutu yerel installer ile uyuşmuyor")
+        self.assertEqual(a.get("digest", "").split(":")[-1].upper(),
+                         self.s["installer"]["sha256"],
+                         "yayınlanan asset digest'i yerel installer ile uyuşmuyor")
+
+    def test_kanit_siniri_metni_korunuyor(self):
+        """'U17 paketli E2E geçti' genellemesine karşı açık sınır."""
+        metin = str(self.r.get("evidence_scope_limit", ""))
+        self.assertTrue(metin.strip(), "evidence_scope_limit boş")
+        for anahtar in ("v4.2", "v4.0"):
+            self.assertIn(anahtar, metin, f"sınır metninde {anahtar} geçmiyor")
+        self.assertRegex(metin, r"(?i)paketli",
+                         "paketli U17 istemci sınırı yazılmamış")
+
+    def test_kod_imzasi_ve_artifact_durumu_korunuyor(self):
+        self.assertIs(self.s["signing"]["signed"], False)
+        self.assertIs(self.r["updater_trust_chain"]["code_signing"], False)
+        self.assertIs(self.s["release_candidate_ready"], True)
+        self.assertEqual(self.s["artifact_verification_status"], "verified")
+
+    def test_r3d_gelecek_host_riski_acik_kaliyor(self):
+        m = (REHBER / "KNOWN_RISKS.md").read_text(encoding="utf-8")
+        self.assertIn("R3d", m)
+        satir = [s for s in m.splitlines() if s.startswith("| R3d")]
+        self.assertTrue(satir, "R3d satırı yok")
+        self.assertIn("release-assets.githubusercontent.com", satir[0])
+        self.assertRegex(satir[0], r"(?i)fail-closed")
+        self.assertNotRegex(satir[0], r"(?i)kapand[ıi]",
+                            "R3d 'kapandı' olarak yazılmış")
+
+    def test_v42_paketli_u17_takip_maddesi_var(self):
+        m = (REHBER / "KNOWN_RISKS.md").read_text(encoding="utf-8")
+        self.assertRegex(m, r"(?i)v4\.2",
+                         "v4.2'de paketli U17 E2E takip maddesi yok")
+        self.assertRegex(m, r"(?i)paketli")
 
 
 if __name__ == "__main__":

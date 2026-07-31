@@ -61,7 +61,7 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dahil son tam suite",
-      "passed": 804,
+      "passed": 813,
       "subtests_passed": 105,
       "date": "2026-07-31",
       "skipped": 1,
@@ -69,7 +69,7 @@
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 804,
+      "passed": 813,
       "subtests_passed": 105,
       "date": "2026-07-31",
       "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. temiz çalışma ağacında alınan gerçek sonuç. Tek skip: artifact stale olmadığı için stale-senaryosu testi uygulanmaz.",
@@ -146,19 +146,79 @@
     },
     "release": {
       "target_version": "v4.1",
-      "tag_created": false,
-      "github_release_created": false,
-      "updater_end_to_end_verified": false,
-      "existing_remote_tag": "v4.0",
+      "tag_created": true,
+      "github_release_created": true,
+      "updater_end_to_end_verified": true,
+      "existing_remote_tag": "v4.1",
       "upstream_sync_must_be_verified_live": true,
-      "note": "U17'li v4.1 artifact'ı üretildi ve üç kanıt sınıfında da doğrulandı. Tag, GitHub Release ve updater read-back YAPILMADI. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; release öncesi canlı git komutlarıyla ölçülür.",
+      "note": "v4.1 yayımlandı (public, latest). Tag hedefi, release ve tek .exe asset'i read-back ile doğrulandı; canlı updater D1 ve D2 kanıtları geçti. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; canlı git ile ölçülür.",
       "updater_trust_chain": {
         "asset_name_pinned": true,
         "url_host_allowlisted": true,
         "sha256_and_size_verified": true,
         "fail_closed_when_metadata_missing": true,
         "code_signing": false,
-        "note": "digest release metadata'sından gelir; bozuk/eksik indirmeyi ve yanlış asset seçimini engeller, ele geçirilmiş release metadata'sına karşı bağımsız güven kökü değildir (KNOWN_RISKS R5). CDN redirect host'u 2026-07-31 canlı API sorgusunda mevcut v4.0 asset'i için release-assets.githubusercontent.com olarak doğrulandı; GitHub ileride başka bir host kullanırsa updater fail-closed olur (güvenli ama çalışmaz) — KNOWN_RISKS R3d."
+        "note": "digest release metadata'sından gelir; bozuk/eksik indirmeyi ve yanlış asset seçimini engeller, ele geçirilmiş release metadata'sına karşı bağımsız güven kökü değildir (KNOWN_RISKS R5). v4.1 release'i için CDN redirect host'u canlı olarak release-assets.githubusercontent.com doğrulandı; GitHub ileride CDN host'unu değiştirirse updater güvenli biçimde fail-closed olur — erişilebilirlik riski sürer (KNOWN_RISKS R3d)."
+      },
+      "tag_commit": "a1bfd88a46cbc783226c148b7f62275101056c8b",
+      "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.1",
+      "published_at": "2026-07-31T10:42:31Z",
+      "draft": false,
+      "prerelease": false,
+      "latest": true,
+      "asset_readback": {
+        "name": "TeklifYonetim_Setup_v4.1.exe",
+        "size": 52501243,
+        "digest": "sha256:de590641717e33b94748d2b8658a23da2079ee6cfccf05bce9ce45a5c98ac98b",
+        "state": "uploaded",
+        "url": "https://github.com/IzzmooPro/OfferManager/releases/download/v4.1/TeklifYonetim_Setup_v4.1.exe",
+        "exe_asset_count": 1,
+        "note": "release'te tek .exe; ad/size/digest updater'ın beklediği biçimle birebir"
+      },
+      "evidence_scope_limit": "D1 ve D2 AYRI kanıtlardır ve 'U17 paketli E2E geçti' diye GENELLENEMEZ. D2'de teslimatı yapan istemci gerçek public v4.0'dır ve v4.0 updater'ı U17 doğrulaması (asset adı, host allowlist, SHA-256/size) YAPMAZ; indirilen dosyanın hash ve boyutu bağımsız olarak ölçülmüştür. D1 yalnız kaynak düzeyinde, gerçek release metadata'sı ve gerçek asset ile U17 güven zincirini kanıtlar. Paketli U17 istemcinin bir sonraki sürüme gerçek yükseltmesi ilk kez v4.2 yayımlandığında doğrulanabilir.",
+      "live_updater_verification": {
+        "D1_source_trust_chain": {
+          "result": "GECTI",
+          "date": "2026-07-31",
+          "scope": "kaynak düzeyi canlı U17 doğrulaması — gerçek releases/latest + gerçek asset indirmesi; installer ÇALIŞTIRILMADI",
+          "evidence": [
+            "gerçek releases/latest yanıtı kullanıldı",
+            "v4.1 yeni sürüm olarak görüldü ve tam asset adı seçildi",
+            "expected size ve digest doğru çıkarıldı",
+            "gerçek _Downloader ile indirildi",
+            "redirect son host = release-assets.githubusercontent.com (allowlist içinde)",
+            "Content-Length = gerçek yazılan bayt = 52501243",
+            "SHA256 = DE590641717E33B94748D2B8658A23DA2079EE6CFCCF05BCE9CE45A5C98AC98B",
+            "download_finished = 1, failed = 0",
+            "os.startfile / os._exit / webbrowser çağrısı = 0 (sert bloklandı)"
+          ],
+          "installer_executed": false
+        },
+        "D2_real_delivery_e2e": {
+          "result": "GECTI",
+          "date": "2026-07-31",
+          "scope": "gerçek yayımlanmış public v4.0 istemciden canlı v4.1 teslimatı — ana makinede açık kullanıcı izniyle",
+          "input_public_v40_installer": {
+            "size": 52447824,
+            "sha256": "32EB324E731E22E728E23FF537845A03D3FB0888D9C4C94030D0C226D0194DCA",
+            "note": "GitHub v4.0 release asset'i; yerel <ROLLBACK_ROOT> kopyasıyla byte-eşit DEĞİLDİR ve o kopya kullanılmamıştır"
+          },
+          "evidence": [
+            "kurulu v4.1 kaldırıldı, gerçek public v4.0 kuruldu",
+            "başlangıç kurulu ProductVersion = v4.0",
+            "v4.0 başlangıç updater'ı canlı v4.1'i kendiliğinden gördü",
+            "Güncelle otomasyonla tıklandı; indirme tamamlandı",
+            "indirilen installer BAĞIMSIZ ölçüldü: 52501243 / DE590641…8AC98B",
+            "installer kullanıcı UAC onayıyla çalıştı",
+            "final kurulu EXE 9437741 / 872DF3C1…95A0DD / ProductVersion v4.1",
+            "registry DisplayVersion v4.1, AppId ve kurulum dizini korundu",
+            "final izole null-keyring smoke exit 0, tek izole kapanış yedeği",
+            "QThread / 0xC0000409 / fatal / Traceback izi yok"
+          ],
+          "isolation": "uygulama izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/TMP/TEMP ve null keyring ile çalıştırıldı; gerçek kullanıcı verisi ve yedekleri dosya bazında SHA256 ile DEĞİŞMEDİ (YENİ=0, SİLİNEN=0, DEĞİŞEN=0)",
+          "credential_manager_access": "get/set/delete = 0",
+          "manual_user_intervention": "üç UAC onayı kullanıcı tarafından elle verildi (v4.1 uninstall, public v4.0 kurulumu, v4.1 güncelleme kurulumu); UAC güvenli masaüstü otomatikleştirilemez"
+        }
       }
     },
     "version_prepare_commit": "a63f981",
