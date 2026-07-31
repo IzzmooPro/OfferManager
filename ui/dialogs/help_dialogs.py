@@ -435,10 +435,14 @@ class AboutDialog(QDialog):
         self.update_btn.setEnabled(True)
         self.update_btn.setText("Güncelleme Kontrol Et")
 
-    def _on_update_available(self, version: str, download_url: str):
+    def _on_update_available(self, version: str, download_url: str,
+                             expected_sha256: str, expected_size: int):
         self._reset_update_btn()
-        # Açılıştaki ile aynı indir-kur diyaloğu (installer indirir ve çalıştırır)
-        UpdateDialog(version, download_url, self).exec()
+        # Açılıştaki ile aynı indir-kur diyaloğu (installer indirir ve çalıştırır).
+        # Doğrulama verisi API asset'inden gelir ve zorunludur.
+        UpdateDialog(version, download_url, self,
+                     expected_sha256=expected_sha256,
+                     expected_size=expected_size).exec()
 
     def _on_no_update(self):
         self._reset_update_btn()
@@ -446,6 +450,9 @@ class AboutDialog(QDialog):
                                 f"Uygulama güncel  ({APP_VERSION}) ✓")
 
     def _on_check_failed(self, error: str):
+        """`error` updater tarafından zaten kullanıcıya uygun sabit metindir.
+
+        Ham istisna / URL / dosya yolu buraya gelmez; teknik neden log'dadır.
+        """
         self._reset_update_btn()
-        QMessageBox.warning(self, "Bağlantı Hatası",
-                            f"Güncelleme kontrol edilemedi:\n{error}")
+        QMessageBox.warning(self, "Güncelleme", error)

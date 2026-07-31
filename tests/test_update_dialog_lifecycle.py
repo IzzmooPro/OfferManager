@@ -12,6 +12,7 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+import hashlib
 import tempfile
 import time
 import unittest
@@ -28,15 +29,25 @@ import ui.utils.updater as updater
 from ui.utils.updater import UpdateDialog
 
 
+# Sahte yanıtın ürettiği gövde — U17 doğrulaması için boyut ve özet gerekli.
+GOVDE = b"x" * 1024
+OZET = hashlib.sha256(GOVDE).hexdigest()
+INDIRME_URL = ("https://github.com/IzzmooPro/OfferManager/releases/download/"
+               "v9.9/TeklifYonetim_Setup_v9.9.exe")
+
+
 class _SahteYanit:
     """urlopen yerine: yavaş yanıt veren dosya benzeri nesne."""
 
-    headers = {"Content-Length": "1024"}
+    headers = {"Content-Length": str(len(GOVDE))}
 
     def __init__(self, blok, hata=False):
         self._kalan = 2
         self._blok = blok
         self._hata = hata
+
+    def geturl(self):
+        return INDIRME_URL
 
     def __enter__(self):
         return self
@@ -76,8 +87,10 @@ class UpdateDialogCloseDuringDownloadTests(unittest.TestCase):
         self.os_startfile = self._patch(os, "startfile", olustur=True)
         self.os_exit = self._patch(os, "_exit")
 
-        # Modal kutular testi kilitlemesin
+        # Modal kutular testi kilitlemesin. U17'den sonra hata kutusu örnek
+        # exec()'i kullanıyor; ikisi de sayılır.
         self.msg_warning = self._patch(QMessageBox, "warning")
+        self.hata_kutusu = self._patch(UpdateDialog, "_hata_kutusu_goster")
         self._patch(QMessageBox, "information")
         self._patch(QMessageBox, "critical")
 
@@ -124,7 +137,8 @@ class UpdateDialogCloseDuringDownloadTests(unittest.TestCase):
     def _indirme_baslat(self, blok=1.2, hata=False):
         self._patch(urllib.request, "urlopen",
                     lambda *a, **k: _SahteYanit(blok, hata))
-        dlg = UpdateDialog("v9.9", "https://ornek.invalid/Setup.exe")
+        dlg = UpdateDialog("v9.9", INDIRME_URL,
+                           expected_sha256=OZET, expected_size=len(GOVDE))
         self.addCleanup(self._join, dlg)
         dlg.show()
         dlg._start_update()
@@ -201,6 +215,8 @@ class UpdateDialogCloseDuringDownloadTests(unittest.TestCase):
         self._indirme_bitene_kadar(dlg)
         self.assertEqual(self.msg_warning.call_count, 0,
                          "kapanış sırasında indirme hatası kutusu açıldı")
+        self.assertEqual(self.hata_kutusu.call_count, 0,
+                         "kapanış sırasında hata kutusu açıldı")
         self.assertEqual(self.apply_update.call_count, 0)
         self._yasak_yollar_cagrilmadi()
 

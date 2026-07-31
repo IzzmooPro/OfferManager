@@ -52,7 +52,7 @@ SCRIPT = textwrap.dedent(
             raise AssertionError("testte yasak: " + ad)
         return _f
 
-    import webbrowser, socket, smtplib, urllib.request
+    import webbrowser, socket, smtplib, urllib.request, hashlib
     webbrowser.open = _yasak("webbrowser.open")
     webbrowser.open_new = _yasak("webbrowser.open_new")
     webbrowser.open_new_tab = _yasak("webbrowser.open_new_tab")
@@ -73,9 +73,15 @@ SCRIPT = textwrap.dedent(
             time.sleep(BLOK); iz("WORKER_ISI_BITTI"); return (235, b"ok")
         def send_message(self, m): return {}
 
+    GOVDE = b"x" * 1024
+    OZET = hashlib.sha256(GOVDE).hexdigest()
+    INDIRME_URL = ("https://github.com/IzzmooPro/OfferManager/releases/"
+                   "download/v9.9/TeklifYonetim_Setup_v9.9.exe")
+
     class SahteYanit:
-        headers = {"Content-Length": "1024"}
+        headers = {"Content-Length": str(len(GOVDE))}
         def __init__(self): self._kalan = 2
+        def geturl(self): return INDIRME_URL
         def __enter__(self): return self
         def __exit__(self, *a): return False
         def read(self, n=None):
@@ -160,7 +166,9 @@ SCRIPT = textwrap.dedent(
     def senaryo_downloader():
         urllib.request.urlopen = lambda *a, **k: SahteYanit()
         win = _win()
-        dlg = updater.UpdateDialog("v9.9", "https://ornek.invalid/Setup.exe", win)
+        dlg = updater.UpdateDialog("v9.9", INDIRME_URL, win,
+                                   expected_sha256=OZET,
+                                   expected_size=len(GOVDE))
         dlg.show(); dlg._start_update()
         _tut["dlg"] = dlg
         _tut["worker"] = dlg._downloader
