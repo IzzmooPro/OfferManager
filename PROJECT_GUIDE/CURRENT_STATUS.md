@@ -53,7 +53,7 @@ K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanl�
 
 `packaging/`, `assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` depo dışıdır → **temiz clone'dan build tekrarlanabilir değildir** ([BUILD_AND_PACKAGING.md](BUILD_AND_PACKAGING.md)).
 
-v4.0/v4.1 artifact ve kurulum kopyaları `<ROLLBACK_ROOT>` altında **hâlâ korunuyor**; release ve canlı updater doğrulaması bitti, temizlik ayrı ve **açık onayla** yapılacak ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3c).
+`<ROLLBACK_ROOT>` temizliği **2026-07-31'de açık onayla yapıldı**: yeniden kurulabilir iki kurulum ağacı kopyası silindi (361 MB). Yeniden üretilemeyen iki build artefaktı (**U17 öncesi v4.1** ve **yerel v4.0**, ~118 MB) bilinçli olarak **korundu** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3c). Geri kurulum bunlara bağlı değildir: doğrulanmış v4.1 installer'ı `installer_output/` altında ve GitHub v4.1 release'inde durur.
 
 ## Tamamlananlar (bu yakalama itibarıyla)
 
@@ -61,9 +61,8 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 ## Kalan aşamalar
 
-1. Bu yayın metadata commit'inin upstream'e gönderilmesi
-2. Rollback/baseline klasörlerinin (`<ROLLBACK_ROOT>`) **açık onayla** temizlenmesi
-3. **v4.2 turunda paketli U17 → sonraki sürüm doğrulaması** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b)
+1. Bu temizlik commit'inin upstream'e gönderilmesi
+2. **v4.2 turunda paketli U17 → sonraki sürüm doğrulaması** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b) — v4.2 hazırlanırken yapılacak, şu anda açık bir işlem değil
 
 ## Bu yakalamayı yenilerken
 
