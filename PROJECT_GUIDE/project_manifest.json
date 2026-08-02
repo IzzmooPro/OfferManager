@@ -130,7 +130,31 @@
         "teknik hata kutusu → 'Hata Raporla' düğmesi ve tek-form pencere — frozen modda tetiklenemedi (aynı sınır)",
         "B-4 temel UI akışı (müşteri/ürün/teklif/PDF), B-6 uzun worker ile kapanış, B-7 restart, B-9 modal/progress (O16) — bu turda TEKRARLANMADI: ilgili kod v4.1'den beri değişmedi"
       ],
-      "isolation": "izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/HOMEDRIVE/HOMEPATH/TMP/TEMP + loopback proxy (127.0.0.1:9); gerçek kullanıcı verisi ve Credential Manager kullanılmadı"
+      "isolation": "izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/HOMEDRIVE/HOMEPATH/TMP/TEMP + loopback proxy (127.0.0.1:9); gerçek kullanıcı verisi ve Credential Manager kullanılmadı",
+      "r12a_feedback_paths": {
+        "date": "2026-08-02",
+        "method": "üretim artifact'ine HOOK EKLENMEDİ; uygulama yalnız dışarıdan sürüldü (UI Automation ile OKUMA + gerçek fare tıklaması + gerçek klavye). İzole profil, loopback proxy; tarayıcı/e-posta/SMTP/ağ açılmadı.",
+        "path_A_help_menu": {
+          "result": "GECTI",
+          "evidence": [
+            "Yardım menüsü ve 'Sorun veya Öneri Bildir...' ögesi gerçek fare ile tıklandı",
+            "tek-form pencere açıldı; görünen alanlar: 'Rapor No:' + 8 haneli no, 'Tarih:', 'Sürüm:' = 'v4.2 (paketli)', 'Sistem:' = 'Windows 10.0.26200 (AMD64)', 'Ne oldu?', gizlilik notu",
+            "teknik alanlar (İşlem/Hata Türü/Konum) bu yolda GÖRÜNMEDİ — doğru",
+            "açıklama boşken 'E-postayı Aç' ve 'Panoya Kopyala' DEVRE DIŞI, 'Vazgeç' etkin; benzersiz açıklama yazıldıktan sonra ikisi de etkinleşti",
+            "'Panoya Kopyala' GERÇEKTEN tıklandı; Windows panosu sentinel'den gerçek rapora değişti",
+            "panodaki rapor tam olarak penceredeki alanlar + kullanıcı açıklamasıdır; benzersiz dize (7F3C1A9E) panoda bulundu",
+            "panoda yasaklı içerik YOK: ham istisna, 'Traceback', SQL, sqlite3, mutlak yol, izole kök yolu",
+            "durum satırı 'Rapor panoya kopyalandı.' — 'gönderildi' DEMİYOR",
+            "'Vazgeç' ile pencere kapandı; uygulama normal kapanış exit 0",
+            "log: 0xC0000409 / QThread destroyed / Traceback YOK; TeklifUpdate klasörü oluşmadı"
+          ]
+        },
+        "path_B_error_box": {
+          "result": "TAMAMLANMADI",
+          "reason": "Kategori yönetimi giriş düğmesi ADSIZ bir ikon buton (PlusButton) ve UI Automation ağacında hiç görünmüyor; komşu ComboBox'tan koordinat türetme de kararsız çıktı (sekme geçişi bir koşuda gerçekleşti, diğerinde gerçekleşmedi). Salt-okunur DB tetikleyicisi ise uygulamayı AÇILIŞTA öldürüyor çünkü db_manager._migrate açılışta UPDATE çalıştırıyor — bu yüzden DB ancak uygulama tam açıldıktan SONRA kilitlenebiliyor.",
+          "not_claimed": "teknik hata kutusundaki 'Hata Raporla' düğmesi ve o yoldaki tek-form pencere PAKETLİ sürümde DOĞRULANMADI. Kaynak testleri bu yolu örter ama frozen kanıt YERİNE GEÇMEZ."
+        }
+      }
     },
     "installer_test": {
       "result": "GECTI",
@@ -265,9 +289,24 @@
         "Excel/CSV",
         "tests/",
         "Import_Test/",
-        ".git"
+        ".git",
+        "SMTP parolası / credential / token"
       ],
-      "finding": "_internal/assets/company.cfg pakete giriyor ve firmanın kendi adı/adresi/telefonu/e-postası ile PDF şablon metinlerini içeriyor. SMTP kullanıcı adı/parola veya token YOKTUR. v4.1 paketiyle BYTE-EŞİTTİR (yeni bir sızıntı değil, en az v4.1'den beri sürüyor). Karar kullanıcıya bırakıldı."
+      "intentional_product_content": {
+        "files": [
+          "_internal/assets/company.cfg",
+          "_internal/assets/logo.png"
+        ],
+        "decision": "KABUL EDİLDİ — ürün kararı",
+        "decided_on": "2026-08-02",
+        "note": "Firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri ve assets/logo.png pakete BİLİNÇLİ olarak dahildir: ürün belirli bir firma için hazırlanmıştır ve bunlar istenen ürün varsayımlarıdır. Paket içinde SMTP parolası, credential veya token YOKTUR. Kullanıcı, bu bilgilerin public GitHub installer'ı içinde bulunmasını açıkça KABUL ETMİŞTİR (2026-08-02). Bu bir güvenlik bulgusu değildir.",
+        "do_not_change": [
+          "core/config.py varsayımları",
+          "assets/company.cfg",
+          "assets/logo.png",
+          "packaging/TeklifYonetim.spec asset kapsamı"
+        ]
+      }
     },
     "build_gate_test_result": {
       "command": "packaging/Kurulum-Yap.bat --no-pause (adım 2)",
