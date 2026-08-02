@@ -23,7 +23,20 @@ _CAKISMA = ("Bu kayıt mevcut bir kayıtla çakışıyor. "
             "Bilgileri kontrol edip yeniden deneyin.")
 _MESGUL = ("Veritabanı şu anda meşgul. "
            "Birkaç saniye sonra yeniden deneyin.")
-_DB_HATASI = "Veritabanı işlemi tamamlanamadı. Lütfen yeniden deneyin."
+# Temel mesaj hem düğmesiz hem düğmeli çağıranlarda kullanılabilir; bu
+# nedenle UI kontrolünden söz etmez. Düğmeye özgü ipucu, düğmeyi gerçekten
+# ekleyen katmanda eklenir.
+_DB_HATASI = ("Veritabanı işlemi tamamlanamadı. Lütfen yeniden deneyin. "
+              "Ayrıntılar uygulama loguna kaydedildi.")
+
+# `islem` → kullanıcıya gösterilecek fiil. Bilinmeyen işlem "kaydedilemedi"
+# varsayar (geriye uyumlu).
+_FIILLER = {
+    "kaydet": "kaydedilemedi",
+    "ekle": "eklenemedi",
+    "ad": "adı değiştirilemedi",
+    "sil": "silinemedi",
+}
 
 
 def _urun_cakismasi_mi(exc) -> bool:
@@ -50,8 +63,8 @@ def _mesgul_mu(exc) -> bool:
 def guvenli_mesaj(exc, tur: str, islem: str = "kaydet") -> str:
     """Kullanıcıya gösterilecek GÜVENLİ metin.
 
-    tur   : "Müşteri" | "Ürün"
-    islem : "kaydet" | "sil"
+    tur   : "Müşteri" | "Ürün" | "Kategori"
+    islem : "kaydet" | "ekle" | "ad" | "sil"
     """
     # Ürün kod çakışması: O6'da kurulan anlaşılır bilgi korunur. YALNIZ gerçek
     # DuplicateProductCodeError için — duck typing YAPILMAZ, aksi hâlde
@@ -67,9 +80,23 @@ def guvenli_mesaj(exc, tur: str, islem: str = "kaydet") -> str:
         return _CAKISMA
     if isinstance(exc, sqlite3.OperationalError):
         return _MESGUL if _mesgul_mu(exc) else _DB_HATASI
-    fiil = "silinemedi" if islem == "sil" else "kaydedilemedi"
-    return (f"{tur} {fiil}. "
+    fiil = _FIILLER.get(islem, "kaydedilemedi")
+    return (f"{tur} {fiil}. Lütfen yeniden deneyin. "
             "Ayrıntılar uygulama loguna kaydedildi.")
+
+
+def teknik_hata_mi(exc) -> bool:
+    """Kullanıcının kendi başına düzeltemeyeceği, beklenmeyen hata mı?
+
+    Çakışma ve "veritabanı meşgul" beklenen, kullanıcının yeniden deneyerek
+    aşabileceği durumlardır → log klasörü düğmesi GEREKMEZ. Diğer her şey
+    (şema/bilinmeyen istisna) tekniktir.
+    """
+    if _urun_cakismasi_mi(exc) or isinstance(exc, sqlite3.IntegrityError):
+        return False
+    if isinstance(exc, sqlite3.OperationalError):
+        return not _mesgul_mu(exc)
+    return True
 
 
 def _guvenli_yer(exc) -> str:

@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from services.category_service import CategoryService
+from ui.utils import operation_error_dialog as hata_diyalogu
 from models.category import Category
 
 
@@ -77,13 +78,16 @@ class CategoryManagerDialog(QDialog):
             self._svc.add(Category(name=name))
             self._name_edit.clear()
             self._load()
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Kategori eklenemedi:\n{e}")
+        except Exception as exc:
+            # Ham istisna kullanıcıya GÖSTERİLMEZ; güvenli mesaj + güvenli log.
+            # Liste YENİLENMEZ ve girilen ad korunur (yeniden denenebilsin).
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Kategori", "ekle")
 
     def _rename(self, _item=None):
         item = self._list.currentItem()
         if not item:
-            QMessageBox.information(self, "Bilgi", "Lütfen bir kategori seçin.")
+            hata_diyalogu.dogrulama_goster(self, "Bilgi",
+                                           "Lütfen bir kategori seçin.")
             return
         from PySide6.QtWidgets import QInputDialog
         new_name, ok = QInputDialog.getText(
@@ -95,13 +99,15 @@ class CategoryManagerDialog(QDialog):
                 cat.name = new_name.strip()
                 self._svc.update(cat)
                 self._load()
-            except Exception as e:
-                QMessageBox.warning(self, "Hata", f"Ad değiştirilemedi:\n{e}")
+            except Exception as exc:
+                hata_diyalogu.hata_goster(self, "Hata", exc, "Kategori",
+                                          "ad", kayit_id=cat_id)
 
     def _delete(self):
         item = self._list.currentItem()
         if not item:
-            QMessageBox.information(self, "Bilgi", "Lütfen bir kategori seçin.")
+            hata_diyalogu.dogrulama_goster(self, "Bilgi",
+                                           "Lütfen bir kategori seçin.")
             return
         cat_id = item.data(Qt.ItemDataRole.UserRole)
         ans = QMessageBox.question(
@@ -115,5 +121,6 @@ class CategoryManagerDialog(QDialog):
         try:
             self._svc.delete(cat_id)
             self._load()
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Kategori silinemedi:\n{e}")
+        except Exception as exc:
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Kategori",
+                                      "sil", kayit_id=cat_id)
