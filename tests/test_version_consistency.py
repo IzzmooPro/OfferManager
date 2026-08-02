@@ -627,18 +627,58 @@ class YayinKanitiTests(unittest.TestCase):
                           "doğrulanmamış artifact ile release adaylığı denemez")
 
     def test_guncel_hedef_yayin_blogu_durust(self):
-        """Hedef sürümün yayın bayrakları KANIT olmadan true olamaz."""
+        """Hedef sürümün yayın bayrakları KANIT olmadan true olamaz.
+
+        `snapshot.release` GÜNCEL hedef sürümün canlı durumudur;
+        `published_releases` yalnız ÖNCEKİ sürümlerin tarihsel kaydını tutar.
+        Bir sürüm ancak yeni bir hedefe geçilirken oraya taşınır — bu yüzden
+        hedef sürüm iki yerde birden bulunamaz.
+        """
         r = self.s["release"]
         self.assertEqual(r.get("target_version"), HEDEF,
                          "release bloğu hedef sürümü göstermiyor")
         self.assertNotIn(HEDEF, self.yayinlar,
-                         f"{HEDEF} henüz yayımlanmadı ama yayın kaydı yazılmış")
-        for alan in ("tag_created", "github_release_created",
-                     "updater_end_to_end_verified"):
-            self.assertIs(r.get(alan), False,
-                          f"{HEDEF} için {alan} kanıtsız true yazılmış")
+                         f"{HEDEF} hem güncel release bloğunda hem tarihsel "
+                         "kayıtta — çift kayıt")
         self.assertTrue(str(r.get("note", "")).strip(),
                         "hedef sürüm yayın durumunun anlamı yazılmamış")
+        bayraklar = [r.get(a) for a in ("tag_created", "github_release_created",
+                                        "updater_end_to_end_verified")]
+        for b in bayraklar:
+            self.assertIsInstance(b, bool)
+        if not all(bayraklar):
+            # Henüz yayımlanmadı: hiçbir bayrak kanıtsız true olamaz.
+            self.assertFalse(any(bayraklar),
+                             "yayın bayrakları kısmen true — tutarsız durum")
+            return
+        # Yayımlandı: read-back kanıtı ZORUNLU.
+        for alan in ("tag_commit", "release_url", "published_at"):
+            self.assertTrue(str(r.get(alan, "")).strip(),
+                            f"{HEDEF} yayımlandı deniyor ama {alan} boş")
+        self.assertRegex(r["tag_commit"], r"^[0-9a-f]{40}$")
+        self.assertIn(f"/releases/tag/{HEDEF}", r["release_url"])
+        a = r.get("asset_readback") or {}
+        self.assertEqual(a.get("name"), HEDEF_INSTALLER)
+        self.assertEqual(a.get("size"), self.s["installer"]["size"],
+                         "yayınlanan asset boyutu yerel installer ile uyuşmuyor")
+        self.assertEqual(a.get("digest", "").split(":")[-1].upper(),
+                         self.s["installer"]["sha256"],
+                         "yayınlanan asset digest'i yerel installer ile uyuşmuyor")
+        self.assertIs(r.get("draft"), False)
+        self.assertIs(r.get("prerelease"), False)
+
+    def test_yayimlanan_tag_build_commitini_gosterir(self):
+        """Tag, artifact'ın build edildiği commit'i göstermeli.
+
+        Tag metadata/kanıt commit'lerine TAŞINMAZ; aksi hâlde yayımlanan
+        installer ile tag'in işaret ettiği ağaç ayrışır.
+        """
+        r = self.s["release"]
+        if r.get("tag_created") is not True:
+            self.skipTest("tag henüz oluşturulmadı")
+        self.assertTrue(r["tag_commit"].startswith(self.s["built_from_commit"]),
+                        f"tag {r['tag_commit'][:7]} build commit "
+                        f"{self.s['built_from_commit']} ile aynı değil")
 
     def test_r3d_gelecek_host_riski_acik_kaliyor(self):
         m = (REHBER / "KNOWN_RISKS.md").read_text(encoding="utf-8")

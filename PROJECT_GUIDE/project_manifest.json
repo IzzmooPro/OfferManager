@@ -97,7 +97,7 @@
       "built_for_version": "v4.2",
       "file_version": "4.2.0.0",
       "product_version": "v4.2",
-      "note": "2026-08-02 yerinde upgrade sonrası kurulu sürüm; dist EXE ile birebir aynı hash."
+      "note": "D2 sonrası kurulu sürüm: paketli v4.1 istemcinin canlı güncellemesiyle v4.2'ye yükseltildi; dist EXE ile birebir aynı hash."
     },
     "upgrade_baseline": {
       "from_version": "v4.0",
@@ -204,14 +204,81 @@
     },
     "release": {
       "target_version": "v4.2",
-      "tag_created": false,
-      "github_release_created": false,
-      "updater_end_to_end_verified": false,
-      "existing_remote_tag": "v4.1",
-      "existing_remote_tag_note": "uzakta en son bulunan tag; v4.2 tag'i HENÜZ YOK (canlı doğrulandı)",
+      "tag_created": true,
+      "github_release_created": true,
+      "updater_end_to_end_verified": true,
+      "existing_remote_tag": "v4.2",
+      "existing_remote_tag_note": "uzakta en son tag; v4.1 tag'i (a1bfd88) DEĞİŞMEDİ",
       "upstream_sync_must_be_verified_live": true,
-      "status": "release_candidate_ready",
-      "note": "v4.2 yayın adayıdır: temiz build, frozen smoke (B), installer doğrulaması (C: yerinde upgrade) ve R12a'nın iki frozen yolu TAMAMLANDI. Bekleyen tek şey yayın adımıdır: push, tag, GitHub Release, read-back ve canlı updater (D1/D2). v4.1 tag/release'ine dokunulmaz; v4.2 tag'i uzakta HENÜZ YOKTUR (canlı doğrulanır)."
+      "status": "published",
+      "note": "v4.2 yayımlandı (public, latest, non-prerelease). Tag hedefi, release ve tek .exe asset'i read-back ile doğrulandı; canlı updater D1 ve D2 kanıtları geçti. v4.1 tag/release'ine dokunulmadı. Upstream durumu burada tutulmaz; canlı git ile ölçülür.",
+      "tag_commit": "227656b9566200e18a5acdf64da4eac0d93be83d",
+      "tag_commit_note": "v4.2 tag'i BUILD commit'ini gösterir; metadata commit'lerine taşınmadı.",
+      "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.2",
+      "published_at": "2026-08-02T21:09:58Z",
+      "draft": false,
+      "prerelease": false,
+      "latest": true,
+      "asset_readback": {
+        "name": "TeklifYonetim_Setup_v4.2.exe",
+        "size": 52548738,
+        "digest": "sha256:d61488dfe55d5f0d7a6d4245b97176498cdd22b9bd442a2056eb87dda5bf82b2",
+        "state": "uploaded",
+        "url": "https://github.com/IzzmooPro/OfferManager/releases/download/v4.2/TeklifYonetim_Setup_v4.2.exe",
+        "exe_asset_count": 1,
+        "note": "draft aşamasında ve public yayından SONRA ayrı ayrı indirildi; her ikisi de yerel installer ile BYTE-EŞİT. --clobber kullanılmadı, başka .exe yüklenmedi."
+      },
+      "evidence_scope_limit": "D1 ve D2 AYRI kanıtlardır. D2'de teslimatı yapan istemci PAKETLİ U17'li v4.1'dir — bu, R3b/R12d'nin ilk gerçek kanıtıdır: U17 doğrulamalarını (tam asset adı, host allowlist, size, SHA-256) yapan bir istemci gerçek bir sonraki sürüme yükseltildi. Yine de bu, GELECEKTEKİ bir sürümün teslimatını kanıtlamaz.",
+      "live_updater_verification": {
+        "D1_source_trust_chain": {
+          "result": "GECTI",
+          "date": "2026-08-02",
+          "scope": "kaynak düzeyi canlı doğrulama — gerçek releases/latest + gerçek asset indirmesi; installer ÇALIŞTIRILMADI",
+          "evidence": [
+            "gerçek releases/latest: tag v4.2, draft=false, prerelease=false",
+            "v4.1 istemcisi için YENİ görülür; v4.2 için yeni görülmez",
+            "tam asset adı seçildi: TeklifYonetim_Setup_v4.2.exe (ASSET_NAME_TEMPLATE ile birebir)",
+            "başlangıç host github.com allowlist içinde",
+            "redirect son host = release-assets.githubusercontent.com (allowlist içinde)",
+            "Content-Length = yazılan bayt = API size = 52548738",
+            "SHA-256 = D61488DFE55D5F0D7A6D4245B97176498CDD22B9BD442A2056EB87DDA5BF82B2",
+            "download_finished = 1, failed = 0",
+            "fail-closed doğrulandı: digest yok / asset adı yanlış / size=0 / aynı ad iki kez → dördünde de asset SEÇİLMEDİ",
+            "os.startfile / os._exit / webbrowser çağrısı = 0 (sert bloklandı)"
+          ],
+          "installer_executed": false
+        },
+        "D2_real_delivery_e2e": {
+          "result": "GECTI",
+          "date": "2026-08-02",
+          "scope": "PAKETLİ U17'li v4.1 istemciden canlı v4.2 teslimatı — R3b/R12d'nin ilk gerçek kanıtı; ana makinede açık kullanıcı izniyle",
+          "input_client": {
+            "version": "v4.1",
+            "size": 9437741,
+            "sha256": "872DF3C11F82E1BD24740373F37A36B71E78E268397802CAEA582EDF4495A0DD",
+            "source": "doğrulanmış arşivdeki public v4.1 installer (DE590641...C98AC98B)"
+          },
+          "evidence": [
+            "kurulu v4.2, arşivdeki v4.1 installer'ı ile v4.1'e geri kuruldu (exit 0)",
+            "başlangıç kurulu EXE 9.437.741 / 872DF3C1...95A0DD / ProductVersion v4.1",
+            "paketli v4.1 izole profil + null keyring + GERÇEK ağ ile açıldı",
+            "'Güncelleme Mevcut' penceresi kendiliğinden çıktı: 'Mevcut sürüm : v4.1 / Yeni sürüm : v4.2'",
+            "log: 'Güncelleme mevcut: v4.2'",
+            "'Güncelle' dış otomasyonla (gerçek fare) tıklandı",
+            "U17 indirmeyi DOĞRULADI: log 'Yeni sürüm indirildi' yalnız ad/host/size/SHA-256 doğrulaması geçtikten sonra yazılır",
+            "indirilen installer BAĞIMSIZ ölçüldü: 52.548.738 / D61488DF...A5BF82B2",
+            "installer kullanıcı UAC onayıyla çalıştı",
+            "final kurulu EXE 9.476.704 / 476015268A26...5353B / ProductVersion v4.2",
+            "registry DisplayVersion v4.2, AppId ve kurulum dizini korundu",
+            "final izole smoke exit 0, kenar çubuğu v4.2, modal yok, tek izole yedek",
+            "0xC0000409 / QThread destroyed / Traceback izi YOK"
+          ],
+          "isolation": "uygulama izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/TMP/TEMP ve null keyring ile çalıştırıldı",
+          "user_data_evidence": "gerçek veri kökü 30 dosya ve yedek kökü 20 dosya: YENİ=0, SİLİNEN=0, DEĞİŞEN=0. database.db 1.921.024 / AB7B8AE5...1CA2D6 değişmedi.",
+          "credential_manager_access": "get/set/delete = 0",
+          "manual_user_intervention": "İKİ UAC onayı kullanıcı tarafından elle verildi (v4.1 geri kurulumu ve v4.2 güncelleme kurulumu). UAC güvenli masaüstü otomatikleştirilemez; UAC dışındaki tüm adımlar dış otomasyonla yapıldı."
+        }
+      }
     },
     "version_prepare_commit": "227656b",
     "version_prepare_commit_note": "v4.2 sürüm alanlarının (APP_VERSION, .iss, version_info.txt, CHANGELOG) hazırlandığı commit — R11 ile aynı commit'tedir.",
