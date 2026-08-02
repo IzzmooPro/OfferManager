@@ -53,6 +53,8 @@ volatile: true
 - **D2 — paketli U17 v4.1 → canlı v4.2: GEÇTİ.** Bu **R3b/R12d'nin ilk gerçek kanıtıdır**. Arşivdeki public v4.1 installer'ı ile geri kuruldu (`872DF3C1…`), paketli U17 istemci canlı v4.2'yi kendiliğinden gördü ("Mevcut sürüm : v4.1 / Yeni sürüm : v4.2"), "Güncelle" dış otomasyonla tıklandı, indirme U17 doğrulamasından geçti, indirilen dosya **bağımsız ölçüldü** (`52548738` / `D61488DF…82B2`), kullanıcı UAC onayıyla kuruldu; final kurulu EXE **9.476.704 / `476015268A26…5353B` / v4.2**. Final izole smoke exit 0, tek izole yedek, crash izi yok.
 - **İki UAC onayı kullanıcı müdahalesidir** (v4.1 geri kurulumu + v4.2 güncelleme kurulumu). Credential Manager `get/set/delete = 0`.
 
+- **D2b — kullanıcı eliyle, gerçek profilde bağımsız doğrulama: GEÇTİ (2026-08-03).** Kullanıcı kendi kurulumunda v4.1'e dönüp güncellemeyi denedi: `00:22:47 Güncelleme mevcut: v4.2` → `00:23:29 Yeni sürüm indirildi` (bu satır yalnız U17 doğrulaması geçtikten sonra yazılır) → `00:23:38 Version: v4.2`. **Gerçek veri korundu**: tek fark yeni günlük log ve `backup_meta.json`; `database.db` değişmedi. Bu kanıt D2'nin yerine geçmez, onu güçlendirir (D2 izole + otomasyon, D2b gerçek profil + kullanıcı).
+
 > **Kanıt sınırı — silinmemeli.** D2 artık **paketli U17 istemciden** yapıldı; ancak bu, **gelecekteki** bir sürümün teslimatını kanıtlamaz. Her yeni sürümde D1/D2 tekrarlanır.
 
 ## Denetim

@@ -97,7 +97,7 @@
       "built_for_version": "v4.2",
       "file_version": "4.2.0.0",
       "product_version": "v4.2",
-      "note": "D2 sonrası kurulu sürüm: paketli v4.1 istemcinin canlı güncellemesiyle v4.2'ye yükseltildi; dist EXE ile birebir aynı hash."
+      "note": "kurulu sürüm v4.2. Son kurulum, kullanıcının kendi yaptığı bağımsız v4.1 → v4.2 canlı güncellemesiyle gerçekleşti (2026-08-03 00:23:38; bkz. D2b). Hash dist EXE ile birebir aynı."
     },
     "upgrade_baseline": {
       "from_version": "v4.0",
@@ -277,6 +277,22 @@
           "user_data_evidence": "gerçek veri kökü 30 dosya ve yedek kökü 20 dosya: YENİ=0, SİLİNEN=0, DEĞİŞEN=0. database.db 1.921.024 / AB7B8AE5...1CA2D6 değişmedi.",
           "credential_manager_access": "get/set/delete = 0",
           "manual_user_intervention": "İKİ UAC onayı kullanıcı tarafından elle verildi (v4.1 geri kurulumu ve v4.2 güncelleme kurulumu). UAC güvenli masaüstü otomatikleştirilemez; UAC dışındaki tüm adımlar dış otomasyonla yapıldı."
+        },
+        "D2b_user_initiated_real_profile": {
+          "result": "GECTI",
+          "date": "2026-08-03",
+          "scope": "KULLANICI tarafından, GERÇEK kullanıcı profili ve GERÇEK verisiyle yapılan bağımsız v4.1 → v4.2 güncelleme denemesi. Claude tarafından KURGULANMADI; yalnız sonradan ölçüldü.",
+          "evidence": [
+            "00:22:44 uygulama v4.1 olarak açıldı (gerçek profil)",
+            "00:22:47 updater: 'Güncelleme mevcut: v4.2'",
+            "00:23:23 ikinci açılışta da v4.2 görüldü",
+            "00:23:29 'Yeni sürüm indirildi' — bu satır YALNIZ U17 doğrulaması (tam asset adı, host allowlist, size, SHA-256) geçtikten sonra yazılır",
+            "00:23:29 kurulum başlatıldı, program kapandı",
+            "00:23:38 uygulama v4.2 olarak açıldı",
+            "kurulu EXE 9.476.704 / 476015268A26...5353B / ProductVersion v4.2, registry v4.2"
+          ],
+          "user_data_evidence": "D2 öncesi manifeste göre TEK fark: yeni günlük log dosyası (data/logs/app_20260803.log) ve backup_meta.json güncellemesi — ikisi de normal uygulama çalışması. database.db 1.921.024 / AB7B8AE5...1CA2D6 DEĞİŞMEDİ; yedek kökü 20 dosya değişmedi.",
+          "note": "Bu kanıt D2'nin yerine geçmez, onu GÜÇLENDİRİR: D2 izole profilde ve otomasyonla, D2b gerçek profilde ve kullanıcı eliyle yapıldı."
         }
       }
     },
