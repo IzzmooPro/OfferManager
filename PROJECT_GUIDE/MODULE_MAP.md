@@ -21,7 +21,7 @@ covers:
   - ui/dashboard_page.py
   - ui/dialogs/category_dialog.py
   - pdf/pdf_generator.py
-last_verified_commit: 25518fb
+last_verified_commit: 9e89370
 last_verified_date: 2026-08-02
 volatile: false
 ---
@@ -35,7 +35,7 @@ volatile: false
 | Dosya | Sorumluluk |
 |---|---|
 | `main.py` | Giriş noktası; tek örnek kilidi, loglama, exception hook, splash, restart bayrağı |
-| `core/constants.py` | `APP_VERSION` — **sürümün tek kaynağı** |
+| `core/constants.py` | `APP_VERSION` — **sürümün tek kaynağı**; `CONTACT_MAIL` — iletişim adresinin tek kanonik kaynağı (Hakkında ekranı ve geri bildirim penceresi buradan okur) |
 | `core/app_paths.py` | Asset kökü (frozen'da `sys._MEIPASS`) ve kullanıcı veri/yedek yolları |
 | `core/config.py` | `company.cfg` okuma/yazma (firma bilgileri, PDF metinleri, SMTP ayarları) |
 | `core/credential_store.py` | SMTP parolası → Windows Credential Manager; hata yutmaz, `CredentialStoreError` fırlatır |

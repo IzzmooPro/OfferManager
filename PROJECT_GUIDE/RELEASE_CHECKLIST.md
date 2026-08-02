@@ -7,8 +7,8 @@ covers:
   - packaging/version_info.txt
   - packaging/Kurulum-Yap.bat
   - ui/utils/updater.py
-last_verified_commit: 7395561
-last_verified_date: 2026-07-31
+last_verified_commit: 9e89370
+last_verified_date: 2026-08-02
 volatile: false
 ---
 

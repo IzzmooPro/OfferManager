@@ -8,8 +8,8 @@ covers:
   - packaging/version_info.txt
   - core/constants.py
   - requirements.txt
-last_verified_commit: a63f981
-last_verified_date: 2026-07-28
+last_verified_commit: 9e89370
+last_verified_date: 2026-08-02
 volatile: false
 ---
 

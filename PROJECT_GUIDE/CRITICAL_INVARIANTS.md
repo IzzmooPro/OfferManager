@@ -19,7 +19,7 @@ covers:
   - core/credential_store.py
   - main.py
   - tests/conftest.py
-last_verified_commit: 25518fb
+last_verified_commit: 9e89370
 last_verified_date: 2026-08-02
 volatile: false
 ---

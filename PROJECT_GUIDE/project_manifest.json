@@ -47,9 +47,9 @@
     "built_from_commit_note": "v4.2 artifact'ının build edildiği gerçek HEAD; kaynak commit'iyle AYNIDIR. Metadata commit'i paket içeriğini değiştirmez (tests/ ve PROJECT_GUIDE/ pakete girmez — paket denetimiyle doğrulandı).",
     "version": "v4.2",
     "artifact_built_for_version": "v4.2",
-    "artifact_verification_status": "installer_pending",
-    "release_candidate_ready": false,
-    "release_readiness_note": "v4.2 için temiz build ve frozen smoke (B) GEÇTİ; installer doğrulaması (C), push, tag, GitHub Release ve canlı updater (D1/D2) YAPILMADI. Bu yüzden release_candidate_ready=false ve --release kapısı bilinçli olarak KIRMIZIDIR. Aşama 2 Codex incelemesinden sonra yürütülecek.",
+    "artifact_verification_status": "verified",
+    "release_candidate_ready": true,
+    "release_readiness_note": "v4.2 için temiz build, frozen smoke (B) ve installer doğrulaması (C: yerinde upgrade) GEÇTİ; R12a'nın iki frozen yolu da kapandı. release_candidate_ready=true YALNIZ 1-5. adımların geçtiğini söyler — v4.2 HENÜZ YAYIMLANMADI: push, tag, GitHub Release, read-back ve canlı updater (D1/D2) yapılmadı.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -61,19 +61,19 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
-      "passed": 941,
+      "passed": 940,
       "subtests_passed": 267,
       "date": "2026-08-02",
-      "skipped": 4,
-      "note": "temiz çalışma ağacında alınan gerçek sonuç. Dört skip Aşama 1 durumunun beklenen sonucudur: --release kapısı, yayımlanmış asset karşılaştırması (yerel artifact artık v4.2), artifact-eski kontrolü ve stale not kontrolü."
+      "skipped": 5,
+      "note": "temiz çalışma ağacında alınan gerçek sonuç. Beş skip, artifact verified + release_candidate_ready=true durumunun beklenen sonucudur."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 941,
+      "passed": 940,
       "subtests_passed": 267,
       "date": "2026-08-02",
-      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. Dört skip Aşama 1 durumunun beklenen sonucudur.",
-      "skipped": 4
+      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 baseline'ını (060baf3) TARİHSEL alan olarak korur.",
+      "skipped": 5
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
@@ -92,11 +92,12 @@
     },
     "installed_exe": {
       "path": "<INSTALL_DIR>/TeklifYonetim.exe",
-      "sha256": "872DF3C11F82E1BD24740373F37A36B71E78E268397802CAEA582EDF4495A0DD",
-      "size": 9437741,
-      "built_for_version": "v4.1",
-      "product_version": "v4.1",
-      "note": "makinede KURULU olan sürüm hâlâ v4.1'dir; v4.2 installer'ı ÇALIŞTIRILMADI (Aşama 2). Derleme çıktısı değil, kurulum durumudur."
+      "sha256": "476015268A2620F60C0617E52D5E518CAF32559D17E618BB1022971AA8D5353B",
+      "size": 9476704,
+      "built_for_version": "v4.2",
+      "file_version": "4.2.0.0",
+      "product_version": "v4.2",
+      "note": "2026-08-02 yerinde upgrade sonrası kurulu sürüm; dist EXE ile birebir aynı hash."
     },
     "upgrade_baseline": {
       "from_version": "v4.0",
@@ -150,32 +151,56 @@
           ]
         },
         "path_B_error_box": {
-          "result": "TAMAMLANMADI",
-          "reason": "Kategori yönetimi giriş düğmesi ADSIZ bir ikon buton (PlusButton) ve UI Automation ağacında hiç görünmüyor; komşu ComboBox'tan koordinat türetme de kararsız çıktı (sekme geçişi bir koşuda gerçekleşti, diğerinde gerçekleşmedi). Salt-okunur DB tetikleyicisi ise uygulamayı AÇILIŞTA öldürüyor çünkü db_manager._migrate açılışta UPDATE çalıştırıyor — bu yüzden DB ancak uygulama tam açıldıktan SONRA kilitlenebiliyor.",
-          "not_claimed": "teknik hata kutusundaki 'Hata Raporla' düğmesi ve o yoldaki tek-form pencere PAKETLİ sürümde DOĞRULANMADI. Kaynak testleri bu yolu örter ama frozen kanıt YERİNE GEÇMEZ."
-        }
+          "result": "GECTI",
+          "date": "2026-08-02",
+          "environment": "KURULU v4.2 (C:\\Program Files\\Teklif Yönetim), izole geçici profil + izole DB + null keyring + loopback proxy",
+          "navigation": "tamamı dış otomasyon: Ürünler -> '+ Yeni Ürün' -> kategori ikon düğmesi (UIA rect + gerçek fare tıklaması). Kullanıcı tıklaması YOK.",
+          "trigger": "YALNIZ izole geçici DB dosyaları salt-okunur yapıldı (attrib +R) → sonraki yazma 'attempt to write a readonly database' = OperationalError. Metin 'locked'/'busy' içermediği için TEKNİK hata sayılır. Gerçek kullanıcı DB'sine YAZILMADI. Not: tetikleyici açılışta uygulanamaz (db_manager._migrate açılışta yazar) ve ALTER TABLE dış bağlantıdan 'database is locked' verir — ikisi de ölçüldü.",
+          "evidence": [
+            "gerçek hata kutusu açıldı (başlık 'Hata'); düğmeler: Tamam + 'Log Klasörünü Aç' + 'Hata Raporla'",
+            "kutu metni güvenli: 'Veritabanı işlemi tamamlanamadı...' — yasaklı içerik YOK",
+            "'Hata Raporla' GERÇEK fare ile tıklandı; tek-form pencere açıldı",
+            "görünen güvenli teknik alanlar: 'İşlem: Kategori ekle', 'Hata Türü: OperationalError', 'Konum: db_manager.py:188 execute <- category_service.py:29 add <- category_dialog.py:78 _add'",
+            "Konum yalnız DOSYA ADI:satır fonksiyon — mutlak yol YOK",
+            "penceredeki yasaklı içerik: YOK ('no such table', SQL, sqlite3, traceback, mutlak yol, izole kök, kayıt id'si)",
+            "açıklama boşken 'E-postayı Aç'/'Panoya Kopyala' DEVRE DIŞI; benzersiz açıklama sonrası etkin",
+            "'Panoya Kopyala' GERÇEK fare ile tıklandı; Windows panosu sentinel'den gerçek rapora değişti",
+            "panoda: görünen alanlar + kullanıcı açıklaması (D5E81C34) + 'Teknik özet' (İşlem/Hata türü/Konum); yasaklı içerik YOK",
+            "durum satırı 'Rapor panoya kopyalandı.' — 'gönderildi' DEMİYOR",
+            "güvenli log tek satır: 'Kategori ekle başarısız — hata=OperationalError id=- konum=[...]' (kayıt id'si yok)",
+            "normal kapanış exit 0; 0xC0000409 / QThread destroyed / Traceback YOK",
+            "gerçek tarayıcı/e-posta/SMTP/ağ açılmadı"
+          ],
+          "capture_note": "UIA kapsama ölçümü geometrik olduğu için arkadaki ürün formunun metinleri de yakalandı ('Alış Fiyatı:' vb.); bunlar RAPORA GİRMEZ — panonun tam içeriği ölçüldü ve temizdir."
+        },
+        "overall": "GECTI — R12a'nın iki yolu da paketli sürümde doğrulandı"
       }
     },
     "installer_test": {
       "result": "GECTI",
-      "verified_for_version": "v4.1",
-      "date": "2026-07-31",
+      "verified_for_version": "v4.2",
+      "date": "2026-08-02",
       "scope": [
-        "U17 öncesi v4.1 → U17'li v4.1 aynı dizinde yerinde upgrade (exit 0)",
-        "kurulu EXE hedef SHA256 ile birebir eşleşti",
-        "AppId, kurulum dizini, uninstall kaydı ve kısayollar korundu",
-        "kurulu uygulama izole null-keyring smoke (exit 0)",
-        "uninstall (exit 0) — kurulum dosyaları ve registry kaydı kalktı",
-        "aynı installer ile temiz reinstall (exit 0)",
-        "ikinci kurulu smoke (exit 0)",
-        "final durum: U17'li v4.1 kurulu ve çalışır"
+        "v4.1 -> v4.2 yerinde upgrade, yerel TeklifYonetim_Setup_v4.2.exe ile (/SILENT /NORESTART /LOG), exit 0, 7.2 s",
+        "Inno log: 'Installation process succeeded', 'Need to restart Windows? No'",
+        "kurulu EXE 9.476.704 B / 476015268A26...5353B — dist EXE ile BİREBİR AYNI",
+        "kurulu EXE FileVersion 4.2.0.0, ProductVersion v4.2",
+        "registry DisplayName 'Teklif Yönetim v4.2 sürümü', DisplayVersion v4.2, AppId {F40CDF0C-...}_is1 korundu",
+        "kurulum yolu C:\\Program Files\\Teklif Yönetim\\ değişmedi; kısayollar (Başlat menüsü x2, ortak masaüstü x1) yerinde",
+        "kurulum dizini 298 -> 299 dosya; değişen: TeklifYonetim.exe, base_library.zip, unins000.dat/exe; yeni: _internal\\_uuid.pyd; dist dışı ARTIK DOSYA YOK",
+        "kurulu v4.2 izole profil + null keyring + loopback proxy ile smoke edildi: açılış, gezinme, normal kapanış exit 0",
+        "logda 0xC0000409 / QThread destroyed / Traceback YOK"
       ],
+      "skipped_scenarios": [
+        "uninstall (kaldırma)",
+        "aynı installer ile temiz reinstall",
+        "ikinci kurulu smoke"
+      ],
+      "skipped_justification": "Installer mekanizması (AppId, SetupMutex, CloseApplications, PrepareToInstall, [Code] bölümü) v4.1'den beri DEĞİŞMEDİ; .iss dosyasında yalnız sürüm alanları güncellendi. Bu senaryolar v4.1 turunda (2026-07-31) TAM olarak yürütülmüş ve GEÇMİŞTİR — bkz. published_releases['v4.1'] ve AUDIT_HISTORY. Bu tur onların yerine geçmez; v4.2 için kaldırma/yeniden kurulum DOĞRULANMAMIŞTIR.",
       "user_data_preserved": true,
-      "user_data_evidence": "gerçek veri kökü 29 ve yedek kökü 20 dosya, upgrade / uninstall / reinstall sonrası dosya bazında SHA256+boyut+mtime ile birebir aynı (YENİ=0, SİLİNEN=0, DEĞİŞEN=0)",
-      "credential_manager_access": "get/set/delete = 0 (izole smoke'lar null keyring backend ile çalıştı)",
-      "manual_user_intervention": "upgrade, uninstall ve reinstall için üç UAC onayı kullanıcı tarafından elle verildi (UAC güvenli masaüstü otomatikleştirilemez); UAC dışındaki tüm uygulama tıklamaları otomasyonla yapıldı",
-      "pending_for_version": "v4.2",
-      "pending_note": "mevcut sonuç v4.1 içindir ve v4.2'ye DEVREDİLMEZ; v4.2 installer'ı henüz çalıştırılmadı (Aşama 2)."
+      "user_data_evidence": "gerçek database.db upgrade öncesi ve sonrası BYTE-BİREBİR AYNI (1.921.024 B / AB7B8AE5722315C47DBFD3A26D4FE7B67F830440C11E5322779278B6371CA2D6); PRAGMA integrity_check=ok, foreign_key_check temiz (salt-okunur bağlantı, içerik satırı okunmadı); yedek kökü 20 dosya YENİ=0 SİLİNEN=0 DEĞİŞEN=0. Veri kökünde beliren database.db-wal/-shm dosyalarını installer değil, integrity_check bağlantısı oluşturdu.",
+      "credential_manager_access": "get/set/delete = 0 (erişilmedi; izole smoke'lar null keyring)",
+      "manual_user_intervention": "TEK UAC onayı kullanıcı tarafından güvenli masaüstünde elle verildi; UAC otomatikleştirilmedi. Başka manuel adım YOK — R12a Yol B dâhil tüm UI navigasyonu dış otomasyonla yapıldı."
     },
     "release": {
       "target_version": "v4.2",

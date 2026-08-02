@@ -3,26 +3,26 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: 25518fb
+last_verified_commit: 9e89370
 last_verified_date: 2026-08-02
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-02 · hedef sürüm: `v4.2` (Aşama 1 tamamlandı — installer doğrulaması bekliyor).**
+> **Yakalama tarihi: 2026-08-02 · hedef sürüm: `v4.2` (Aşama 2A tamamlandı — YAYIN ADAYI; push/tag/release bekliyor).**
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.2** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.2.0.0` / `v4.2`) eşitlendi; installer adı `TeklifYonetim_Setup_v4.2.exe`
-- **Build durumu:** v4.2 temiz build **ALINDI** (`packaging/Kurulum-Yap.bat --no-pause`, exit 0, build commit `227656b`). `artifact_verification_status = installer_pending` — frozen smoke (B) geçti, **installer doğrulaması (C) bekliyor**, `release_candidate_ready = false`, `--release` kapısı bilinçli olarak **kırmızı**.
+- **Doğrulama durumu:** v4.2 temiz build **ALINDI** (build commit `227656b`, exit 0); frozen smoke (**B**) ve installer (**C**: yerinde upgrade) **GEÇTİ**; R12a'nın iki frozen yolu da kapandı → `artifact_verification_status = verified`, `release_candidate_ready = true`, `--release` kapısı **exit 0**. ⚠️ Bu **yayımlandı demek değildir**: push, tag, GitHub Release, read-back ve canlı updater (D1/D2) **yapılmadı**.
 - v4.2 artifact'ları: dist EXE `476015268A26…5353B` (9.476.704 B, 4.2.0.0 / v4.2) · installer `TeklifYonetim_Setup_v4.2.exe` `D61488DFE55D…82B2` (52.548.738 B). İkisi de v4.1 hash'lerinden **farklıdır**.
-- **Makinede kurulu sürüm hâlâ v4.1'dir**; v4.2 installer'ı çalıştırılmadı.
+- **Makinede kurulu sürüm artık v4.2**: yerinde upgrade exit 0 (tek UAC onayı elle verildi); kurulu EXE dist EXE ile birebir aynı (`476015268A26…5353B`), registry `DisplayVersion v4.2`, AppId ve kurulum dizini korundu, `dist` dışı artık dosya yok. **Gerçek `database.db` byte-birebir aynı** (`AB7B8AE5…`), yedekler 0/0/0, `integrity_check=ok`. **Kaldırma ve temiz yeniden kurulum bu turda ATLANDI** — installer mekanizması v4.1'den beri değişmedi ve o senaryolar v4.1 turunda tam yürütüldü; v4.2 için **doğrulanmamıştır**.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **941 passed, 4 skipped, 267 subtests** (2026-08-02, temiz ağaç). Dört skip Aşama 1 durumunun beklenen sonucudur: `--release` kapısı, yayımlanmış asset karşılaştırması (yerel artifact artık v4.2), artifact-eski kontrolü ve `built_from_commit` stale notu.
+- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **940 passed, 5 skipped, 267 subtests** (2026-08-02, temiz ağaç). Beş skip, artifact `verified` + `release_candidate_ready=true` durumunun beklenen sonucudur (stale/installer_pending/eski-asset kontrolleri artık geçerli değil).
 - `py_compile` tüm proje dosyalarında temiz
 - Upstream durumu **her release öncesi canlı git komutlarıyla** doğrulanır; bu belgede canlı remote hash tutulmaz
 
@@ -40,7 +40,7 @@ volatile: true
 
 - **Temiz build: GEÇTİ** — exit 0; adım 2'deki pytest kapısı build commit'inde **943 passed, 2 skipped, 267 subtests** (manifest `build_gate_test_result`; metadata commit'i sonrası güncel ağaçta 941/4/267 — fark, artifact durumunun `installer_pending` olmasıyla iki kontrolün atlanmasıdır); log'da `[HATA]`/traceback yok.
 - **Frozen smoke (kanıt sınıfı B): GEÇTİ** — izole profil + loopback proxy; açılış ve sürüm `v4.2`, null keyring'de **modal yok**, fail keyring'de **"Güvenli Depo" modalı gerçekten açıldı** (ana pencere disabled), tek örnek kilidi (ikinci süreç exit 0), **Yardım → "Sorun veya Öneri Bildir" penceresi açıldı** (ana pencere modal arkasında disabled, Vazgeç ile kapandı), normal kapanış exit 0, tek izole yedek, **0xC0000409 / QThread destroyed / Traceback yok**, tarayıcı-e-posta-installer-TeklifUpdate oluşmadı.
-- **R12a — paketli EXE'de R11 (2026-08-02):** *Yol A* (Yardım → Sorun veya Öneri Bildir) **GEÇTİ**: pencere açıldı, görünen alanlar `Rapor No / Tarih / Sürüm: v4.2 (paketli) / Sistem`, teknik alanlar bu yolda yok; açıklama boşken gönderme düğmeleri **kapalı**, yazınca **etkin**; **"Panoya Kopyala" gerçekten tıklandı** ve Windows panosu tam rapora değişti (benzersiz dize doğrulandı, **yasaklı içerik yok**); durum satırı *"Rapor panoya kopyalandı."* — "gönderildi" demiyor. *Yol B* (teknik hata kutusu → **"Hata Raporla"**) **hâlâ doğrulanmadı**: giriş düğmesi adsız ikon buton olduğundan UIA'da görünmüyor. Kaynak testi bunun yerine geçmez.
+- **R12a — KAPALI (2026-08-02):** *Yol A* paketli dist EXE'de, *Yol B* **kurulu v4.2**'de doğrulandı. Yol B: izole profil + izole DB salt-okunur tetikleyici → gerçek hata kutusu (**Tamam / Log Klasörünü Aç / Hata Raporla**) → gerçek tıklama → tek-form pencerede `İşlem: Kategori ekle`, `Hata Türü: OperationalError`, `Konum: db_manager.py:188 execute <- category_service.py:29 add <- category_dialog.py:78 _add` → **Panoya Kopyala gerçek tıklama**, panoda görünen alanlar + açıklama + teknik özet, **yasaklı içerik yok**. Navigasyon tamamen dış otomasyonla (UIA okuma + gerçek fare) yapıldı.
 - **Bu turda tekrarlanmayan B senaryoları** (ilgili kod v4.1'den beri değişmedi): B-4 temel UI akışı (müşteri/ürün/teklif/PDF), B-6 uzun worker ile kapanış, B-7 restart, B-9 modal/progress (O16).
 - **Installer (C), push, tag, GitHub Release ve canlı updater (D1/D2): YAPILMADI.**
 

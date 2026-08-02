@@ -26,7 +26,7 @@ gönderilmez.
 - **Gördüğünüzün dışında hiçbir bilgi eklenmiyor.**
 
 ### Gönderme — her zaman sizin kararınız
-- **E-postayı Aç**: kendi e-posta uygulamanızda hazır bir taslak açar.
+- **E-postayı Aç**: kendi e-posta uygulamanızda konusu ve içeriği hazır bir e-posta penceresi açar.
   Göndermek için Gönder'e siz basarsınız; program sizin adınıza e-posta
   göndermez.
 - **Panoya Kopyala**: raporu panoya alır, dilediğiniz yere yapıştırırsınız.
