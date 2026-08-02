@@ -10,17 +10,19 @@ volatile: true
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-02 · hedef sürüm: `v4.2` (ARA DURUM — build bekliyor).**
+> **Yakalama tarihi: 2026-08-02 · hedef sürüm: `v4.2` (Aşama 1 tamamlandı — installer doğrulaması bekliyor).**
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.2** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.2.0.0` / `v4.2`) eşitlendi; installer adı `TeklifYonetim_Setup_v4.2.exe`
-- ⚠️ **ARA DURUM:** sürüm alanları v4.2'ye yükseltildi, **yeni build henüz alınmadı**. Eldeki derleme hâlâ **v4.1**'dir (build HEAD `d359137`) → `artifact_verification_status = stale_for_target_version`, `release_candidate_ready = false`, `--release` kapısı bilinçli olarak **kırmızı**.
-- Eldeki v4.1 artifact'ı ne R10/PdfWorker ne de R11 değişikliklerini içerir; hash/boyutları **v4.2 gibi etiketlenmedi**, olduğu gibi korundu.
+- **Build durumu:** v4.2 temiz build **ALINDI** (`packaging/Kurulum-Yap.bat --no-pause`, exit 0, build commit `227656b`). `artifact_verification_status = installer_pending` — frozen smoke (B) geçti, **installer doğrulaması (C) bekliyor**, `release_candidate_ready = false`, `--release` kapısı bilinçli olarak **kırmızı**.
+- v4.2 artifact'ları: dist EXE `476015268A26…5353B` (9.476.704 B, 4.2.0.0 / v4.2) · installer `TeklifYonetim_Setup_v4.2.exe` `D61488DFE55D…82B2` (52.548.738 B). İkisi de v4.1 hash'lerinden **farklıdır**.
+- **Makinede kurulu sürüm hâlâ v4.1'dir**; v4.2 installer'ı çalıştırılmadı.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
+- **Paket denetimi bulgusu:** `_internal/assets/company.cfg` pakete giriyor ve firmanın kendi adı/adresi/telefonu/e-postası ile PDF şablon metinlerini taşıyor. **SMTP kullanıcı adı/parola veya token YOKTUR** ve dosya v4.1 paketiyle **byte-eşittir** — yeni bir sızıntı değil, en az v4.1'den beri süren bilinçli/varsayılan durumdur. Karar kullanıcıya bırakıldı.
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **943 passed, 2 skipped, 267 subtests** (2026-08-02, temiz ağaç). İki skip: `--release` kapısı (artifact hedef sürüm için stale) ve `installer_pending` durum kontrolü — ikisi de ARA DURUMUN beklenen sonucudur.
+- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **941 passed, 4 skipped, 267 subtests** (2026-08-02, temiz ağaç). Dört skip Aşama 1 durumunun beklenen sonucudur: `--release` kapısı, yayımlanmış asset karşılaştırması (yerel artifact artık v4.2), artifact-eski kontrolü ve `built_from_commit` stale notu.
 - `py_compile` tüm proje dosyalarında temiz
 - Upstream durumu **her release öncesi canlı git komutlarıyla** doğrulanır; bu belgede canlı remote hash tutulmaz
 
@@ -33,6 +35,14 @@ volatile: true
 - Rapora ham istisna, traceback, mutlak yol, kayıt id'si, teklif no ve müşteri/firma verisi **girmez**; `mailto:` Qt URL/query API'siyle üretilir (CRLF/`&`/`?` enjeksiyonuna kapalı).
 - **Bilinen sınır:** "E-postayı Aç" Windows'un `mailto:` eşlemesine bağlıdır; bazı kurulumlarda yalnız tarayıcı açılabilir veya hiçbir şey açılmayabilir — pencere kısa uyarı gösterir, **"Panoya Kopyala" güvenilir alternatiftir**.
 - **Native crash (0xC0000409 sınıfı) v1 kapsamında değildir**: süreç Python'a hiç dönmeden öldüğü için rapor hazırlanamaz.
+
+## v4.2 Aşama 1 doğrulaması (2026-08-02)
+
+- **Temiz build: GEÇTİ** — exit 0; adım 2'deki pytest kapısı build commit'inde **943 passed, 2 skipped, 267 subtests** (manifest `build_gate_test_result`; metadata commit'i sonrası güncel ağaçta 941/4/267 — fark, artifact durumunun `installer_pending` olmasıyla iki kontrolün atlanmasıdır); log'da `[HATA]`/traceback yok.
+- **Frozen smoke (kanıt sınıfı B): GEÇTİ** — izole profil + loopback proxy; açılış ve sürüm `v4.2`, null keyring'de **modal yok**, fail keyring'de **"Güvenli Depo" modalı gerçekten açıldı** (ana pencere disabled), tek örnek kilidi (ikinci süreç exit 0), **Yardım → "Sorun veya Öneri Bildir" penceresi açıldı** (ana pencere modal arkasında disabled, Vazgeç ile kapandı), normal kapanış exit 0, tek izole yedek, **0xC0000409 / QThread destroyed / Traceback yok**, tarayıcı-e-posta-installer-TeklifUpdate oluşmadı.
+- **Frozen'da ÖRTÜLEMEYENLER (kaynak testi bunların yerine geçmez):** bildirim penceresi içindeki *Panoya Kopyala* tıklaması ve pano içeriği; *teknik hata kutusu → "Hata Raporla"* yolu. Sebep ölçüldü: `QPlainTextEdit` Tab'ı yutuyor ve Qt açılır menüsü UIA `Invoke`'unu bloke ediyor.
+- **Bu turda tekrarlanmayan B senaryoları** (ilgili kod v4.1'den beri değişmedi): B-4 temel UI akışı (müşteri/ürün/teklif/PDF), B-6 uzun worker ile kapanış, B-7 restart, B-9 modal/progress (O16).
+- **Installer (C), push, tag, GitHub Release ve canlı updater (D1/D2): YAPILMADI.**
 
 ## Denetim
 

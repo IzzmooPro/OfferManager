@@ -810,7 +810,12 @@ class CanliRemoteIddiaTests(unittest.TestCase):
         guncel = str(veri["snapshot"]["guide_integrated_test_result"]["passed"])
         baseline = str(veri["snapshot"]["source_test_result"]["passed"])
         sayilar = set(re.findall(r"\b(\d{3})\s+(?:passed|test)\b", metin))
-        beklenen = {guncel, baseline, "713"}   # 713: build anındaki tarihsel sayı
+        # İzin verilen her sayı MANİFESTE dayanmak zorundadır; serbest
+        # metinde gerekçesiz bir test sayısı bırakılamaz.
+        kapi = veri["snapshot"].get("build_gate_test_result") or {}
+        beklenen = {guncel, baseline, "713"}   # 713: tarihsel build sayısı
+        if kapi.get("passed"):
+            beklenen.add(str(kapi["passed"]))
         fazla = sayilar - beklenen
         self.assertEqual(fazla, set(),
                          f"CURRENT_STATUS eskimiş test sayısı iddia ediyor: {fazla}")

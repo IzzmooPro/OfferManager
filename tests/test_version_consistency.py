@@ -103,10 +103,23 @@ class KaynakSurumTests(unittest.TestCase):
             self.assertEqual(durum, "verified",
                              "doğrulanmamış artifact release adayı olamaz")
 
-        for anahtar in ("dist_exe", "installer", "installed_exe"):
+        # Yerel derleme çıktıları artifact sürümünü taşımak ZORUNDADIR.
+        for anahtar in ("dist_exe", "installer"):
             self.assertEqual(s[anahtar].get("built_for_version"), artifact,
                              f"{anahtar}.built_for_version artifact sürümüyle "
                              "uyuşmuyor — eski hash yeni sürüm gibi etiketlenmiş")
+        # `installed_exe` MAKİNEDE KURULU olanı anlatır ve derleme çıktısı
+        # değildir: installer doğrulaması yapılana kadar bir ÖNCEKİ sürümde
+        # kalır. Sahte ilerletmeye karşı, farklıysa gerekçe zorunludur.
+        kurulu = s["installed_exe"].get("built_for_version")
+        self.assertRegex(str(kurulu), r"^v\d+\.\d+$",
+                         "installed_exe.built_for_version yazılmamış")
+        if kurulu != artifact:
+            self.assertTrue(str(s["installed_exe"].get("note", "")).strip(),
+                            "kurulu sürüm derlemeden farklı ama gerekçe yok")
+            self.assertIs(s.get("release_candidate_ready"), False,
+                          "kurulu sürüm henüz hedef değilken release adaylığı "
+                          "iddia edilemez")
 
     def test_installer_pending_durumu_dogru_kullaniliyor(self):
         """`installer_pending`: build + frozen smoke geçti, installer BEKLİYOR."""

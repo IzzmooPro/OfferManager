@@ -31,3 +31,13 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 | R10c | **import / settings / backup / reports** ham hata mesajları envanterlenmedi (~19 çağrı yeri) | Düşük | Sonraki envanter turu |
 | R11 | **500 kalemli teklifte UI doldurma ~3 sn** (`_add_row`) | Düşük | Gerçek veride maks ~10 kalem; toplu/gecikmeli satır kurulumu ileride |
 | R12 | **Normal kapanış yedeği büyük veritabanında kapanışı uzatır** | Düşük | Ölçüldü ve kabul edildi; gerekirse ilerleme göstergesi |
+
+## R12 — v4.2 Aşama 1 sonrası açık kalanlar (2026-08-02)
+
+| No | Risk | Durum |
+|---|---|---|
+| R12a | **Frozen modda örtülemeyen R11 yolları**: bildirim penceresi içindeki *Panoya Kopyala* tıklaması/pano içeriği ve *teknik hata kutusu → "Hata Raporla"*. Sebep ölçüldü: `QPlainTextEdit` Tab'ı yutuyor, Qt açılır menüsü UIA `Invoke`'unu bloke ediyor. Kaynak testleri bu yolları örter ama **frozen kanıt yerine geçmez**. | AÇIK — Aşama 2'de installer sonrası kurulu uygulamada tekrar denenecek |
+| R12b | **`_internal/assets/company.cfg` pakete giriyor**: firmanın kendi adı/adresi/telefonu/e-postası + PDF şablon metinleri. SMTP kullanıcı adı/parola/token **YOK**; dosya v4.1 paketiyle **byte-eşit** (en az v4.1'den beri sürüyor). | AÇIK — kullanıcı kararı bekliyor |
+| R12c | **Build sonrası provenance kuralı henüz testle zorlanmıyor**: "build sonrası yalnız manifest/CURRENT_STATUS/KNOWN_RISKS/CHANGELOG değişebilir" kuralı için otomatik kontrol yok. Bu turda metadata commit'i `tests/test_version_consistency.py` dosyasına da dokundu (pakete girmeyen dosya; paket denetimiyle doğrulandı). | AÇIK — kural bir sonraki build'den ÖNCE kodlanmalı |
+| R12d | **Paketli U17 → v4.2 gerçek yükseltme (R3b)** ilk kez v4.2 yayımlandıktan sonra D2 ile sınanabilir. | AÇIK — Aşama 2 |
+
