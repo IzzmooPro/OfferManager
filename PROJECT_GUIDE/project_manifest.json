@@ -42,14 +42,14 @@
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
     "source_commit": "25518fb",
-    "source_commit_note": "güncel v4.1 işlevsel kaynak snapshot'ı — U17 updater güven zinciri, R10-A (kategori), R10-B (dashboard), R10-C (teklif kaydetme/PDF aşama sınırları) ve PdfWorker yaşam döngüsü düzeltmelerini içerir",
+    "source_commit_note": "v4.1 işlevsel kaynağı (U17 + R10-A/B/C + PdfWorker). R11 geri bildirim özelliği ve v4.2 sürüm hazırlığı bu alandan SONRAKİ commit'tedir; gerçek hash build sonrası metadata commit'inde yazılır.",
     "built_from_commit": "d359137",
-    "built_from_commit_note": "yayımlanan v4.1 artifact'ının build edildiği gerçek HEAD. Bu artifact 25518fb'deki R10 ve PdfWorker kaynak değişikliklerini İÇERMEZ; güncel kaynak için yeniden build gerekir.",
-    "version": "v4.1",
+    "built_from_commit_note": "yayımlanan v4.1 artifact'ının build edildiği gerçek HEAD. Bu artifact ne 25518fb'deki R10/PdfWorker değişikliklerini ne de R11 geri bildirim özelliğini İÇERMEZ ve v4.2 sürüm alanlarını taşımaz; v4.2 için yeniden build gerekir.",
+    "version": "v4.2",
     "artifact_built_for_version": "v4.1",
-    "artifact_verification_status": "stale_source_changed",
+    "artifact_verification_status": "stale_for_target_version",
     "release_candidate_ready": false,
-    "release_readiness_note": "GÜNCEL KAYNAK için release adayı DEĞİL: 25518fb, artifact'ın build edildiği d359137'den ileride; yeniden build + frozen smoke + installer doğrulaması bekliyor. Bu, YAYIMLANMIŞ v4.1 sürümünün geçerliliğini ETKİLEMEZ — tag, GitHub Release ve canlı updater doğrulaması (D1/D2) tarihsel olarak geçerlidir.",
+    "release_readiness_note": "ARA DURUM: sürüm alanları v4.2'ye yükseltildi, yeni build henüz alınmadı. artifact_built_for_version=v4.1 ≠ version=v4.2 olduğu sürece release_candidate_ready=false ve --release kapısı bilinçli olarak KIRMIZIDIR. Bu, YAYIMLANMIŞ v4.1'in geçerliliğini etkilemez (bkz. published_releases).",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -60,20 +60,20 @@
     },
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
-      "scope": "PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dahil son tam suite",
-      "passed": 895,
-      "subtests_passed": 251,
+      "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
+      "passed": 943,
+      "subtests_passed": 267,
       "date": "2026-08-02",
-      "skipped": 1,
-      "note": "temiz çalışma ağacında alınan gerçek sonuç. Tek skip: --release kapısı, artifact güncel kaynak için stale olduğundan atlanır."
+      "skipped": 2,
+      "note": "temiz çalışma ağacında alınan gerçek sonuç. İki skip ARA DURUMUN beklenen sonucudur: --release kapısı (artifact hedef sürüm için stale) ve installer_pending durum kontrolü."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 895,
-      "subtests_passed": 251,
+      "passed": 943,
+      "subtests_passed": 267,
       "date": "2026-08-02",
-      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. temiz çalışma ağacında alınan gerçek sonuç. Tek skip: --release kapısı, artifact güncel kaynak için stale olduğundan atlanır.",
-      "skipped": 1
+      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. Temiz çalışma ağacında alınan gerçek sonuç; iki skip ara durumun beklenen sonucudur.",
+      "skipped": 2
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
@@ -145,84 +145,98 @@
       "manual_user_intervention": "upgrade, uninstall ve reinstall için üç UAC onayı kullanıcı tarafından elle verildi (UAC güvenli masaüstü otomatikleştirilemez); UAC dışındaki tüm uygulama tıklamaları otomasyonla yapıldı"
     },
     "release": {
-      "target_version": "v4.1",
-      "tag_created": true,
-      "github_release_created": true,
-      "updater_end_to_end_verified": true,
+      "target_version": "v4.2",
+      "tag_created": false,
+      "github_release_created": false,
+      "updater_end_to_end_verified": false,
       "existing_remote_tag": "v4.1",
+      "existing_remote_tag_note": "uzakta en son bulunan tag; v4.2 tag'i HENÜZ YOK (canlı doğrulandı)",
       "upstream_sync_must_be_verified_live": true,
-      "note": "v4.1 yayımlandı (public, latest). Tag hedefi, release ve tek .exe asset'i read-back ile doğrulandı; canlı updater D1 ve D2 kanıtları geçti. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; canlı git ile ölçülür.",
-      "updater_trust_chain": {
-        "asset_name_pinned": true,
-        "url_host_allowlisted": true,
-        "sha256_and_size_verified": true,
-        "fail_closed_when_metadata_missing": true,
-        "code_signing": false,
-        "note": "digest release metadata'sından gelir; bozuk/eksik indirmeyi ve yanlış asset seçimini engeller, ele geçirilmiş release metadata'sına karşı bağımsız güven kökü değildir (KNOWN_RISKS R5). v4.1 release'i için CDN redirect host'u canlı olarak release-assets.githubusercontent.com doğrulandı; GitHub ileride CDN host'unu değiştirirse updater güvenli biçimde fail-closed olur — erişilebilirlik riski sürer (KNOWN_RISKS R3d)."
-      },
-      "tag_commit": "a1bfd88a46cbc783226c148b7f62275101056c8b",
-      "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.1",
-      "published_at": "2026-07-31T10:42:31Z",
-      "draft": false,
-      "prerelease": false,
-      "latest": true,
-      "asset_readback": {
-        "name": "TeklifYonetim_Setup_v4.1.exe",
-        "size": 52501243,
-        "digest": "sha256:de590641717e33b94748d2b8658a23da2079ee6cfccf05bce9ce45a5c98ac98b",
-        "state": "uploaded",
-        "url": "https://github.com/IzzmooPro/OfferManager/releases/download/v4.1/TeklifYonetim_Setup_v4.1.exe",
-        "exe_asset_count": 1,
-        "note": "release'te tek .exe; ad/size/digest updater'ın beklediği biçimle birebir"
-      },
-      "evidence_scope_limit": "D1 ve D2 AYRI kanıtlardır ve 'U17 paketli E2E geçti' diye GENELLENEMEZ. D2'de teslimatı yapan istemci gerçek public v4.0'dır ve v4.0 updater'ı U17 doğrulaması (asset adı, host allowlist, SHA-256/size) YAPMAZ; indirilen dosyanın hash ve boyutu bağımsız olarak ölçülmüştür. D1 yalnız kaynak düzeyinde, gerçek release metadata'sı ve gerçek asset ile U17 güven zincirini kanıtlar. Paketli U17 istemcinin bir sonraki sürüme gerçek yükseltmesi ilk kez v4.2 yayımlandığında doğrulanabilir.",
-      "live_updater_verification": {
-        "D1_source_trust_chain": {
-          "result": "GECTI",
-          "date": "2026-07-31",
-          "scope": "kaynak düzeyi canlı U17 doğrulaması — gerçek releases/latest + gerçek asset indirmesi; installer ÇALIŞTIRILMADI",
-          "evidence": [
-            "gerçek releases/latest yanıtı kullanıldı",
-            "v4.1 yeni sürüm olarak görüldü ve tam asset adı seçildi",
-            "expected size ve digest doğru çıkarıldı",
-            "gerçek _Downloader ile indirildi",
-            "redirect son host = release-assets.githubusercontent.com (allowlist içinde)",
-            "Content-Length = gerçek yazılan bayt = 52501243",
-            "SHA256 = DE590641717E33B94748D2B8658A23DA2079EE6CFCCF05BCE9CE45A5C98AC98B",
-            "download_finished = 1, failed = 0",
-            "os.startfile / os._exit / webbrowser çağrısı = 0 (sert bloklandı)"
-          ],
-          "installer_executed": false
-        },
-        "D2_real_delivery_e2e": {
-          "result": "GECTI",
-          "date": "2026-07-31",
-          "scope": "gerçek yayımlanmış public v4.0 istemciden canlı v4.1 teslimatı — ana makinede açık kullanıcı izniyle",
-          "input_public_v40_installer": {
-            "size": 52447824,
-            "sha256": "32EB324E731E22E728E23FF537845A03D3FB0888D9C4C94030D0C226D0194DCA",
-            "note": "GitHub v4.0 release asset'i; yerel <ROLLBACK_ROOT> kopyasıyla byte-eşit DEĞİLDİR ve o kopya kullanılmamıştır"
-          },
-          "evidence": [
-            "kurulu v4.1 kaldırıldı, gerçek public v4.0 kuruldu",
-            "başlangıç kurulu ProductVersion = v4.0",
-            "v4.0 başlangıç updater'ı canlı v4.1'i kendiliğinden gördü",
-            "Güncelle otomasyonla tıklandı; indirme tamamlandı",
-            "indirilen installer BAĞIMSIZ ölçüldü: 52501243 / DE590641…8AC98B",
-            "installer kullanıcı UAC onayıyla çalıştı",
-            "final kurulu EXE 9437741 / 872DF3C1…95A0DD / ProductVersion v4.1",
-            "registry DisplayVersion v4.1, AppId ve kurulum dizini korundu",
-            "final izole null-keyring smoke exit 0, tek izole kapanış yedeği",
-            "QThread / 0xC0000409 / fatal / Traceback izi yok"
-          ],
-          "isolation": "uygulama izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/TMP/TEMP ve null keyring ile çalıştırıldı; gerçek kullanıcı verisi ve yedekleri dosya bazında SHA256 ile DEĞİŞMEDİ (YENİ=0, SİLİNEN=0, DEĞİŞEN=0)",
-          "credential_manager_access": "get/set/delete = 0",
-          "manual_user_intervention": "üç UAC onayı kullanıcı tarafından elle verildi (v4.1 uninstall, public v4.0 kurulumu, v4.1 güncelleme kurulumu); UAC güvenli masaüstü otomatikleştirilemez"
-        }
-      }
+      "status": "asama_1_devam_ediyor",
+      "note": "v4.2 için tag, GitHub Release ve canlı updater doğrulaması YAPILMADI. Aşama 1 kapsamı: kaynak doğrulaması + sürüm hazırlığı + yerel commit + temiz build + frozen smoke + artifact metadata. Aşama 2 (installer C, push, tag, release, read-back, D1/D2) Codex incelemesinden sonra."
     },
     "version_prepare_commit": "a63f981",
     "version_prepare_commit_note": "v4.1 sürüm alanlarının (APP_VERSION, .iss, version_info.txt, CHANGELOG) hazırlandığı commit",
-    "artifact_stale_reason": "R10-A/R10-B/R10-C güvenli hata mesajı düzeltmeleri ve PdfWorker yaşam döngüsü düzeltmesi d359137'den SONRA eklendi (kaynak 25518fb). Artifact hash/boyutları OLDUĞU GİBİ bırakıldı — sahte güncelleme yapılmadı; yalnız güncel kaynak için tazelik iddiası düştü."
+    "artifact_stale_reason": "hedef sürüm v4.2'ye yükseltildi; eldeki derleme hâlâ v4.1'dir (build HEAD d359137). R10-A/B/C, PdfWorker yaşam döngüsü ve R11 geri bildirim özelliği bu artifact'ta YOKTUR. Artifact hash/boyutları OLDUĞU GİBİ bırakıldı — v4.1 değerleri v4.2 gibi etiketlenmedi.",
+    "published_releases": {
+      "v4.1": {
+        "target_version": "v4.1",
+        "tag_created": true,
+        "github_release_created": true,
+        "updater_end_to_end_verified": true,
+        "existing_remote_tag": "v4.1",
+        "upstream_sync_must_be_verified_live": true,
+        "note": "v4.1 yayımlandı (public, latest). Tag hedefi, release ve tek .exe asset'i read-back ile doğrulandı; canlı updater D1 ve D2 kanıtları geçti. v4.0 tag'i değiştirilmez. Upstream durumu burada tutulmaz; canlı git ile ölçülür.",
+        "updater_trust_chain": {
+          "asset_name_pinned": true,
+          "url_host_allowlisted": true,
+          "sha256_and_size_verified": true,
+          "fail_closed_when_metadata_missing": true,
+          "code_signing": false,
+          "note": "digest release metadata'sından gelir; bozuk/eksik indirmeyi ve yanlış asset seçimini engeller, ele geçirilmiş release metadata'sına karşı bağımsız güven kökü değildir (KNOWN_RISKS R5). v4.1 release'i için CDN redirect host'u canlı olarak release-assets.githubusercontent.com doğrulandı; GitHub ileride CDN host'unu değiştirirse updater güvenli biçimde fail-closed olur — erişilebilirlik riski sürer (KNOWN_RISKS R3d)."
+        },
+        "tag_commit": "a1bfd88a46cbc783226c148b7f62275101056c8b",
+        "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.1",
+        "published_at": "2026-07-31T10:42:31Z",
+        "draft": false,
+        "prerelease": false,
+        "latest": true,
+        "asset_readback": {
+          "name": "TeklifYonetim_Setup_v4.1.exe",
+          "size": 52501243,
+          "digest": "sha256:de590641717e33b94748d2b8658a23da2079ee6cfccf05bce9ce45a5c98ac98b",
+          "state": "uploaded",
+          "url": "https://github.com/IzzmooPro/OfferManager/releases/download/v4.1/TeklifYonetim_Setup_v4.1.exe",
+          "exe_asset_count": 1,
+          "note": "release'te tek .exe; ad/size/digest updater'ın beklediği biçimle birebir"
+        },
+        "evidence_scope_limit": "D1 ve D2 AYRI kanıtlardır ve 'U17 paketli E2E geçti' diye GENELLENEMEZ. D2'de teslimatı yapan istemci gerçek public v4.0'dır ve v4.0 updater'ı U17 doğrulaması (asset adı, host allowlist, SHA-256/size) YAPMAZ; indirilen dosyanın hash ve boyutu bağımsız olarak ölçülmüştür. D1 yalnız kaynak düzeyinde, gerçek release metadata'sı ve gerçek asset ile U17 güven zincirini kanıtlar. Paketli U17 istemcinin bir sonraki sürüme gerçek yükseltmesi ilk kez v4.2 yayımlandığında doğrulanabilir.",
+        "live_updater_verification": {
+          "D1_source_trust_chain": {
+            "result": "GECTI",
+            "date": "2026-07-31",
+            "scope": "kaynak düzeyi canlı U17 doğrulaması — gerçek releases/latest + gerçek asset indirmesi; installer ÇALIŞTIRILMADI",
+            "evidence": [
+              "gerçek releases/latest yanıtı kullanıldı",
+              "v4.1 yeni sürüm olarak görüldü ve tam asset adı seçildi",
+              "expected size ve digest doğru çıkarıldı",
+              "gerçek _Downloader ile indirildi",
+              "redirect son host = release-assets.githubusercontent.com (allowlist içinde)",
+              "Content-Length = gerçek yazılan bayt = 52501243",
+              "SHA256 = DE590641717E33B94748D2B8658A23DA2079EE6CFCCF05BCE9CE45A5C98AC98B",
+              "download_finished = 1, failed = 0",
+              "os.startfile / os._exit / webbrowser çağrısı = 0 (sert bloklandı)"
+            ],
+            "installer_executed": false
+          },
+          "D2_real_delivery_e2e": {
+            "result": "GECTI",
+            "date": "2026-07-31",
+            "scope": "gerçek yayımlanmış public v4.0 istemciden canlı v4.1 teslimatı — ana makinede açık kullanıcı izniyle",
+            "input_public_v40_installer": {
+              "size": 52447824,
+              "sha256": "32EB324E731E22E728E23FF537845A03D3FB0888D9C4C94030D0C226D0194DCA",
+              "note": "GitHub v4.0 release asset'i; yerel <ROLLBACK_ROOT> kopyasıyla byte-eşit DEĞİLDİR ve o kopya kullanılmamıştır"
+            },
+            "evidence": [
+              "kurulu v4.1 kaldırıldı, gerçek public v4.0 kuruldu",
+              "başlangıç kurulu ProductVersion = v4.0",
+              "v4.0 başlangıç updater'ı canlı v4.1'i kendiliğinden gördü",
+              "Güncelle otomasyonla tıklandı; indirme tamamlandı",
+              "indirilen installer BAĞIMSIZ ölçüldü: 52501243 / DE590641…8AC98B",
+              "installer kullanıcı UAC onayıyla çalıştı",
+              "final kurulu EXE 9437741 / 872DF3C1…95A0DD / ProductVersion v4.1",
+              "registry DisplayVersion v4.1, AppId ve kurulum dizini korundu",
+              "final izole null-keyring smoke exit 0, tek izole kapanış yedeği",
+              "QThread / 0xC0000409 / fatal / Traceback izi yok"
+            ],
+            "isolation": "uygulama izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/TMP/TEMP ve null keyring ile çalıştırıldı; gerçek kullanıcı verisi ve yedekleri dosya bazında SHA256 ile DEĞİŞMEDİ (YENİ=0, SİLİNEN=0, DEĞİŞEN=0)",
+            "credential_manager_access": "get/set/delete = 0",
+            "manual_user_intervention": "üç UAC onayı kullanıcı tarafından elle verildi (v4.1 uninstall, public v4.0 kurulumu, v4.1 güncelleme kurulumu); UAC güvenli masaüstü otomatikleştirilemez"
+          }
+        },
+        "historical_note": "v4.1 yayını TAMAMLANMIŞTIR ve geçerlidir. Bu blok tarihsel kanıttır; güncel hedef sürümün (snapshot.release) durumuyla karıştırılamaz."
+      }
+    }
   }
 }

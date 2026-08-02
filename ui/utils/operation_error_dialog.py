@@ -77,7 +77,38 @@ def kullanici_mesaji(exc, tur: str, islem: str = "kaydet") -> str:
     return f"{temel} {_IPUCU}" if op_hata.teknik_hata_mi(exc) else temel
 
 
-def _kutu(parent, baslik: str, mesaj: str, ikon, log_dugmesi: bool):
+def rapor_diyalogu_ac(parent, exc, islem: str):
+    """"Hata Raporla" düğmesinin YALNIZ gerçek tıklamayla çağırdığı yol.
+
+    İstisna BURADA TEKRAR KAYDEDİLMEZ — kutuyu açan çağrı `op_hata.logla` ile
+    zaten tam bir kez kaydetmiştir. Rapor penceresinin kendi hatası dışarı
+    sızmaz ve ikinci bir hata kutusu açmaz (özyineleme yok); yalnız istisna
+    SINIF ADI kaydedilir.
+    """
+    try:
+        from ui.dialogs.feedback_dialog import FeedbackDialog
+        FeedbackDialog(parent, exc=exc, islem=islem).exec()
+    except Exception as ic_hata:                               # noqa: BLE001
+        logger.warning("Rapor penceresi açılamadı — hata=%s",
+                       type(ic_hata).__name__)
+
+
+def _rapor_dugmesi_ekle(kutu, parent, exc, islem: str):
+    """Kutuya "Hata Raporla" düğmesini ekler (yalnız teknik hatalarda)."""
+    from ui.dialogs.feedback_dialog import RAPOR_DUGME_METNI
+    dugme = kutu.addButton(RAPOR_DUGME_METNI,
+                           QMessageBox.ButtonRole.ActionRole)
+    dugme.clicked.connect(lambda: rapor_diyalogu_ac(parent, exc, islem))
+    return dugme
+
+
+def _kutu(parent, baslik: str, mesaj: str, ikon, log_dugmesi: bool,
+          rapor=None):
+    """`rapor` verilirse `(exception, güvenli işlem adı)` çiftidir.
+
+    Yalnız `op_hata.teknik_hata_mi(exc) is True` olan kutularda verilir;
+    doğrulama, çakışma ve "veritabanı meşgul" kutularında verilmez.
+    """
     kutu = QMessageBox(parent)
     kutu.setIcon(ikon)
     kutu.setWindowTitle(baslik)
@@ -87,6 +118,9 @@ def _kutu(parent, baslik: str, mesaj: str, ikon, log_dugmesi: bool):
                                QMessageBox.ButtonRole.ActionRole)
         # Explorer YALNIZ gerçek tıklamada açılır.
         dugme.clicked.connect(log_klasorunu_ac)
+    if rapor is not None:
+        # Rapor penceresi de YALNIZ gerçek tıklamada açılır.
+        _rapor_dugmesi_ekle(kutu, parent, rapor[0], rapor[1])
     kutu.addButton(QMessageBox.StandardButton.Ok)
     kutu.exec()
     return kutu
@@ -98,9 +132,15 @@ def hata_goster(parent, baslik: str, exc, tur: str, islem: str = "kaydet",
     op_hata.logla(exc, f"{tur} {islem}", kayit_id=kayit_id)
     # Mesajdaki ipucu ile kutudaki düğme AYNI koşula bağlıdır: biri varsa
     # diğeri de vardır (tests: test_mesaj_ile_dugme_varligi_tutarli).
+    # "Hata Raporla" düğmesi de aynı koşula bağlıdır: beklenen/çözülebilir
+    # hatalarda (çakışma, "veritabanı meşgul") kullanıcıyı rapora yöneltmek
+    # yanlış olur. `tur` ve `islem` GÜVENLİ kategori adlarıdır (ör.
+    # "Kategori ekle"); kayıt id'si veya kullanıcı verisi rapora geçmez.
+    teknik = op_hata.teknik_hata_mi(exc)
     return _kutu(parent, baslik, kullanici_mesaji(exc, tur, islem),
                  QMessageBox.Icon.Warning,
-                 log_dugmesi=op_hata.teknik_hata_mi(exc))
+                 log_dugmesi=teknik,
+                 rapor=(exc, f"{tur} {islem}") if teknik else None)
 
 
 def toplu_hata_goster(parent, baslik: str, guvenli_mesaj: str, hatalar,
@@ -111,6 +151,10 @@ def toplu_hata_goster(parent, baslik: str, guvenli_mesaj: str, hatalar,
                 KEZ loglanır; hiçbir ham hata metni birleştirilmez.
     `guvenli_mesaj` : çağıran tarafından **sayılardan** üretilir; istisna
                 içeriğinden ASLA türetilmez.
+
+    "Hata Raporla" düğmesi BİLİNÇLİ OLARAK EKLENMEZ: elde birden fazla istisna
+    vardır ve yalnız ilkini raporlamak yanıltıcı bir özet üretir. Kullanıcı
+    yine de Yardım menüsünden bildirim yapabilir.
     """
     for exc, kayit_id in hatalar:
         op_hata.logla(exc, islem, kayit_id=kayit_id)
@@ -125,10 +169,15 @@ def kismi_hata_goster(parent, baslik: str, exc, mesaj: str,
     `mesaj` çağıranın SABİT metnidir: neyin kaydedildiğini, neyin
     yapılamadığını ve kullanıcının ne yapması gerektiğini söyler. Yapay
     "0/1" sayımı üretilmez; istisna içeriği mesaja girmez.
+
+    Tek ve BELLİ bir istisna vardır; bu yüzden "Hata Raporla" düğmesi eklenir.
+    İstisna burada tam bir kez kaydedilir — rapor penceresi onu YENİDEN
+    KAYDETMEZ. `islem` güvenli kategori adıdır; `kayit_id` rapora geçmez.
     """
     op_hata.logla(exc, islem, kayit_id=kayit_id)
     return _kutu(parent, baslik, f"{mesaj} {_IPUCU}",
-                 QMessageBox.Icon.Warning, log_dugmesi=True)
+                 QMessageBox.Icon.Warning, log_dugmesi=True,
+                 rapor=(exc, islem))
 
 
 def dogrulama_goster(parent, baslik: str, mesaj: str):

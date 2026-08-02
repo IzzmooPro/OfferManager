@@ -16,6 +16,8 @@ covers:
   - ui/utils/excel_import.py
   - ui/utils/operation_error.py
   - ui/utils/operation_error_dialog.py
+  - core/feedback_report.py
+  - ui/dialogs/feedback_dialog.py
   - ui/dashboard_page.py
   - ui/dialogs/category_dialog.py
   - pdf/pdf_generator.py
@@ -67,7 +69,9 @@ volatile: false
 | `ui/dialogs/pdf_preview_dialog.py`, `help_dialogs.py`, `category_dialog.py`, `customer_history_dialog.py` | Yardımcı diyaloglar |
 | `ui/utils/excel_import.py` | CSV/XLSX içe aktarma: sayfa adayları, sayfa seçimi, doğrulama, mükerrer kontrolü, toplu yazma |
 | `ui/utils/operation_error.py` | İstisna → güvenli kullanıcı METNİ + güvenli log. **UI açmaz, Qt import etmez**; ürettiği metin düğme/pencere ögesine atıf yapmaz |
-| `ui/utils/operation_error_dialog.py` | O metni gerçek `QMessageBox` içinde gösteren ince sarmalayıcı: `hata_goster` (tekil), `toplu_hata_goster` (kısmi başarı sayıları), `kismi_hata_goster` (kaydedildi ama sonraki adım başarısız), `dogrulama_goster` (log düğmesi yok) ve "Log Klasörünü Aç" düğmesi |
+| `ui/utils/operation_error_dialog.py` | O metni gerçek `QMessageBox` içinde gösteren ince sarmalayıcı: `hata_goster` (tekil), `toplu_hata_goster` (kısmi başarı sayıları), `kismi_hata_goster` (kaydedildi ama sonraki adım başarısız), `dogrulama_goster` (log düğmesi yok) ve "Log Klasörünü Aç" düğmesi ve "Hata Raporla" düğmesi (`rapor_diyalogu_ac`). Rapor düğmesi YALNIZ tek ve belli bir istisna varken eklenir: `hata_goster` (teknik hata) ve `kismi_hata_goster`. `toplu_hata_goster` ve `dogrulama_goster` bu düğmeyi TAŞIMAZ |
+| `core/feedback_report.py` | Hata/öneri raporunun SAF veri modeli ve metin üreticisi: `RaporVerisi`, `TeknikOzet`, `rapor_olustur`, `metin_uret`, `konu_uret`, `guvenli_konum`. Qt import etmez, diske/ağa dokunmaz, log yazmaz, istisnayı yeniden kaydetmez |
+| `ui/dialogs/feedback_dialog.py` | Tek ortak bildirim penceresi (iki giriş: Yardım menüsü ve "Hata Raporla"). Tek form: görünen otomatik alanlar + tek "Ne oldu?" kutusu; `mailto_baglantisi` Qt URL/query ile kurulur; eylemler E-postayı Aç / Panoya Kopyala / Vazgeç |
 | `ui/utils/theme_manager.py` | Açık/koyu tema, QSS üretimi |
 | `ui/utils/updater.py` | Sürüm kontrolü, indirme, kurulum başlatma |
 | `ui/widgets/*` | Ortak widget'lar (kart, tablo, kâr paneli, hover delegate) |

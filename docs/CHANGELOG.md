@@ -2,6 +2,56 @@
 
 ---
 
+## [v4.2] — 2026-08-02
+
+Bu sürüm, bir sorunla karşılaştığınızda size **kolay bir bildirim yolu** ekler.
+Teknik bilgi girmeniz gerekmez ve hiçbir şey arka planda kendiliğinden
+gönderilmez.
+
+### Sorun ve öneri bildirme
+- **Yardım → Sorun veya Öneri Bildir...** menüsü eklendi. Bir hata yaşamanız
+  gerekmez; öneri de yazabilirsiniz.
+- Beklenmeyen bir hata penceresi çıktığında ya da bir işlem yarım kaldığında
+  (ör. teklif kaydedildi ama PDF oluşmadı) aynı pencereye **"Hata Raporla"**
+  düğmesiyle ulaşılıyor.
+- Çakışma ve "veritabanı meşgul" gibi kendiniz yeniden deneyerek
+  aşabileceğiniz durumlarda bu düğme **görünmüyor**.
+
+### Tek ekranlık sade form
+- Pencerenin üstünde raporla birlikte gidecek bilgiler **olduğu gibi
+  görünüyor**: rapor numarası, tarih, sürüm ve Windows bilgisi. Hata
+  yolunda ayrıca işlem adı, hata türü ve hatanın geçtiği dosya/satır.
+- Altında tek bir **"Ne oldu?"** kutusu var; doldurmanız gereken başka alan
+  yok. Kutu boşken gönderme düğmeleri kapalı kalıyor.
+- **Gördüğünüzün dışında hiçbir bilgi eklenmiyor.**
+
+### Gönderme — her zaman sizin kararınız
+- **E-postayı Aç**: kendi e-posta uygulamanızda hazır bir taslak açar.
+  Göndermek için Gönder'e siz basarsınız; program sizin adınıza e-posta
+  göndermez.
+- **Panoya Kopyala**: raporu panoya alır, dilediğiniz yere yapıştırırsınız.
+- **Vazgeç**: hiçbir şey yapmaz.
+- Program hiçbir aşamada internete çıkmaz, e-posta hesabınızı veya kayıtlı
+  şifrenizi kullanmaz. Bu yüzden hiçbir zaman "rapor gönderildi" demez.
+
+### Gizlilik
+- Müşteri, teklif, ürün ve firma bilgileriniz ile şifreleriniz rapora
+  **otomatik eklenmez**; kayıt numarası, teklif numarası, tam dosya yolları,
+  ham hata metni ve log dosyanız da girmez.
+- Yazdığınız açıklama rapora **aynen** girer — bu yüzden açıklamaya kişisel
+  veya müşteri bilgisi yazmamanız önerilir; pencerede de bu uyarı yer alıyor.
+
+### Bilinen sınırlar
+- **"E-postayı Aç" Windows'un `mailto:` eşlemesine bağlıdır.** Bazı
+  kurulumlarda varsayılan e-posta uygulaması tanımlı değildir ve yalnız
+  tarayıcı açılabilir ya da hiçbir şey açılmayabilir. Bu durumda pencere
+  kısa bir uyarı gösterir; **"Panoya Kopyala" güvenilir alternatiftir.**
+- Programın tamamen çökmesine yol açan sistem düzeyindeki hatalar bu
+  sürümün kapsamı dışındadır; böyle bir durumda süreç kapandığı için rapor
+  hazırlanamaz.
+
+---
+
 ## [v4.1] — 2026-07-31
 
 Bu sürüm baştan sona bir güvenilirlik turudur: veri kaybına, sessiz hatalara ve

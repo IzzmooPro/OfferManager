@@ -10,13 +10,15 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 logger = logging.getLogger("help")
-from core.constants import APP_VERSION
+from core.constants import APP_VERSION, CONTACT_MAIL
 from ui.utils.updater import UpdateChecker, UpdateDialog
 
 # ── Uygulama sabitleri ────────────────────────────────────────────────────────
 GITHUB_REPO  = "IzzmooPro/OfferManager"
 GITHUB_URL   = f"https://github.com/{GITHUB_REPO}"
-CONTACT_MAIL = "IzzmooPro@gmail.com"
+# CONTACT_MAIL `core.constants`ten gelir (tek kanonik kaynak); buradan yeniden
+# dışa verilmesi eski `from ui.dialogs.help_dialogs import CONTACT_MAIL`
+# çağrılarını bozmamak içindir.
 
 # ── Ortak yardımcılar ────────────────────────────────────────────────────────
 

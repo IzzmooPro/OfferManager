@@ -10,24 +10,35 @@ volatile: true
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-02 · hedef sürüm: `v4.1`.**
+> **Yakalama tarihi: 2026-08-02 · hedef sürüm: `v4.2` (ARA DURUM — build bekliyor).**
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
-- Sürüm: **v4.1** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` ve `version_info.txt` eşitlendi
-- Commit ayrımı: v4.1 **sürüm hazırlığı** `a63f981` · **güncel işlevsel kaynak** `25518fb` (U17 + R10-A/B/C + PdfWorker) · **yayımlanan artifact'ın build edildiği HEAD** `d359137`
-- ⚠️ **Güncel kaynak artifact'tan İLERİDE**: `d359137` ile üretilen v4.1 artifact'ı R10 ve PdfWorker düzeltmelerini **içermez** → güncel kaynak için yeniden build + frozen smoke + installer doğrulaması bekliyor (`artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`)
+- Hedef sürüm: **v4.2** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.2.0.0` / `v4.2`) eşitlendi; installer adı `TeklifYonetim_Setup_v4.2.exe`
+- ⚠️ **ARA DURUM:** sürüm alanları v4.2'ye yükseltildi, **yeni build henüz alınmadı**. Eldeki derleme hâlâ **v4.1**'dir (build HEAD `d359137`) → `artifact_verification_status = stale_for_target_version`, `release_candidate_ready = false`, `--release` kapısı bilinçli olarak **kırmızı**.
+- Eldeki v4.1 artifact'ı ne R10/PdfWorker ne de R11 değişikliklerini içerir; hash/boyutları **v4.2 gibi etiketlenmedi**, olduğu gibi korundu.
+- **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık ve R10 güvenli hata testleri dâhil son tam suite: **895 passed, 1 skipped, 251 subtests** (2026-08-02, temiz ağaç). Tek skip, artifact güncel kaynak için stale olduğundan `--release` kapısının atlanmasıdır; bu kapı bilinçli olarak **kırmızıdır** (yeniden build bekliyor).
+- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **943 passed, 2 skipped, 267 subtests** (2026-08-02, temiz ağaç). İki skip: `--release` kapısı (artifact hedef sürüm için stale) ve `installer_pending` durum kontrolü — ikisi de ARA DURUMUN beklenen sonucudur.
 - `py_compile` tüm proje dosyalarında temiz
-- v4.1 kaynak commit'lerinin upstream durumu **release öncesinde canlı git komutlarıyla doğrulanmalıdır**; bu belgede canlı remote hash tutulmaz
+- Upstream durumu **her release öncesi canlı git komutlarıyla** doğrulanır; bu belgede canlı remote hash tutulmaz
+
+## R11 geri bildirim özelliği (2026-08-02) — kaynakta tamamlandı
+
+- **Yardım → Sorun veya Öneri Bildir...** menü girişi; teknik hata gerekmez.
+- Teknik hata kutularında ve **kısmi başarı** kutularında **"Hata Raporla"** düğmesi. Çakışma / "veritabanı meşgul" gibi beklenen hatalarda **görünmez**; toplu hata kutusunda **bilinçli olarak yoktur** (birden fazla istisnadan yalnız ilkini raporlamak yanıltıcı olur).
+- **Tek form:** otomatik toplanan alanların hepsi kalın etiketlerle görünür (Rapor No, Tarih, Sürüm, Sistem + hata yolunda İşlem, Hata Türü, Konum); altında tek düzenlenebilir "Ne oldu?" kutusu. Ayrı ön izleme alanı yoktur — gönderilen metin görünen alanlar + kullanıcı açıklamasıdır.
+- **E-postayı Aç / Panoya Kopyala / Vazgeç.** Otomatik gönderim, otomatik ağ isteği ve otomatik hassas veri toplama **yoktur**; kullanıcının SMTP hesabı ve güvenli depodaki parolası **kullanılmaz**. Hiçbir yolda "rapor gönderildi" denmez.
+- Rapora ham istisna, traceback, mutlak yol, kayıt id'si, teklif no ve müşteri/firma verisi **girmez**; `mailto:` Qt URL/query API'siyle üretilir (CRLF/`&`/`?` enjeksiyonuna kapalı).
+- **Bilinen sınır:** "E-postayı Aç" Windows'un `mailto:` eşlemesine bağlıdır; bazı kurulumlarda yalnız tarayıcı açılabilir veya hiçbir şey açılmayabilir — pencere kısa uyarı gösterir, **"Panoya Kopyala" güvenilir alternatiftir**.
+- **Native crash (0xC0000409 sınıfı) v1 kapsamında değildir**: süreç Python'a hiç dönmeden öldüğü için rapor hazırlanamaz.
 
 ## Denetim
 
 K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanlış pozitif olarak kapandı; O5'in özgün yarış iddiası yanlış pozitifti, komşu kusurlar düzeltildi; O10 ve O11 "olası ölçekleme bulgusu, düzeltildi" sınıfındadır.
 
-## v4.1 doğrulama durumu
+## v4.1 doğrulama durumu · TARİHSEL
 
 Aşağıdaki üç kanıt sınıfı **yayımlanan v4.1 artifact'ı** için geçerlidir (kaynak `7395561`, build HEAD `d359137`). **Güncel kaynak `25518fb` için tekrarlanmadı.**
 
@@ -38,7 +49,7 @@ Aşağıdaki üç kanıt sınıfı **yayımlanan v4.1 artifact'ı** için geçer
 - **Kod imzası yok** → SmartScreen "bilinmeyen yayımcı" uyarısı beklenir
 - Artifact hash/boyutları: [project_manifest.json](project_manifest.json)
 
-## v4.1 yayın durumu — **YAYINLANDI (public, latest)**
+## v4.1 yayın durumu — **YAYINLANDI (public, latest)** · TARİHSEL
 
 - Tag **`v4.1`** → `a1bfd88a46cbc783226c148b7f62275101056c8b` · Release: <https://github.com/IzzmooPro/OfferManager/releases/tag/v4.1> · yayın `2026-07-31T10:42:31Z` · `draft=false`, `prerelease=false`, `latest=true`
 - Tek `.exe` asset read-back ile doğrulandı: `TeklifYonetim_Setup_v4.1.exe` · `size 52501243` · `digest sha256:de590641…ac98b` · `state uploaded`; yeniden indirilen dosya yerel installer ile **byte-eşit**
@@ -79,10 +90,15 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 ## Kalan aşamalar
 
-1. Dört R10 kaynak commit'i ve bu metadata commit'inin upstream'e gönderilmesi
-2. **Güncel kaynak için yeniden build + frozen smoke + installer doğrulaması** (artifact `d359137`'de kaldı)
-3. **v4.2 turunda paketli U17 → sonraki sürüm doğrulaması** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b)
-4. Küçük denetim maddeleri: R10a, R10b, R10c
+**Aşama 1 (bu tur):** R11 kaynak doğrulaması · v4.2 sürüm hazırlığı · yerel commit · temiz build · frozen smoke (B) · artifact metadata.
+
+**Aşama 2 (Codex incelemesinden sonra):**
+
+1. Installer doğrulaması (kanıt sınıfı **C**): upgrade → uninstall → temiz reinstall
+2. `origin/main`'e push
+3. `v4.2` tag'i ve GitHub Release + asset read-back
+4. Canlı updater doğrulaması **D1** ve **D2** — D2 bu kez ilk kez **paketli U17 istemciden** yapılabilir ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b)
+5. Küçük denetim maddeleri: R10a, R10b, R10c
 
 ## Bu yakalamayı yenilerken
 

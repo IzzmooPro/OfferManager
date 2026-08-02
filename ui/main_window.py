@@ -351,6 +351,12 @@ class MainWindow(QMainWindow):
 
         help_menu.addSeparator()
 
+        act_feedback = QAction("Sorun veya Öneri Bildir...", self)
+        act_feedback.triggered.connect(self._open_feedback)
+        help_menu.addAction(act_feedback)
+
+        help_menu.addSeparator()
+
         act_about = QAction("Hakkında\tCtrl+H", self)
         act_about.setShortcut("Ctrl+H")
         act_about.triggered.connect(self._open_about)
@@ -560,6 +566,11 @@ class MainWindow(QMainWindow):
             self._help_dialog = HowToUseDialog(self)
             self._help_dialog.finished.connect(lambda _: setattr(self, "_help_dialog", None))
             self._help_dialog.show()
+
+    def _open_feedback(self):
+        """Yardım menüsü yolu — teknik hata GEREKMEZ, istisna taşınmaz."""
+        from ui.dialogs.feedback_dialog import FeedbackDialog
+        FeedbackDialog(self, exc=None).exec()
 
     def _open_about(self):
         from ui.dialogs.help_dialogs import AboutDialog

@@ -6,6 +6,8 @@ covers:
   - core/config.py
   - ui/utils/operation_error.py
   - ui/utils/operation_error_dialog.py
+  - core/feedback_report.py
+  - ui/dialogs/feedback_dialog.py
   - core/app_paths.py
   - ui/dialogs/email_dialog.py
   - main.py
@@ -35,6 +37,14 @@ volatile: false
 - **"Log Klasörünü Aç" düğmesi** (`ui/utils/operation_error_dialog.py`): yalnız beklenmeyen/teknik hatalarda eklenir. Tıklanmadıkça `os.startfile` **çağrılmaz**; tıklanınca yalnız kanonik `core.app_paths.LOG_DIR` açılır — yol istisnadan veya kullanıcı girdisinden türetilmez ve **mesaj metninde gösterilmez**. Klasör yoksa ya da açma başarısız olursa ikinci pencere açılmaz, istisna sızmaz, yalnız istisna **sınıf adı** warning olarak loglanır (özyineleme yok). → `tests/test_operation_error_dialog.py`
 - Log satırı: işlem adı + istisna sınıf adı + güvenli kayıt id'si + traceback'in yalnız `dosya:satır fonksiyon` çerçeveleri. `exc_info` kullanılmaz. Toplu işlemlerde her istisna **tam bir kez** ayrı ayrı loglanır; ham metinler birleştirilmez. Başarı loglarında tam kullanıcı dosya yolu yazılmaz — yalnız güvenli kayıt id'si.
 - Paketlenmiş windowed derlemede yakalanmamış istisna sessizce kaybolmaz: görünür hata penceresi + log dosyası yolu gösterilir; aynı hata kısa süre içinde tekrar ederse bastırılır.
+
+## Hata/öneri raporu (R11)
+
+- **Otomatik gönderim ve otomatik veri toplama yoktur.** Rapor yalnız kullanıcının kendi e-posta istemcisinde TASLAK olarak açılır ya da panoya kopyalanır; program ağa çıkmaz, SMTP hesabını ve Credential Manager'daki parolayı kullanmaz. "Rapor gönderildi" **denmez**.
+- Rapora giren alanların **tamamı pencerede görünür**: rastgele rapor no, yerel tarih/saat, `APP_VERSION`, paketli/kaynak modu, işletim sistemi sürümü + mimari, rapor türü, kullanıcının açıklaması ve (yalnız teknik hata yolunda) güvenli işlem adı, istisna **sınıf adı** ve `dosya.py:satır fonksiyon` özeti.
+- Rapora **girmez**: `str(exception)`, istisna mesajı, traceback, SQL, mutlak yol, bilgisayar/kullanıcı adı, kayıt id'si, teklif no, müşteri/ürün/firma verisi, parola, tam log dosyası, ekran görüntüsü. `platform.node()` bilinçli olarak okunmaz; rapor no `uuid4`'tür (MAC taşıyan `uuid1` değil).
+- Kullanıcının yazdığı açıklama rapora **aynen** girer — bu tek gerçek sızıntı kanalıdır ve pencerede açıkça uyarılır ("Yazdığınız açıklama rapora aynen girer; kişisel veya müşteri bilgisi yazmayın").
+- `mailto:` bağlantısı Qt `QUrl`/`QUrlQuery` ile kurulur ve kullanıcı metni yüzde-kodlanır; CRLF, `&`, `?` ile başlık/query enjeksiyonu yapılamaz. Pencerenin kendi hatası ikinci pencere veya özyineleme üretmez, yalnız istisna **sınıf adı** loglanır. İstisna rapor yolunda **yeniden kaydedilmez**. → `tests/test_feedback_report.py`
 
 ## Çıktı gizliliği
 

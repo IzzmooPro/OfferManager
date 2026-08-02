@@ -8,6 +8,8 @@ covers:
   - ui/utils/excel_import.py
   - ui/utils/operation_error.py
   - ui/utils/operation_error_dialog.py
+  - core/feedback_report.py
+  - ui/dialogs/feedback_dialog.py
   - ui/dashboard_page.py
   - ui/create_offer_page.py
   - ui/dialogs/category_dialog.py
@@ -60,6 +62,7 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 18. **Hiçbir kullanıcı mesajında veya güvenli logda** ham istisna metni, `str(exception)`, traceback, SQL, yerel dosya yolu ya da müşteri/firma/teklif adı bulunmaz. Mesaj sabit metinlerden seçilir; log yalnız işlem adı, istisna sınıf adı, güvenli kayıt id'si ve `dosya:satır` çerçevelerini içerir (`exc_info` kullanılmaz). Diyalog kapanmaz, kullanıcı düzeltip yeniden dener. → `tests/test_save_error_handling.py`, `tests/test_operation_error_dialog.py`, `tests/test_dashboard_safe_errors.py`, `tests/test_create_offer_stage_errors.py`
 18b. **Kısmi başarı önceki başarılı aşamayı İNKÂR ETMEZ.** Çok aşamalı akışlarda (kaydet → PDF → arşiv → sonraki eylemler; toplu silme/PDF; DB yazımı → ekran yenileme) sonraki bir aşamanın hatası, tamamlanmış aşamayı "yapılamadı" gibi anlatamaz. Toplu işlemlerde yalnız güvenli sayılar gösterilir; "hiçbiri" türü genelleme yapılmaz. → `tests/test_create_offer_stage_errors.py`, `tests/test_dashboard_safe_errors.py`
 18c. **"Log Klasörünü Aç" düğmesi** yalnız beklenmeyen/teknik hatalarda gösterilir ve mesajdaki ipucu ile kutudaki gerçek düğme birebir eşleşir; doğrulama mesajlarında bulunmaz. → `tests/test_operation_error_dialog.py`
+18d. **Hata/öneri raporu kullanıcı iradesiyle gider ve gizli alan taşımaz.** Program hiçbir koşulda raporu kendiliğinden göndermez, ağa çıkmaz, kullanıcının SMTP hesabını veya güvenli depodaki parolasını kullanmaz; hiçbir yolda "rapor gönderildi" denmez. Rapora YALNIZ pencerede **görünen** alanlar ve kullanıcının kendi açıklaması girer — `str(exception)`, traceback, mutlak yol, kayıt id'si, teklif no ve müşteri/firma verisi girmez. `mailto:` Qt URL/query API'siyle yüzde-kodlanarak kurulur (CRLF/`&`/`?` enjeksiyonu kapalı). Pano yalnız gerçek tıklamada yazılır; "Vazgeç" yan etki üretmez. `core/feedback_report.py` Qt import etmez ve istisnayı YENİDEN KAYDETMEZ. → `tests/test_feedback_report.py`
 19. **Paketlenmiş (windowed) derlemede çalışma zamanı hatası görünür**; hata penceresi log yolunu gösterir, aynı hata kısa süre tekrar bastırılır. → `tests/test_windowed_error_reporting.py`
 
 ## Paketleme ve yayın

@@ -1,6 +1,10 @@
 """Uygulama geneli sabitler — tek kaynak, tüm modüller buradan import eder."""
 
-APP_VERSION = "v4.1"
+APP_VERSION = "v4.2"
+
+# İletişim adresi — TEK kanonik kaynak. Hem "Hakkında" ekranı hem de
+# "Hata Raporla / Sorun veya Öneri Bildir" taslağı buradan okur.
+CONTACT_MAIL = "IzzmooPro@gmail.com"
 
 SYM_MAP = {"TL": "₺", "EUR": "€", "USD": "$"}
 

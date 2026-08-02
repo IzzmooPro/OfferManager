@@ -30,11 +30,19 @@ VERSION_INFO = PACKAGING / "version_info.txt"
 VERIFY = REHBER / "scripts" / "verify_project_guide.py"
 
 # Hedef sürüm sözleşmesi
-HEDEF = "v4.1"
-HEDEF_SAYISAL = "4.1.0.0"
-HEDEF_INSTALLER = "TeklifYonetim_Setup_v4.1.exe"
+HEDEF = "v4.2"
+HEDEF_SAYISAL = "4.2.0.0"
+HEDEF_INSTALLER = "TeklifYonetim_Setup_v4.2.exe"
 # Upgrade testinin başlangıç noktası (yalnız tarihsel bilgi)
 UPGRADE_TEMEL = "v4.0"
+# Yayımlanmış (tarihsel) sürüm — kanıtı korunur, hedef sürümle karıştırılmaz
+YAYIMLANMIS = "v4.1"
+
+# `artifact_verification_status` için izin verilen tüm değerler
+DURUMLAR = ("verified",                 # hedef sürüm için build + B + C geçti
+            "installer_pending",        # build + B geçti, installer (C) bekliyor
+            "stale_source_changed",     # artifact güncel, kaynak ilerledi
+            "stale_for_target_version") # hedef sürüm yükseltildi, build eski
 
 _YOK = "packaging/ yerel-only; temiz clone'da bulunmayabilir"
 _ARTIFACT_YOK = "dist/ ve installer_output/ yerel-only; temiz clone'da yok"
@@ -56,27 +64,67 @@ class KaynakSurumTests(unittest.TestCase):
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(veri["snapshot"]["version"], HEDEF)
 
-    def test_manifest_artifact_hedef_surumle_ayni(self):
-        """Artifact hedef sürüm için üretildi; durumu dürüstçe yazıldı.
+    def test_artifact_surumu_ve_durumu_tutarli(self):
+        """Artifact sürümü ile hedef sürüm ayrı tutulur; sahte "verified" yok.
 
-        `artifact_verification_status` sabit "verified" olmak ZORUNDA değildir:
-        kaynak artifact üretildikten sonra değişirse doğru değer
-        "stale_source_changed"dır. Sınanan şey, durumun tutarlı ve gerekçeli
-        olmasıdır — sahte "verified" yazılamaz.
+        Sürüm yükseltmesinin ARA DURUMUNDA (`RELEASE_CHECKLIST.md`) hedef sürüm
+        yükseltilmiş ama yeni build alınmamıştır. O zaman
+        `artifact_built_for_version` ESKİ sürümdür ve bu bir kusur değil,
+        dürüst kayıttır. Sınanan şey durumun tutarlılığıdır:
+
+          * eski artifact  → durum `stale_for_target_version`, rc_ready False
+          * güncel artifact → `verified` / `stale_source_changed` /
+            `installer_pending`
+          * rc_ready True  → YALNIZ `verified`
+          * eski v4.1 hash'leri yeni sürüm gibi ETİKETLENEMEZ: üç artifact
+            kaydının `built_for_version` değeri artifact sürümüyle aynıdır.
         """
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        self.assertEqual(s.get("artifact_built_for_version"), HEDEF)
+        hedef = s.get("version")
+        artifact = s.get("artifact_built_for_version")
         durum = s.get("artifact_verification_status")
-        self.assertIn(durum, ("verified", "stale_source_changed"))
-        if durum == "stale_source_changed":
+        self.assertEqual(hedef, HEDEF, "snapshot.version hedef sürüm değil")
+        self.assertIn(durum, DURUMLAR, f"bilinmeyen artifact durumu: {durum}")
+
+        if artifact != hedef:
+            self.assertEqual(durum, "stale_for_target_version",
+                             "artifact hedef sürümden eski ama durum bunu "
+                             f"söylemiyor: {durum}")
+            self.assertIs(s.get("release_candidate_ready"), False,
+                          "eski artifact ile release adaylığı iddia edilemez")
             self.assertTrue(str(s.get("artifact_stale_reason", "")).strip(),
                             "artifact eskidi ama gerekçe yazılmamış")
-            self.assertIs(s.get("release_candidate_ready"), False,
-                          "artifact eskimişken release adayı sayılamaz")
+        else:
+            self.assertIn(durum, ("verified", "stale_source_changed",
+                                  "installer_pending"))
+
+        if s.get("release_candidate_ready") is True:
+            self.assertEqual(durum, "verified",
+                             "doğrulanmamış artifact release adayı olamaz")
+
         for anahtar in ("dist_exe", "installer", "installed_exe"):
-            self.assertEqual(s[anahtar].get("built_for_version"), HEDEF,
-                             f"{anahtar}.built_for_version hedef sürüm değil")
+            self.assertEqual(s[anahtar].get("built_for_version"), artifact,
+                             f"{anahtar}.built_for_version artifact sürümüyle "
+                             "uyuşmuyor — eski hash yeni sürüm gibi etiketlenmiş")
+
+    def test_installer_pending_durumu_dogru_kullaniliyor(self):
+        """`installer_pending`: build + frozen smoke geçti, installer BEKLİYOR."""
+        s = json.loads(
+            (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
+        if s.get("artifact_verification_status") != "installer_pending":
+            self.skipTest("artifact installer_pending durumunda değil")
+        hedef = s["version"]
+        self.assertEqual(s["artifact_built_for_version"], hedef)
+        self.assertEqual(s["frozen_smoke"].get("verified_for_version"), hedef,
+                         "installer_pending ama frozen smoke hedef sürüm için değil")
+        self.assertEqual(s["frozen_smoke"].get("result"), "GECTI")
+        self.assertNotEqual(s["installer_test"].get("verified_for_version"), hedef,
+                            "installer hedef sürüm için doğrulandıysa durum "
+                            "installer_pending olamaz")
+        self.assertEqual(s["installer_test"].get("pending_for_version"), hedef,
+                         "installer testinin hangi sürüm için beklediği yazılmamış")
+        self.assertIs(s.get("release_candidate_ready"), False)
 
     def test_manifest_release_candidate_durumu_durust(self):
         s = json.loads(
@@ -99,73 +147,72 @@ class KaynakSurumTests(unittest.TestCase):
     def test_manifest_commit_ayrimi_durust(self):
         """Üçlü provenance ayrı ayrı tutulur ve birbirine karıştırılmaz.
 
-        * `version_prepare_commit` — v4.1 sürüm alanlarının hazırlandığı commit
-        * `source_commit`         — güncel işlevsel kaynak (U17 dâhil)
-        * `built_from_commit`     — eldeki artifact'ın alındığı gerçek HEAD
+        * `version_prepare_commit` — sürüm alanlarının hazırlandığı commit
+        * `source_commit`          — güncel işlevsel kaynak
+        * `built_from_commit`      — eldeki artifact'ın alındığı gerçek HEAD
+
+        Hash'ler burada LİTERAL olarak sabitlenmez (her turda değişir);
+        sınanan şey biçim, ayrım ve gerekçenin yazılmış olmasıdır.
         """
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        self.assertEqual(s.get("version_prepare_commit"), "a63f981",
-                         "v4.1 sürüm hazırlığı commit'i (tarihsel, sabit)")
-        # Güncel işlevsel kaynak — her metadata turunda BİLİNÇLİ güncellenir.
-        self.assertEqual(s.get("source_commit"), "25518fb",
-                         "güncel işlevsel kaynak commit'i (R10-A/B/C + PdfWorker)")
-        self.assertNotEqual(s.get("source_commit"), s.get("built_from_commit"),
-                            "kaynak artifact build'inden ileride olmalı")
-        # v4.1 release artifact'ı DEĞİŞMEZ biçimde d359137 ağacından üretildi;
-        # bu alan sabittir. Yeni bir build alınırsa bilinçli olarak güncellenir.
-        self.assertEqual(s.get("built_from_commit"), "d359137",
-                         "v4.1 artifact'ının build edildiği gerçek HEAD")
-        self.assertRegex(str(s.get("source_commit", "")).strip(),
-                         r"^[0-9a-f]{7,40}$",
-                         "source_commit gerçek bir commit hash'i değil")
+        for alan in ("version_prepare_commit", "source_commit",
+                     "built_from_commit"):
+            self.assertRegex(str(s.get(alan, "")).strip(), r"^[0-9a-f]{7,40}$",
+                             f"{alan} gerçek bir commit hash'i değil")
         for alan in ("version_prepare_commit_note", "source_commit_note",
                      "built_from_commit_note"):
             self.assertTrue(str(s.get(alan, "")).strip(),
                             f"{alan} boş — provenance açıklanmamış")
-        self.assertIn(str(s.get("source_commit", "")).strip(),
-                      str(s.get("built_from_commit_note", "")),
-                      "built_from_commit_note, kaynak commit'in bu build ağacında "
-                      "bulunduğunu açıklamıyor")
+        durum = s.get("artifact_verification_status")
+        if durum in ("stale_source_changed", "stale_for_target_version"):
+            self.assertNotEqual(s.get("source_commit"), s.get("built_from_commit"),
+                                "artifact eski deniyor ama kaynak ve build "
+                                "commit'i aynı yazılmış")
+        elif durum in ("verified", "installer_pending"):
+            self.assertEqual(s.get("source_commit"), s.get("built_from_commit"),
+                             "artifact güncel deniyor ama build commit'i "
+                             "kaynak commit'inden farklı")
 
-    def test_artifact_staleyken_kaynak_ve_build_commiti_farkli(self):
+    def test_artifact_eskiyken_gerekce_ve_hashler_korunuyor(self):
+        """Eski artifact'ın hash'leri DEĞİŞTİRİLMEZ; yalnız tazelik iddiası düşer."""
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        self.assertEqual(s.get("artifact_verification_status"),
-                         "stale_source_changed",
-                         "kaynak 25518fb, artifact d359137 → durum stale olmalı")
-        self.assertNotEqual(s.get("source_commit"), s.get("built_from_commit"),
-                            "artifact stale iddiası var ama kaynak ve build "
-                            "commit'i aynı yazılmış")
+        durum = s.get("artifact_verification_status")
+        if durum not in ("stale_source_changed", "stale_for_target_version"):
+            self.skipTest("artifact eski değil")
         self.assertIs(s.get("release_candidate_ready"), False)
         gerekce = str(s.get("artifact_stale_reason", "")).strip()
         self.assertTrue(gerekce, "artifact_stale_reason boş")
-        self.assertRegex(gerekce, r"(?i)r10",
-                         "gerekçe R10 sonrası kaynak değişikliğini açıklamıyor")
-        self.assertEqual(s.get("built_from_commit"), "d359137",
-                         "artifact build commit'i korunmalı")
-        # Artifact hash/boyutları DEĞİŞMEZ — yalnız tazelik iddiası düşer.
-        self.assertEqual(s["dist_exe"]["size"], 9437741)
-        self.assertTrue(s["dist_exe"]["sha256"].startswith("872DF3C1"))
-        self.assertEqual(s["installer"]["size"], 52501243)
-        self.assertTrue(s["installer"]["sha256"].startswith("DE590641"))
+        if durum == "stale_for_target_version":
+            # Hedef sürüm yükseltildi, build eski: v4.1 değerleri korunmalı
+            self.assertEqual(s["dist_exe"]["size"], 9437741)
+            self.assertTrue(s["dist_exe"]["sha256"].startswith("872DF3C1"))
+            self.assertEqual(s["installer"]["size"], 52501243)
+            self.assertTrue(s["installer"]["sha256"].startswith("DE590641"))
+            self.assertIn(s["artifact_built_for_version"], gerekce,
+                          "gerekçe, eldeki derlemenin hangi sürüm olduğunu "
+                          "söylemiyor")
 
     def test_built_from_commit_notu_stale_durumu_aciklar(self):
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        if s.get("artifact_verification_status") != "stale_source_changed":
+        if s.get("artifact_verification_status") not in (
+                "stale_source_changed", "stale_for_target_version"):
             self.skipTest("artifact stale değil")
         not_metni = str(s.get("built_from_commit_note", ""))
         self.assertRegex(not_metni, r"(?i)i[çc]ermez|dahil de[ğg]il|eskidir",
                          "not, artifact'ın güncel kaynağı içermediğini "
                          f"söylemiyor: {not_metni!r}")
 
-    def test_manifest_installer_yolu_hedef_surumu_gosterir(self):
+    def test_manifest_installer_yolu_artifact_surumunu_gosterir(self):
+        """Installer yolu ARTIFACT sürümünü gösterir — sahte etiket yok."""
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        self.assertIn(HEDEF, s["installer"]["path"])
+        self.assertIn(s["artifact_built_for_version"], s["installer"]["path"],
+                      "installer yolu eldeki derlemenin sürümüyle uyuşmuyor")
         self.assertNotIn(UPGRADE_TEMEL, s["installer"]["path"],
-                         "aktif installer yolu hâlâ eski sürümü gösteriyor")
+                         "aktif installer yolu hâlâ v4.0'ı gösteriyor")
 
     def test_eski_surum_yalniz_upgrade_baseline_alaninda(self):
         """v4.0 hash'leri aktif artifact alanlarında kalmamalı."""
@@ -236,13 +283,26 @@ class CanliUpstreamTests(unittest.TestCase):
             self.assertIn(beklenen, metin,
                           f"RELEASE_CHECKLIST '{beklenen}' adımını içermiyor")
 
-    def test_dogrulama_kanitlari_hedef_surume_ait(self):
+    def test_dogrulama_kanitlari_hangi_surume_ait_belli(self):
+        """B ve C kanıtları HANGİ sürüm için alındıysa onu söyler.
+
+        Hedef sürüm yükseltildiğinde eski kanıt yeni sürüme DEVREDİLMEZ:
+        `verified_for_version` hedeften farklıysa release adaylığı düşer.
+        """
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        self.assertEqual(s["frozen_smoke"].get("verified_for_version"), HEDEF)
-        self.assertEqual(s["installer_test"].get("verified_for_version"), HEDEF)
-        self.assertEqual(s["frozen_smoke"].get("result"), "GECTI")
-        self.assertEqual(s["installer_test"].get("result"), "GECTI")
+        hedef = s["version"]
+        for anahtar in ("frozen_smoke", "installer_test"):
+            kanit = s[anahtar]
+            self.assertEqual(kanit.get("result"), "GECTI",
+                             f"{anahtar} sonucu GECTI değil")
+            surum = kanit.get("verified_for_version")
+            self.assertRegex(str(surum), r"^v\d+\.\d+$",
+                             f"{anahtar}.verified_for_version yazılmamış")
+            if surum != hedef:
+                self.assertIs(s.get("release_candidate_ready"), False,
+                              f"{anahtar} kanıtı {surum} için ama {hedef} "
+                              "release adayı sayılmış")
 
     def test_current_status_hedef_surumu_yaziyor(self):
         metin = (REHBER / "CURRENT_STATUS.md").read_text(encoding="utf-8")
@@ -250,12 +310,22 @@ class CanliUpstreamTests(unittest.TestCase):
 
     def test_changelog_hedef_bolumu_var(self):
         metin = (KOK / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")
-        self.assertRegex(metin, r"##\s*\[?v4\.1\]?",
-                         "CHANGELOG'da v4.1 bölümü yok")
+        self.assertRegex(metin, rf"##\s*\[{re.escape(HEDEF)}\]\s*[—–-]\s*\d{{4}}-\d{{2}}-\d{{2}}",
+                         f"CHANGELOG'da tarihli {HEDEF} bölümü yok")
+        for taslak in ("TASLAK", "DRAFT", "TBD", "YYYY-MM-DD"):
+            self.assertNotIn(taslak, metin,
+                             f"CHANGELOG'da taslak işareti kalmış: {taslak}")
 
-    def test_changelog_eski_surum_bolumu_korunmus(self):
+    def test_changelog_eski_surum_bolumleri_korunmus(self):
         metin = (KOK / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")
-        self.assertIn("[v4.0]", metin, "tarihsel v4.0 bölümü silinmiş")
+        for eski in ("[v4.0]", f"[{YAYIMLANMIS}]"):
+            self.assertIn(eski, metin, f"tarihsel {eski} bölümü silinmiş")
+
+    def test_changelog_hedef_bolumu_en_ustte(self):
+        """Yeni sürüm bölümü eskilerin ÜSTÜNDE olmalı."""
+        metin = (KOK / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")
+        self.assertLess(metin.index(f"[{HEDEF}]"), metin.index(f"[{YAYIMLANMIS}]"),
+                        "hedef sürüm bölümü eski sürümün altında kalmış")
 
 
 class InstallerAdiTests(unittest.TestCase):
@@ -374,9 +444,12 @@ class ArtifactGercekDosyaTests(unittest.TestCase):
         yol = KOK / self.snapshot["dist_exe"]["path"]
         if not yol.is_file():
             self.skipTest(_ARTIFACT_YOK)
+        artifact = self.snapshot["artifact_built_for_version"]
         self.assertEqual(self.snapshot["dist_exe"].get("file_version"),
-                         HEDEF_SAYISAL)
-        self.assertEqual(self.snapshot["dist_exe"].get("product_version"), HEDEF)
+                         artifact.lstrip("v") + ".0.0",
+                         "dist EXE dosya sürümü artifact sürümüyle uyuşmuyor")
+        self.assertEqual(self.snapshot["dist_exe"].get("product_version"),
+                         artifact)
 
 
 class ReleaseDogrulamaTests(unittest.TestCase):
@@ -400,40 +473,64 @@ class ReleaseDogrulamaTests(unittest.TestCase):
         self.assertEqual(sonuc.returncode, 0,
                          f"--release başarısız:\n{sonuc.stdout}")
 
-    def test_artifacts_modu_uyarisiz_gecer(self):
+    def test_artifacts_modu_gecer(self):
+        """`--artifacts` her durumda exit 0'dır; uyarı hedef duruma bağlıdır.
+
+        ARA DURUMDA (hedef sürüm yükseltildi, build eski) uyarı **beklenir** ve
+        eldeki derlemenin sürümünü söylemek zorundadır — sessizce geçmesi
+        gerçeği gizlerdi (RELEASE_CHECKLIST, "Sürüm yükseltmesinin üç durumu").
+        """
+        s = json.loads(
+            (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
         sonuc = subprocess.run([sys.executable, str(VERIFY), "--artifacts"],
                                capture_output=True, text=True, timeout=180)
         self.assertEqual(sonuc.returncode, 0,
                          f"--artifacts exit 0 olmalıydı:\n{sonuc.stdout}")
-        self.assertNotIn("uyari", sonuc.stdout.lower(),
-                         f"beklenmeyen uyarı:\n{sonuc.stdout}")
+        if s["artifact_built_for_version"] != s["version"]:
+            self.assertIn("uyari", sonuc.stdout.lower(),
+                          "ara durumda eski artifact uyarısı verilmedi:\n"
+                          + sonuc.stdout)
+            self.assertIn(s["artifact_built_for_version"], sonuc.stdout,
+                          "uyarı eldeki derlemenin sürümünü söylemiyor")
+        else:
+            self.assertNotIn("uyari", sonuc.stdout.lower(),
+                             f"beklenmeyen uyarı:\n{sonuc.stdout}")
 
 
 class YayinKanitiTests(unittest.TestCase):
-    """v4.1 yayını ve canlı updater doğrulaması (D1/D2) kanıt sözleşmesi.
+    """YAYIMLANMIŞ sürümün (v4.1) kanıt sözleşmesi — TARİHSEL blok.
+
+    Yayın kanıtı `snapshot.published_releases[<sürüm>]` altında saklanır ve
+    hedef sürüm yükseltildiğinde **taşınmaz, silinmez, yeni sürüme
+    devredilmez**. `snapshot.release` ise GÜNCEL hedef sürümün durumudur.
 
     Sayılar ve hash'ler burada tekrar sabitlenmez; sınanan şey kanıtın
-    **eksiksiz, tutarlı ve sınırı korunmuş** olmasıdır.
+    eksiksiz, tutarlı ve sınırı korunmuş olmasıdır.
     """
 
     @classmethod
     def setUpClass(cls):
         cls.s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        cls.r = cls.s["release"]
+        cls.yayinlar = cls.s.get("published_releases") or {}
+        cls.r = cls.yayinlar.get(YAYIMLANMIS) or {}
 
-    def test_tag_ve_release_olusturuldu(self):
+    def test_yayimlanmis_surum_kaydi_duruyor(self):
+        self.assertIn(YAYIMLANMIS, self.yayinlar,
+                      f"{YAYIMLANMIS} yayın kanıtı kaybolmuş")
+        self.assertEqual(self.r.get("target_version"), YAYIMLANMIS)
         self.assertIs(self.r.get("tag_created"), True)
         self.assertIs(self.r.get("github_release_created"), True)
-        self.assertEqual(self.r.get("existing_remote_tag"), HEDEF)
 
     def test_e2e_yalniz_tag_ve_release_ile_dogru_sayilir(self):
         """updater_end_to_end_verified, tag+release olmadan true olamaz."""
-        if self.r.get("updater_end_to_end_verified") is True:
-            self.assertIs(self.r.get("tag_created"), True,
-                          "E2E true ama tag oluşturulmamış")
-            self.assertIs(self.r.get("github_release_created"), True,
-                          "E2E true ama GitHub Release yok")
+        for surum, blok in list(self.yayinlar.items()) + [("guncel", self.s["release"])]:
+            with self.subTest(surum=surum):
+                if blok.get("updater_end_to_end_verified") is True:
+                    self.assertIs(blok.get("tag_created"), True,
+                                  "E2E true ama tag oluşturulmamış")
+                    self.assertIs(blok.get("github_release_created"), True,
+                                  "E2E true ama GitHub Release yok")
 
     def test_e2e_true_ise_iki_kanit_da_gecmis(self):
         if self.r.get("updater_end_to_end_verified") is not True:
@@ -454,7 +551,7 @@ class YayinKanitiTests(unittest.TestCase):
         self.assertIn("release-assets.githubusercontent.com",
                       json.dumps(d1, ensure_ascii=False),
                       "D1 canlı redirect host kanıtı yok")
-        self.assertIn("v4.0", json.dumps(d2, ensure_ascii=False),
+        self.assertIn(UPGRADE_TEMEL, json.dumps(d2, ensure_ascii=False),
                       "D2 gerçek public v4.0 istemci kanıtı yok")
 
     def test_release_read_back_alanlari_dolu(self):
@@ -462,13 +559,24 @@ class YayinKanitiTests(unittest.TestCase):
             self.assertTrue(str(self.r.get(alan, "")).strip(), f"{alan} boş")
         self.assertRegex(self.r["tag_commit"], r"^[0-9a-f]{40}$",
                          "tag_commit tam hash değil")
-        self.assertIn(f"/releases/tag/{HEDEF}", self.r["release_url"])
+        self.assertIn(f"/releases/tag/{YAYIMLANMIS}", self.r["release_url"])
         a = self.r.get("asset_readback") or {}
-        self.assertEqual(a.get("name"), HEDEF_INSTALLER)
+        self.assertEqual(a.get("name"), f"TeklifYonetim_Setup_{YAYIMLANMIS}.exe")
         self.assertIsInstance(a.get("size"), int)
         self.assertGreater(a.get("size", 0), 0)
         self.assertRegex(str(a.get("digest", "")), r"^sha256:[0-9a-f]{64}$",
                          "asset digest sha256:<64 hex> biçiminde değil")
+
+    def test_yayimlanmis_asset_kendi_artifactiyla_tutarli(self):
+        """Asset read-back değerleri, O SÜRÜMÜN artifact'ıyla karşılaştırılır.
+
+        Yerel `installer` alanı hedef sürümle birlikte değiştiğinde bu kontrol
+        sessizce anlamını yitirmemeli: karşılaştırma yalnız yerel artifact hâlâ
+        yayımlanmış sürüme aitken yapılır, aksi hâlde açıkça atlanır.
+        """
+        a = self.r.get("asset_readback") or {}
+        if self.s.get("artifact_built_for_version") != YAYIMLANMIS:
+            self.skipTest(f"yerel artifact artık {YAYIMLANMIS} değil")
         self.assertEqual(a.get("size"), self.s["installer"]["size"],
                          "yayınlanan asset boyutu yerel installer ile uyuşmuyor")
         self.assertEqual(a.get("digest", "").split(":")[-1].upper(),
@@ -479,18 +587,13 @@ class YayinKanitiTests(unittest.TestCase):
         """'U17 paketli E2E geçti' genellemesine karşı açık sınır."""
         metin = str(self.r.get("evidence_scope_limit", ""))
         self.assertTrue(metin.strip(), "evidence_scope_limit boş")
-        for anahtar in ("v4.2", "v4.0"):
+        for anahtar in ("v4.2", UPGRADE_TEMEL):
             self.assertIn(anahtar, metin, f"sınır metninde {anahtar} geçmiyor")
         self.assertRegex(metin, r"(?i)paketli",
                          "paketli U17 istemci sınırı yazılmamış")
 
     def test_kod_imzasi_ve_guven_zinciri_korunuyor(self):
-        """YAYINLANMIŞ v4.1'in güvenlik kanıtı — kaynak ilerlese de değişmez.
-
-        `release_candidate_ready` ve `artifact_verification_status` GÜNCEL
-        KAYNAĞIN durumunu anlatır; yayınlanmış sürümün geçerliliğiyle
-        karıştırılmaz. Bu yüzden burada sabitlenmezler.
-        """
+        """YAYINLANMIŞ v4.1'in güvenlik kanıtı — hedef sürüm ilerlese de durur."""
         self.assertIs(self.s["signing"]["signed"], False)
         self.assertIs(self.r["updater_trust_chain"]["code_signing"], False)
         for alan in ("asset_name_pinned", "url_host_allowlisted",
@@ -499,18 +602,30 @@ class YayinKanitiTests(unittest.TestCase):
             self.assertIs(self.r["updater_trust_chain"][alan], True,
                           f"updater güven zinciri kanıtı zayıfladı: {alan}")
 
-    def test_yayin_gecerliligi_ile_kaynak_tazeligi_ayrilir(self):
-        """'v4.1 yayınlandı' ≠ 'mevcut kaynak build edildi'."""
+    def test_yayin_gecerliligi_ile_hedef_tazeligi_ayrilir(self):
+        """'v4.1 yayınlandı' ≠ 'hedef sürüm build edildi'."""
         self.assertIs(self.r["tag_created"], True)
         self.assertIs(self.r["github_release_created"], True)
         self.assertIs(self.r["updater_end_to_end_verified"], True)
-        # Yayın kanıtları, güncel kaynağın taze olmasını ZORUNLU KILMAZ.
-        self.assertIn(self.s["artifact_verification_status"],
-                      ("verified", "stale_source_changed"))
+        self.assertIn(self.s["artifact_verification_status"], DURUMLAR)
         self.assertIsInstance(self.s["release_candidate_ready"], bool)
-        if self.s["artifact_verification_status"] == "stale_source_changed":
+        if self.s["artifact_verification_status"] != "verified":
             self.assertIs(self.s["release_candidate_ready"], False,
-                          "artifact eskimişken release adayı denemez")
+                          "doğrulanmamış artifact ile release adaylığı denemez")
+
+    def test_guncel_hedef_yayin_blogu_durust(self):
+        """Hedef sürümün yayın bayrakları KANIT olmadan true olamaz."""
+        r = self.s["release"]
+        self.assertEqual(r.get("target_version"), HEDEF,
+                         "release bloğu hedef sürümü göstermiyor")
+        self.assertNotIn(HEDEF, self.yayinlar,
+                         f"{HEDEF} henüz yayımlanmadı ama yayın kaydı yazılmış")
+        for alan in ("tag_created", "github_release_created",
+                     "updater_end_to_end_verified"):
+            self.assertIs(r.get(alan), False,
+                          f"{HEDEF} için {alan} kanıtsız true yazılmış")
+        self.assertTrue(str(r.get("note", "")).strip(),
+                        "hedef sürüm yayın durumunun anlamı yazılmamış")
 
     def test_r3d_gelecek_host_riski_acik_kaliyor(self):
         m = (REHBER / "KNOWN_RISKS.md").read_text(encoding="utf-8")
