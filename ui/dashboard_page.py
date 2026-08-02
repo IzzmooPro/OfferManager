@@ -19,6 +19,8 @@ from services.offer_service    import OfferService
 from ui.widgets._animated_card import AnimatedCard
 
 logger = logging.getLogger("dashboard")
+
+from ui.utils import operation_error_dialog as hata_diyalogu
 from core.constants import SYM_MAP, STATUS_ORDER, get_status_config
 from core.formatting import fmt_money
 from core.date_utils import to_display_date
@@ -30,7 +32,10 @@ class PdfWorker(QThread):
     # QThread'in yerleşik finished() sinyali GÖLGELENMEZ — aksi hâlde
     # "thread.finished.connect(...)" standart temizlik deyimi sessizce
     # yanlış sinyale bağlanır.
-    result_ready = Signal(list, list)   # (generated: [(path, meta)], errors: [str])
+    # errors: [(exception, güvenli_kayit_id)] — HAM METİN ÜRETİLMEZ. Teklif/
+    # firma adı taşınmaz; loglama UI katmanında `toplu_hata_goster` ile TAM
+    # BİR KEZ yapılır.
+    result_ready = Signal(list, list)   # (generated: [(path, meta)], errors)
 
     def __init__(self, tasks: list):
         super().__init__()
@@ -43,8 +48,8 @@ class PdfWorker(QThread):
             try:
                 generate_pdf(offer_data, out_path)
                 generated.append((out_path, meta))
-            except Exception as e:
-                errors.append(f"{getattr(offer_data, 'offer_no', '?')}: {e}")
+            except Exception as exc:                       # noqa: BLE001
+                errors.append((exc, getattr(offer_data, "id", None)))
         self.result_ready.emit(generated, errors)
 
 
@@ -750,15 +755,15 @@ class DashboardPage(QWidget):
 
         try:
             adet = self.svc_o.cancel_expired(sorted(ids))
-        except Exception as e:
+        except Exception as exc:                           # noqa: BLE001
             # İşaretleme YAPILMAZ: kullanıcı sekmeye döndüğünde yeniden
             # deneyebilmeli. Tekrar yalnız bir sonraki on_enter'da olur,
             # bu diyaloğun içinde döngü kurulmaz.
-            logger.error("Süresi dolan teklifler güncellenemedi: %s", e,
-                         exc_info=True)
-            QMessageBox.warning(
-                self, "İşlem Başarısız",
-                f"Teklifler güncellenemedi, hiçbir değişiklik yapılmadı:\n{e}")
+            # `cancel_expired` toplu bir servis çağrısıdır; kaç kaydın
+            # yazıldığı burada BİLİNMEZ → "hiçbir değişiklik yapılmadı"
+            # gibi genelleme YAPILMAZ.
+            hata_diyalogu.hata_goster(self, "İşlem Başarısız", exc,
+                                      "Teklif", "guncelle")
             return False
         self._expiry_asked_ids |= ids
 
@@ -860,13 +865,30 @@ class DashboardPage(QWidget):
         self._apply_status(index.row(), offer, STATUS_ORDER[next_idx])
 
     def _apply_status(self, row: int, offer, new_status: str):
-        """DB güncelle + modeli in-place yenile (tam reload yok)."""
+        """DB güncelle + modeli in-place yenile (tam reload yok).
+
+        İki AŞAMA ayrı ayrı ele alınır: veritabanı yazımı başarısız olursa
+        hiçbir şey değişmemiştir; yazım başarılı olup ekran yenilemesi
+        başarısız olursa **kayıt yapılmıştır** ve bunu inkâr eden mesaj
+        gösterilmez (geri alma da denenmez).
+        """
         try:
             self.svc_o.update_status(offer.id, new_status)
+        except Exception as exc:                           # noqa: BLE001
+            # 1. aşama: DB yazılmadı → model ve istatistik güncellenmez.
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif",
+                                      "guncelle", kayit_id=offer.id)
+            return
+        try:
             self._model.update_offer_status(row, new_status)
             self._refresh_stats()
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Durum güncellenemedi:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            # 2. aşama: DB YAZILDI, yalnız ekran tazelenemedi.
+            hata_diyalogu.kismi_hata_goster(
+                self, "Kısmi Sonuç", exc,
+                "Teklif durumu kaydedildi ancak ekrandaki liste yenilenemedi. "
+                "Sayfayı yeniden açın.",
+                islem="Teklif guncelle (ekran)", kayit_id=offer.id)
 
     # ── Context Menu ──────────────────────────────────────────────────────────
     def _context_menu(self, pos):
@@ -940,8 +962,9 @@ class DashboardPage(QWidget):
             return
         try:
             offer_data = self.svc_o.get_by_id(o.id)
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Teklif yüklenemedi:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif",
+                                      "yukle", kayit_id=o.id)
             return
         if not offer_data or not offer_data.items:
             QMessageBox.warning(self, "Hata", "Teklifte ürün kalemi bulunamadı.")
@@ -962,8 +985,8 @@ class DashboardPage(QWidget):
                 self, "Kaydedildi",
                 f"'{name.strip()}' şablonu {len(offer_data.items)} kalemle kaydedildi.\n\n"
                 "Yeni teklif oluştururken 'Şablondan Yükle' ile kullanabilirsiniz.")
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Şablon kaydedilemedi:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Şablon", "kaydet")
 
     # ── PDF Önizleme ──────────────────────────────────────────────────────────
     def _preview_pdf(self):
@@ -974,8 +997,9 @@ class DashboardPage(QWidget):
             return
         try:
             offer_data = self.svc_o.get_by_id(o.id)
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Teklif yüklenemedi:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif",
+                                      "yukle", kayit_id=o.id)
             return
         import tempfile
         from pdf.pdf_generator import generate_pdf
@@ -984,8 +1008,9 @@ class DashboardPage(QWidget):
         out_path = str(preview_dir / f"{offer_data.offer_no or 'Teklif'}.pdf")
         try:
             generate_pdf(offer_data, out_path)
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"PDF oluşturulamadı:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "PDF",
+                                      "olustur", kayit_id=o.id)
             return
         self._show_preview_dialog(out_path, offer_data)
 
@@ -1007,8 +1032,9 @@ class DashboardPage(QWidget):
             return
         try:
             offer_data = self.svc_o.get_by_id(o.id)
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Teklif yüklenemedi:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif",
+                                      "yukle", kayit_id=o.id)
             return
         import tempfile
         from pdf.pdf_generator import generate_pdf
@@ -1017,8 +1043,9 @@ class DashboardPage(QWidget):
         out_path = str(preview_dir / f"{offer_data.offer_no or 'Teklif'}.pdf")
         try:
             generate_pdf(offer_data, out_path)
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"PDF oluşturulamadı:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "PDF",
+                                      "olustur", kayit_id=o.id)
             return
         self._send_email(out_path, {
             "offer_no": offer_data.offer_no or "",
@@ -1040,8 +1067,9 @@ class DashboardPage(QWidget):
         if len(offers) == 1:
             try:
                 offer_data = self.svc_o.get_by_id(offers[0].id)
-            except Exception as e:
-                QMessageBox.warning(self, "Hata", f"Teklif yüklenemedi:\n{e}")
+            except Exception as exc:                       # noqa: BLE001
+                hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif",
+                                          "yukle", kayit_id=offers[0].id)
                 return
             out_path, _ = QFileDialog.getSaveFileName(
                 self, f"PDF Kaydet — {offer_data.offer_no}",
@@ -1059,7 +1087,7 @@ class DashboardPage(QWidget):
                 self, f"{len(offers)} PDF'in Kaydedileceği Klasörü Seçin", str(desktop))
             if not folder:
                 return
-            load_errors = []
+            load_errors = []          # [(exception, güvenli_kayit_id)]
             for o in offers:
                 try:
                     offer_data = self.svc_o.get_by_id(o.id)
@@ -1067,11 +1095,17 @@ class DashboardPage(QWidget):
                         "offer_no":       offer_data.offer_no or "",
                         "customer_email": offer_data.customer_email or "",
                     }))
-                except Exception as e:
-                    load_errors.append(f"{o.offer_no or '?'}: {e}")
+                except Exception as exc:                   # noqa: BLE001
+                    load_errors.append((exc, o.id))
             if load_errors:
-                QMessageBox.warning(self, "Yükleme Hatası",
-                                    "Bazı teklifler yüklenemedi:\n" + "\n".join(load_errors))
+                # Kısmi başarı: yalnız GÜVENLİ sayılar; teklif/firma adı ve
+                # istisna metni kullanıcıya da loga da taşınmaz.
+                hata_diyalogu.toplu_hata_goster(
+                    self, "Yükleme Hatası",
+                    f"{len(tasks)} teklif yüklendi, "
+                    f"{len(load_errors)} teklif yüklenemedi. "
+                    "Başarısız kayıtların ayrıntıları uygulama loguna kaydedildi.",
+                    load_errors, islem="Teklif yukle")
             if not tasks:
                 return
 
@@ -1089,8 +1123,13 @@ class DashboardPage(QWidget):
             self._pdf_worker = None
 
         if errors:
-            QMessageBox.warning(self, "Hata",
-                                "Bazı PDF'ler oluşturulamadı:\n" + "\n".join(errors))
+            # `errors` = [(exception, güvenli_kayit_id)] — ham metin YOK.
+            hata_diyalogu.toplu_hata_goster(
+                self, "Hata",
+                f"{len(generated)} PDF oluşturuldu, "
+                f"{len(errors)} PDF oluşturulamadı. "
+                "Başarısız kayıtların ayrıntıları uygulama loguna kaydedildi.",
+                errors, islem="PDF olustur")
         if len(generated) == 1:
             out_path, meta = generated[0]
             box = QMessageBox(self)
@@ -1138,14 +1177,22 @@ class DashboardPage(QWidget):
             QMessageBox.StandardButton.No,
         ) != QMessageBox.StandardButton.Yes:
             return
-        errors = []
+        errors = []                   # [(exception, güvenli_kayit_id)]
+        silinen = 0
         for o in offers:
             try:
                 self.svc_o.delete(o.id)
-            except Exception as e:
-                errors.append(str(e))
+                silinen += 1
+            except Exception as exc:                       # noqa: BLE001
+                errors.append((exc, o.id))
         if errors:
-            QMessageBox.warning(self, "Hata", "Bazı teklifler silinemedi:\n" + "\n".join(errors))
+            # Kısmi başarı: "hiçbiri silinemedi" gibi genelleme YAPILMAZ;
+            # yalnız güvenli sayılar gösterilir.
+            hata_diyalogu.toplu_hata_goster(
+                self, "Hata",
+                f"{silinen} teklif silindi, {len(errors)} teklif silinemedi. "
+                "Başarısız kayıtların ayrıntıları uygulama loguna kaydedildi.",
+                errors, islem="Teklif sil")
         self.on_enter()
 
     # ── E-Posta ───────────────────────────────────────────────────────────────
@@ -1192,8 +1239,9 @@ class DashboardPage(QWidget):
             out = export_excel(offers, path) if fmt == "excel" else export_csv(offers, path)
             QMessageBox.information(self, "Tamamlandı",
                                     f"{len(offers)} teklif dışa aktarıldı.\n{out}")
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Export hatası:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif listesi",
+                                      "aktar")
 
     # ── Dosya Aç ──────────────────────────────────────────────────────────────
     def _open_file(self, path: str):

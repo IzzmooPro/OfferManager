@@ -36,6 +36,10 @@ _FIILLER = {
     "ekle": "eklenemedi",
     "ad": "adı değiştirilemedi",
     "sil": "silinemedi",
+    "yukle": "yüklenemedi",
+    "guncelle": "güncellenemedi",
+    "olustur": "oluşturulamadı",
+    "aktar": "aktarılamadı",
 }
 
 

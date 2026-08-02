@@ -89,6 +89,34 @@ def hata_goster(parent, baslik: str, exc, tur: str, islem: str = "kaydet",
                  log_dugmesi=op_hata.teknik_hata_mi(exc))
 
 
+def toplu_hata_goster(parent, baslik: str, guvenli_mesaj: str, hatalar,
+                      islem: str = "Toplu işlem"):
+    """Kısmi başarı/toplu hata: yalnız GÜVENLİ sayılar + ayrı ayrı güvenli log.
+
+    `hatalar` : `(exception, güvenli_kayit_id)` çiftleri. Her istisna TAM BİR
+                KEZ loglanır; hiçbir ham hata metni birleştirilmez.
+    `guvenli_mesaj` : çağıran tarafından **sayılardan** üretilir; istisna
+                içeriğinden ASLA türetilmez.
+    """
+    for exc, kayit_id in hatalar:
+        op_hata.logla(exc, islem, kayit_id=kayit_id)
+    return _kutu(parent, baslik, f"{guvenli_mesaj} {_IPUCU}",
+                 QMessageBox.Icon.Warning, log_dugmesi=True)
+
+
+def kismi_hata_goster(parent, baslik: str, exc, mesaj: str,
+                      islem: str, kayit_id=None):
+    """İşlem KAYDEDİLDİ, sonraki adım (ör. ekran yenileme) başarısız.
+
+    `mesaj` çağıranın SABİT metnidir: neyin kaydedildiğini, neyin
+    yapılamadığını ve kullanıcının ne yapması gerektiğini söyler. Yapay
+    "0/1" sayımı üretilmez; istisna içeriği mesaja girmez.
+    """
+    op_hata.logla(exc, islem, kayit_id=kayit_id)
+    return _kutu(parent, baslik, f"{mesaj} {_IPUCU}",
+                 QMessageBox.Icon.Warning, log_dugmesi=True)
+
+
 def dogrulama_goster(parent, baslik: str, mesaj: str):
     """Kullanıcı hatası (eksik seçim/alan): log YOK, log düğmesi YOK."""
     return _kutu(parent, baslik, mesaj, QMessageBox.Icon.Information,

@@ -44,6 +44,10 @@ class ExpiredOfferPromptTests(unittest.TestCase):
         secim, acilan = self.secim, self.acilan
 
         def sahte_exec(box, *a, **k):
+            # YALNIZ toplu onay sorusu sayılır. Aynı akışta açılabilen güvenli
+            # hata diyaloğu (R10-B) ayrı bir kutudur ve bu sayacı kirletmemeli.
+            if box.windowTitle() != "Süresi Dolan Teklifler":
+                return 0
             acilan.append(box)
             # Soru ile onay arasında dünya değişebilir (yarış senaryoları)
             if secim.get("yan_etki"):
