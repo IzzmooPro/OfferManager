@@ -25,6 +25,9 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 | R7 | **Açılışta credential uyarısı ana pencereyi bekletiyor** — güvenli depo okunamazsa kullanıcı onaylayana kadar açılış durur | Düşük-orta | Uyarıyı ana pencere açıldıktan sonra göstermek değerlendirilebilir |
 | R8 | **"Tümünü İçe Aktar" gizli sayfaları da okuyor** — O15 yalnız tek sayfa seçimi yolunu kapsadı | Düşük-orta | Gizli sayfa politikasını iki yolda eşitle |
 | R9 | **Müşteri tablosunda UNIQUE kimlik kuralı yok** — mükerrer koruması yalnız içe aktarma katmanında | Düşük-orta | Normalize anahtar + geriye uyumlu migration değerlendirmesi |
-| R10 | **Teklif/kategori/şablon hata yolları** O14 kapsamına alınmadı | Düşük | Aynı güvenli mesaj + retry deseninin taşınması |
+| R10 | ~~Teklif/kategori/şablon hata yolları~~ → **kapandı 2026-08-02**: kategori (R10-A), dashboard teklif/şablon/PDF/dışa aktarma (R10-B) ve teklif kaydetme/PDF aşama sınırları (R10-C) güvenli mesaj + güvenli loga geçirildi; kısmi başarı mesajları ve "Log Klasörünü Aç" erişimi eklendi; PdfWorker yaşam döngüsü kusuru kapandı | — | Kalan alt maddeler R10a–R10c olarak ayrı izlenir |
+| R10a | **`create_offer_page` müşteri kaydetme catch'leri** (iki yol) hâlâ ham `{e}` gösteriyor ve loglamıyor; başarı logunda **firma adı** geçiyor | Düşük | R10-C2: servis kaydı ile `_load_customers`/UI seçimini ayırıp güvenli mesaja geçir; catch'i körlemesine değiştirme |
+| R10b | **`dashboard_page._open_file`** korumasız `os.startfile` — dosya yoksa yakalanmamış istisna | Düşük | Ayrı küçük tur: güvenli hata + log |
+| R10c | **import / settings / backup / reports** ham hata mesajları envanterlenmedi (~19 çağrı yeri) | Düşük | Sonraki envanter turu |
 | R11 | **500 kalemli teklifte UI doldurma ~3 sn** (`_add_row`) | Düşük | Gerçek veride maks ~10 kalem; toplu/gecikmeli satır kurulumu ileride |
 | R12 | **Normal kapanış yedeği büyük veritabanında kapanışı uzatır** | Düşük | Ölçüldü ve kabul edildi; gerekirse ilerleme göstergesi |

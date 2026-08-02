@@ -37,19 +37,19 @@
     "clean_clone_buildable": false
   },
   "snapshot": {
-    "captured_at": "2026-07-31",
+    "captured_at": "2026-08-02",
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "7395561",
-    "source_commit_note": "güncel v4.1 işlevsel kaynak snapshot'ı — U17 updater güven zinciri (asset adı doğrulaması, URL/host allowlist, SHA-256 + size doğrulaması, fail-closed) bu commit'te yer alır",
+    "source_commit": "25518fb",
+    "source_commit_note": "güncel v4.1 işlevsel kaynak snapshot'ı — U17 updater güven zinciri, R10-A (kategori), R10-B (dashboard), R10-C (teklif kaydetme/PDF aşama sınırları) ve PdfWorker yaşam döngüsü düzeltmelerini içerir",
     "built_from_commit": "d359137",
-    "built_from_commit_note": "U17'li v4.1 temiz build'inin alındığı gerçek HEAD; kaynak commit 7395561 bu ağaçta bulunur",
+    "built_from_commit_note": "yayımlanan v4.1 artifact'ının build edildiği gerçek HEAD. Bu artifact 25518fb'deki R10 ve PdfWorker kaynak değişikliklerini İÇERMEZ; güncel kaynak için yeniden build gerekir.",
     "version": "v4.1",
     "artifact_built_for_version": "v4.1",
-    "artifact_verification_status": "verified",
-    "release_candidate_ready": true,
-    "release_readiness_note": "teknik kapılar U17'li kaynakla yeniden geçti: temiz build + izole frozen smoke + gerçek yerinde upgrade + uninstall + temiz reinstall. Bu YAYINLANDI anlamına GELMEZ — tag, GitHub Release ve updater uçtan uca read-back henüz yapılmadı.",
+    "artifact_verification_status": "stale_source_changed",
+    "release_candidate_ready": false,
+    "release_readiness_note": "GÜNCEL KAYNAK için release adayı DEĞİL: 25518fb, artifact'ın build edildiği d359137'den ileride; yeniden build + frozen smoke + installer doğrulaması bekliyor. Bu, YAYIMLANMIŞ v4.1 sürümünün geçerliliğini ETKİLEMEZ — tag, GitHub Release ve canlı updater doğrulaması (D1/D2) tarihsel olarak geçerlidir.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -61,18 +61,18 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dahil son tam suite",
-      "passed": 817,
-      "subtests_passed": 105,
-      "date": "2026-07-31",
+      "passed": 895,
+      "subtests_passed": 251,
+      "date": "2026-08-02",
       "skipped": 1,
-      "note": "temiz çalışma ağacında alınan gerçek sonuç. Tek skip: artifact stale olmadığı için stale-senaryosu testi uygulanmaz."
+      "note": "temiz çalışma ağacında alınan gerçek sonuç. Tek skip: --release kapısı, artifact güncel kaynak için stale olduğundan atlanır."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 817,
-      "subtests_passed": 105,
-      "date": "2026-07-31",
-      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. temiz çalışma ağacında alınan gerçek sonuç. Tek skip: artifact stale olmadığı için stale-senaryosu testi uygulanmaz.",
+      "passed": 895,
+      "subtests_passed": 251,
+      "date": "2026-08-02",
+      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 kaynak davranışı baseline'ını (060baf3) TARİHSEL alan olarak korur. temiz çalışma ağacında alınan gerçek sonuç. Tek skip: --release kapısı, artifact güncel kaynak için stale olduğundan atlanır.",
       "skipped": 1
     },
     "dist_exe": {
@@ -222,6 +222,7 @@
       }
     },
     "version_prepare_commit": "a63f981",
-    "version_prepare_commit_note": "v4.1 sürüm alanlarının (APP_VERSION, .iss, version_info.txt, CHANGELOG) hazırlandığı commit"
+    "version_prepare_commit_note": "v4.1 sürüm alanlarının (APP_VERSION, .iss, version_info.txt, CHANGELOG) hazırlandığı commit",
+    "artifact_stale_reason": "R10-A/R10-B/R10-C güvenli hata mesajı düzeltmeleri ve PdfWorker yaşam döngüsü düzeltmesi d359137'den SONRA eklendi (kaynak 25518fb). Artifact hash/boyutları OLDUĞU GİBİ bırakıldı — sahte güncelleme yapılmadı; yalnız güncel kaynak için tazelik iddiası düştü."
   }
 }

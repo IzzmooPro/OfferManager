@@ -7,14 +7,18 @@ covers:
   - database/db_manager.py
   - ui/utils/excel_import.py
   - ui/utils/operation_error.py
+  - ui/utils/operation_error_dialog.py
+  - ui/dashboard_page.py
+  - ui/create_offer_page.py
+  - ui/dialogs/category_dialog.py
   - ui/main_window.py
   - ui/dialogs/backup_manager.py
   - core/restart.py
   - core/credential_store.py
   - main.py
   - tests/conftest.py
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: 25518fb
+last_verified_date: 2026-08-02
 volatile: false
 ---
 
@@ -45,7 +49,7 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 
 ## Thread, kapanış, restart
 
-13. **Çalışan worker bitmeden süreç teardown yapmaz.** Biten worker `deleteLater` ile bırakılır; çalışan yedek worker'ı kapanış beklemesine dahildir. Çalışan `QThread` yok edilmesi (`0xC0000409`) kabul edilemez. → `tests/test_shutdown_workers.py`, `tests/test_thread_lifecycle.py`, `tests/test_backup_worker_lifecycle.py`
+13. **Çalışan worker bitmeden süreç teardown yapmaz.** Bir `QThread` nesnesi YALNIZ yerleşik `finished` sinyalinden sonra bırakılır — sonuç sinyali `run()` İÇİNDE yayıldığı için sonuç slot'unda `deleteLater`/referans temizliği yapılmaz (ölçüldü: `0xC0000409` fast-fail). Gecikmiş eski worker'ın `finished` sinyali yeni worker'ın referansını ve UI durumunu değiştirmez. Çalışan yedek worker'ı kapanış beklemesine dahildir. → `tests/test_shutdown_workers.py`, `tests/test_thread_lifecycle.py`, `tests/test_backup_worker_lifecycle.py`, `tests/test_pdf_worker_lifecycle.py`
 14. **Kapanış sırası:** kapanış yedeği → DB kapatma → çıkış kodu 0.
 15. **Restart kapanışında yeni kapanış yedeği alınmaz**; normal Qt/DB kapanışı ve sınırlı mutex beklemesi uygulanır. Ardıl `--restarted-from <pid>` ile açılır, komut satırında EXE yolu bir kez geçer, `os.execl` kullanılmaz. → `tests/test_restart_flow.py`
 16. **Tek örnek kilidinde kısmi edinim bırakılmaz**; mutex alınıp paylaşımlı bellek alınamazsa handle kapatılır. → `tests/test_restart_flow.py`
@@ -53,7 +57,9 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 ## Gizlilik ve hata bildirimi
 
 17. **SMTP parolası yalnız Windows Credential Manager'da tutulur**; config'e düz metin yazılmaz, loglanmaz. Okuma hatası **sessizce yutulmaz**, `CredentialStoreError` fırlatılır ve okuma hatası kaydı silmeye dönüşmez. → `tests/test_credential_store.py`, `tests/test_smtp_credential_ui.py`, `tests/test_smtp_security.py`
-18. **Kaydetme/silme hatasında** kullanıcıya ham istisna, traceback, SQL veya dosya yolu gösterilmez; diyalog kapanmaz, kullanıcı düzeltip yeniden dener. Log yalnız işlem adı, istisna sınıf adı ve dosya:satır çerçevelerini içerir. → `tests/test_save_error_handling.py`
+18. **Hiçbir kullanıcı mesajında veya güvenli logda** ham istisna metni, `str(exception)`, traceback, SQL, yerel dosya yolu ya da müşteri/firma/teklif adı bulunmaz. Mesaj sabit metinlerden seçilir; log yalnız işlem adı, istisna sınıf adı, güvenli kayıt id'si ve `dosya:satır` çerçevelerini içerir (`exc_info` kullanılmaz). Diyalog kapanmaz, kullanıcı düzeltip yeniden dener. → `tests/test_save_error_handling.py`, `tests/test_operation_error_dialog.py`, `tests/test_dashboard_safe_errors.py`, `tests/test_create_offer_stage_errors.py`
+18b. **Kısmi başarı önceki başarılı aşamayı İNKÂR ETMEZ.** Çok aşamalı akışlarda (kaydet → PDF → arşiv → sonraki eylemler; toplu silme/PDF; DB yazımı → ekran yenileme) sonraki bir aşamanın hatası, tamamlanmış aşamayı "yapılamadı" gibi anlatamaz. Toplu işlemlerde yalnız güvenli sayılar gösterilir; "hiçbiri" türü genelleme yapılmaz. → `tests/test_create_offer_stage_errors.py`, `tests/test_dashboard_safe_errors.py`
+18c. **"Log Klasörünü Aç" düğmesi** yalnız beklenmeyen/teknik hatalarda gösterilir ve mesajdaki ipucu ile kutudaki gerçek düğme birebir eşleşir; doğrulama mesajlarında bulunmaz. → `tests/test_operation_error_dialog.py`
 19. **Paketlenmiş (windowed) derlemede çalışma zamanı hatası görünür**; hata penceresi log yolunu gösterir, aynı hata kısa süre tekrar bastırılır. → `tests/test_windowed_error_reporting.py`
 
 ## Paketleme ve yayın

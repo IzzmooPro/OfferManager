@@ -107,6 +107,11 @@ class KaynakSurumTests(unittest.TestCase):
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
         self.assertEqual(s.get("version_prepare_commit"), "a63f981",
                          "v4.1 sürüm hazırlığı commit'i (tarihsel, sabit)")
+        # Güncel işlevsel kaynak — her metadata turunda BİLİNÇLİ güncellenir.
+        self.assertEqual(s.get("source_commit"), "25518fb",
+                         "güncel işlevsel kaynak commit'i (R10-A/B/C + PdfWorker)")
+        self.assertNotEqual(s.get("source_commit"), s.get("built_from_commit"),
+                            "kaynak artifact build'inden ileride olmalı")
         # v4.1 release artifact'ı DEĞİŞMEZ biçimde d359137 ağacından üretildi;
         # bu alan sabittir. Yeni bir build alınırsa bilinçli olarak güncellenir.
         self.assertEqual(s.get("built_from_commit"), "d359137",
@@ -126,12 +131,34 @@ class KaynakSurumTests(unittest.TestCase):
     def test_artifact_staleyken_kaynak_ve_build_commiti_farkli(self):
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
-        if s.get("artifact_verification_status") != "stale_source_changed":
-            self.skipTest("artifact stale değil")
+        self.assertEqual(s.get("artifact_verification_status"),
+                         "stale_source_changed",
+                         "kaynak 25518fb, artifact d359137 → durum stale olmalı")
         self.assertNotEqual(s.get("source_commit"), s.get("built_from_commit"),
                             "artifact stale iddiası var ama kaynak ve build "
                             "commit'i aynı yazılmış")
         self.assertIs(s.get("release_candidate_ready"), False)
+        gerekce = str(s.get("artifact_stale_reason", "")).strip()
+        self.assertTrue(gerekce, "artifact_stale_reason boş")
+        self.assertRegex(gerekce, r"(?i)r10",
+                         "gerekçe R10 sonrası kaynak değişikliğini açıklamıyor")
+        self.assertEqual(s.get("built_from_commit"), "d359137",
+                         "artifact build commit'i korunmalı")
+        # Artifact hash/boyutları DEĞİŞMEZ — yalnız tazelik iddiası düşer.
+        self.assertEqual(s["dist_exe"]["size"], 9437741)
+        self.assertTrue(s["dist_exe"]["sha256"].startswith("872DF3C1"))
+        self.assertEqual(s["installer"]["size"], 52501243)
+        self.assertTrue(s["installer"]["sha256"].startswith("DE590641"))
+
+    def test_built_from_commit_notu_stale_durumu_aciklar(self):
+        s = json.loads(
+            (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
+        if s.get("artifact_verification_status") != "stale_source_changed":
+            self.skipTest("artifact stale değil")
+        not_metni = str(s.get("built_from_commit_note", ""))
+        self.assertRegex(not_metni, r"(?i)i[çc]ermez|dahil de[ğg]il|eskidir",
+                         "not, artifact'ın güncel kaynağı içermediğini "
+                         f"söylemiyor: {not_metni!r}")
 
     def test_manifest_installer_yolu_hedef_surumu_gosterir(self):
         s = json.loads(
@@ -457,11 +484,33 @@ class YayinKanitiTests(unittest.TestCase):
         self.assertRegex(metin, r"(?i)paketli",
                          "paketli U17 istemci sınırı yazılmamış")
 
-    def test_kod_imzasi_ve_artifact_durumu_korunuyor(self):
+    def test_kod_imzasi_ve_guven_zinciri_korunuyor(self):
+        """YAYINLANMIŞ v4.1'in güvenlik kanıtı — kaynak ilerlese de değişmez.
+
+        `release_candidate_ready` ve `artifact_verification_status` GÜNCEL
+        KAYNAĞIN durumunu anlatır; yayınlanmış sürümün geçerliliğiyle
+        karıştırılmaz. Bu yüzden burada sabitlenmezler.
+        """
         self.assertIs(self.s["signing"]["signed"], False)
         self.assertIs(self.r["updater_trust_chain"]["code_signing"], False)
-        self.assertIs(self.s["release_candidate_ready"], True)
-        self.assertEqual(self.s["artifact_verification_status"], "verified")
+        for alan in ("asset_name_pinned", "url_host_allowlisted",
+                     "sha256_and_size_verified",
+                     "fail_closed_when_metadata_missing"):
+            self.assertIs(self.r["updater_trust_chain"][alan], True,
+                          f"updater güven zinciri kanıtı zayıfladı: {alan}")
+
+    def test_yayin_gecerliligi_ile_kaynak_tazeligi_ayrilir(self):
+        """'v4.1 yayınlandı' ≠ 'mevcut kaynak build edildi'."""
+        self.assertIs(self.r["tag_created"], True)
+        self.assertIs(self.r["github_release_created"], True)
+        self.assertIs(self.r["updater_end_to_end_verified"], True)
+        # Yayın kanıtları, güncel kaynağın taze olmasını ZORUNLU KILMAZ.
+        self.assertIn(self.s["artifact_verification_status"],
+                      ("verified", "stale_source_changed"))
+        self.assertIsInstance(self.s["release_candidate_ready"], bool)
+        if self.s["artifact_verification_status"] == "stale_source_changed":
+            self.assertIs(self.s["release_candidate_ready"], False,
+                          "artifact eskimişken release adayı denemez")
 
     def test_r3d_gelecek_host_riski_acik_kaliyor(self):
         m = (REHBER / "KNOWN_RISKS.md").read_text(encoding="utf-8")

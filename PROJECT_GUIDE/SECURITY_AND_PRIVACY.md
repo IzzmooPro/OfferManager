@@ -5,10 +5,12 @@ covers:
   - core/credential_store.py
   - core/config.py
   - ui/utils/operation_error.py
+  - ui/utils/operation_error_dialog.py
+  - core/app_paths.py
   - ui/dialogs/email_dialog.py
   - main.py
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: 25518fb
+last_verified_date: 2026-08-02
 volatile: false
 ---
 
@@ -29,8 +31,9 @@ volatile: false
 
 ## Hata mesajı ve log
 
-- Kullanıcıya gösterilen kaydetme/silme hatası sabit metinlerden seçilir; `str(exception)`, traceback, SQL veya dosya yolu içermez. Ürün kodu çakışmasında mesaj istisnanın **alanlarından** üretilir (duck typing yok, `isinstance` kontrolü).
-- Log satırı: işlem adı + istisna sınıf adı + güvenli kayıt id'si + traceback'in yalnız `dosya:satır fonksiyon` çerçeveleri. `exc_info` kullanılmaz.
+- Kullanıcıya gösterilen hata sabit metinlerden seçilir; `str(exception)`, traceback, SQL, yerel dosya yolu ya da müşteri/firma/teklif adı içermez. Ürün kodu çakışmasında mesaj istisnanın **alanlarından** üretilir (duck typing yok, `isinstance` kontrolü).
+- **"Log Klasörünü Aç" düğmesi** (`ui/utils/operation_error_dialog.py`): yalnız beklenmeyen/teknik hatalarda eklenir. Tıklanmadıkça `os.startfile` **çağrılmaz**; tıklanınca yalnız kanonik `core.app_paths.LOG_DIR` açılır — yol istisnadan veya kullanıcı girdisinden türetilmez ve **mesaj metninde gösterilmez**. Klasör yoksa ya da açma başarısız olursa ikinci pencere açılmaz, istisna sızmaz, yalnız istisna **sınıf adı** warning olarak loglanır (özyineleme yok). → `tests/test_operation_error_dialog.py`
+- Log satırı: işlem adı + istisna sınıf adı + güvenli kayıt id'si + traceback'in yalnız `dosya:satır fonksiyon` çerçeveleri. `exc_info` kullanılmaz. Toplu işlemlerde her istisna **tam bir kez** ayrı ayrı loglanır; ham metinler birleştirilmez. Başarı loglarında tam kullanıcı dosya yolu yazılmaz — yalnız güvenli kayıt id'si.
 - Paketlenmiş windowed derlemede yakalanmamış istisna sessizce kaybolmaz: görünür hata penceresi + log dosyası yolu gösterilir; aynı hata kısa süre içinde tekrar ederse bastırılır.
 
 ## Çıktı gizliliği

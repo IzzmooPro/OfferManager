@@ -3,22 +3,23 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: 7395561
-last_verified_date: 2026-07-31
+last_verified_commit: 25518fb
+last_verified_date: 2026-08-02
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-07-31 · hedef sürüm: `v4.1`.**
+> **Yakalama tarihi: 2026-08-02 · hedef sürüm: `v4.1`.**
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Sürüm: **v4.1** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` ve `version_info.txt` eşitlendi
-- Commit ayrımı: v4.1 **sürüm hazırlığı** `a63f981` · **U17 dâhil güncel işlevsel kaynak** `7395561` · **eldeki artifact'ın build edildiği HEAD** `d359137` (7395561'i içerir → artifact güncel)
+- Commit ayrımı: v4.1 **sürüm hazırlığı** `a63f981` · **güncel işlevsel kaynak** `25518fb` (U17 + R10-A/B/C + PdfWorker) · **yayımlanan artifact'ın build edildiği HEAD** `d359137`
+- ⚠️ **Güncel kaynak artifact'tan İLERİDE**: `d359137` ile üretilen v4.1 artifact'ı R10 ve PdfWorker düzeltmelerini **içermez** → güncel kaynak için yeniden build + frozen smoke + installer doğrulaması bekliyor (`artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık ve U17 updater güven zinciri testleri dâhil son tam suite: **817 passed, 1 skipped, 105 subtests** (2026-07-31, temiz ağaç). Tek skip, artifact stale olmadığı için stale-senaryosu testinin uygulanmamasıdır; `verify_project_guide.py --release` temiz ağaçta **exit 0** verir.
+- PROJECT_GUIDE, sürüm tutarlılık ve R10 güvenli hata testleri dâhil son tam suite: **895 passed, 1 skipped, 251 subtests** (2026-08-02, temiz ağaç). Tek skip, artifact güncel kaynak için stale olduğundan `--release` kapısının atlanmasıdır; bu kapı bilinçli olarak **kırmızıdır** (yeniden build bekliyor).
 - `py_compile` tüm proje dosyalarında temiz
 - v4.1 kaynak commit'lerinin upstream durumu **release öncesinde canlı git komutlarıyla doğrulanmalıdır**; bu belgede canlı remote hash tutulmaz
 
@@ -28,7 +29,7 @@ K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanl�
 
 ## v4.1 doğrulama durumu
 
-Üç kanıt sınıfı da **U17'li kaynakla (`7395561`, build HEAD `d359137`) yeniden** yürütüldü.
+Aşağıdaki üç kanıt sınıfı **yayımlanan v4.1 artifact'ı** için geçerlidir (kaynak `7395561`, build HEAD `d359137`). **Güncel kaynak `25518fb` için tekrarlanmadı.**
 
 - **Temiz build: GEÇTİ** — `packaging/Kurulum-Yap.bat --no-pause` exit 0; PyInstaller onedir + Inno Setup; log'da `[HATA]`/traceback yok
 - **Frozen smoke (kanıt sınıfı B): GEÇTİ** — izole ortamda U17'li dist EXE ile: null keyring'de **gözetimsiz açılış, modal yok**; fail keyring'de **"Güvenli Depo" modalı gerçekten açılıyor** (ana pencere arkasında disabled, mesaj kısa ve güvenli, `Tamam` otomasyonla basıldı); manuel güncelleme ağ-hata yolu **"Güncelleme kontrol edilemedi."** — URL/proxy/traceback sızıntısı ve yanlış "uygulama güncel" mesajı yok; indirme/tarayıcı/installer başlatılmadı; tek örnek kilidi; normal kapanış exit 0, tek izole yedek, thread/native crash izi yok
@@ -55,6 +56,17 @@ Salt okunur tarama tamamlandı: **ürün kusuru bulunamadı**. Kaynak envanterin
 
 **Ancak** O16 deseni kaynak modunda (offscreen ve gerçek platform, iki deneme) **yeniden üretilemedi** — özgün kanıt paketli EXE'de alınmıştı. Bu yüzden kalıcı kural korunuyor: modal/progress/import sırası değişirse kanıt **frozen EXE** üzerinde alınır ([VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) B sınıfı 9. senaryo, [KNOWN_RISKS.md](KNOWN_RISKS.md) R4).
 
+## R10 güvenilirlik turu (2026-08-02) — kaynakta tamamlandı
+
+- **R10-A** `9bf4d8d` — kategori ekleme/ad değiştirme/silme: ham istisna gitti, güvenli mesaj + güvenli log, "Log Klasörünü Aç" düğmesi; yeni ince sarmalayıcı `ui/utils/operation_error_dialog.py` (`operation_error` UI'dan bağımsız kaldı).
+- **R10-B** `49ef0b3` — dashboard teklif/şablon/PDF/dışa aktarma: 12 ham hata yolu kapandı; toplu işlemlerde yalnız güvenli sayılar ("X silindi, Y silinemedi"); `PdfWorker` artık `(exception, güvenli_id)` taşıyor.
+- **PdfWorker yaşam döngüsü** `f29ea47` — sonuç sinyali `run()` içinde yayıldığı için temizlik yalnız yerleşik `finished` yolunda yapılıyor. Kusur ölçülmüştü: alt süreç `0xC0000409` ile fast-fail veriyordu.
+- **R10-C** `25518fb` — `_finish_offer` **A/B/C/D** aşamalarına ayrıldı; kaydedilmiş teklif/PDF artık inkâr edilmiyor, `_preview_pdf` üretim ve pencere hatası ayrıldı, başarı logundan tam kullanıcı yolu çıkarıldı.
+
+Kalan alt bulgular **kapatılmadı**, ayrı maddeler olarak izleniyor: [KNOWN_RISKS.md](KNOWN_RISKS.md) R10a (müşteri kaydetme catch'leri + firma adı logu), R10b (`_open_file`), R10c (import/settings/backup/reports envanteri).
+
+> **Ayrım — silinmemeli.** *"Yayımlanmış v4.1 geçerlidir"* ile *"mevcut kaynak build edilmedi"* farklı iddialardır. v4.1 tag'i, GitHub Release'i ve canlı updater doğrulaması (D1/D2) **tarihsel olarak geçerlidir**; bu tur yalnız **güncel kaynağın** artifact tazeliğini düşürür.
+
 ## Bilinen sınır
 
 `packaging/`, `assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` depo dışıdır → **temiz clone'dan build tekrarlanabilir değildir** ([BUILD_AND_PACKAGING.md](BUILD_AND_PACKAGING.md)).
@@ -67,8 +79,10 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 ## Kalan aşamalar
 
-1. Bu belge commit'inin upstream'e gönderilmesi
-2. **v4.2 turunda paketli U17 → sonraki sürüm doğrulaması** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b) — v4.2 hazırlanırken yapılacak, şu anda açık bir işlem değil
+1. Dört R10 kaynak commit'i ve bu metadata commit'inin upstream'e gönderilmesi
+2. **Güncel kaynak için yeniden build + frozen smoke + installer doğrulaması** (artifact `d359137`'de kaldı)
+3. **v4.2 turunda paketli U17 → sonraki sürüm doğrulaması** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b)
+4. Küçük denetim maddeleri: R10a, R10b, R10c
 
 ## Bu yakalamayı yenilerken
 
