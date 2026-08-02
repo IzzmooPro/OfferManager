@@ -22,7 +22,7 @@ volatile: true
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **941 passed, 4 skipped, 267 subtests** (2026-08-02, temiz ağaç; bağımsız Codex ölçümüyle aynı). Dört skip, artifact `verified` + `release_candidate_ready=true` durumunun beklenen sonucudur; `--release` kapısı artık ATLANMIYOR ve geçiyor.
+- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **942 passed, 4 skipped, 267 subtests** (2026-08-02, temiz ağaç). Yayın turunda bir test eklendi (tag'in build commit'inden ayrılmasını yakalar); önceki ölçüm 941/4/267 idi.
 - `py_compile` tüm proje dosyalarında temiz
 - Upstream durumu **her release öncesi canlı git komutlarıyla** doğrulanır; bu belgede canlı remote hash tutulmaz
 

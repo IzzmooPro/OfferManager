@@ -61,15 +61,15 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
-      "passed": 941,
+      "passed": 942,
       "subtests_passed": 267,
       "date": "2026-08-02",
       "skipped": 4,
-      "note": "temiz çalışma ağacında alınan gerçek sonuç; bağımsız Codex ölçümüyle aynı. Dört skip, artifact verified + release_candidate_ready=true durumunun beklenen sonucudur; --release kapısı artık atlanmıyor ve geçiyor."
+      "note": "temiz çalışma ağacında alınan gerçek sonuç. Yayın turunda bir test eklendi (yayımlanan tag'in build commit'ini göstermesi); önceki ölçüm 941/4/267 idi. Dört skip beklenen durumdur."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 941,
+      "passed": 942,
       "subtests_passed": 267,
       "date": "2026-08-02",
       "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 baseline'ını (060baf3) TARİHSEL alan olarak korur.",
