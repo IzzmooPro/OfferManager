@@ -61,19 +61,19 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
-      "passed": 940,
+      "passed": 941,
       "subtests_passed": 267,
       "date": "2026-08-02",
-      "skipped": 5,
-      "note": "temiz çalışma ağacında alınan gerçek sonuç. Beş skip, artifact verified + release_candidate_ready=true durumunun beklenen sonucudur."
+      "skipped": 4,
+      "note": "temiz çalışma ağacında alınan gerçek sonuç; bağımsız Codex ölçümüyle aynı. Dört skip, artifact verified + release_candidate_ready=true durumunun beklenen sonucudur; --release kapısı artık atlanmıyor ve geçiyor."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 940,
+      "passed": 941,
       "subtests_passed": 267,
       "date": "2026-08-02",
       "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 baseline'ını (060baf3) TARİHSEL alan olarak korur.",
-      "skipped": 5
+      "skipped": 4
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
@@ -210,8 +210,8 @@
       "existing_remote_tag": "v4.1",
       "existing_remote_tag_note": "uzakta en son bulunan tag; v4.2 tag'i HENÜZ YOK (canlı doğrulandı)",
       "upstream_sync_must_be_verified_live": true,
-      "status": "asama_1_devam_ediyor",
-      "note": "v4.2 için tag, GitHub Release ve canlı updater doğrulaması YAPILMADI. Aşama 1 kapsamı: kaynak doğrulaması + sürüm hazırlığı + yerel commit + temiz build + frozen smoke + artifact metadata. Aşama 2 (installer C, push, tag, release, read-back, D1/D2) Codex incelemesinden sonra."
+      "status": "release_candidate_ready",
+      "note": "v4.2 yayın adayıdır: temiz build, frozen smoke (B), installer doğrulaması (C: yerinde upgrade) ve R12a'nın iki frozen yolu TAMAMLANDI. Bekleyen tek şey yayın adımıdır: push, tag, GitHub Release, read-back ve canlı updater (D1/D2). v4.1 tag/release'ine dokunulmaz; v4.2 tag'i uzakta HENÜZ YOKTUR (canlı doğrulanır)."
     },
     "version_prepare_commit": "227656b",
     "version_prepare_commit_note": "v4.2 sürüm alanlarının (APP_VERSION, .iss, version_info.txt, CHANGELOG) hazırlandığı commit — R11 ile aynı commit'tedir.",

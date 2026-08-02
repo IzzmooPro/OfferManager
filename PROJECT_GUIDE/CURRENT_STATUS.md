@@ -16,13 +16,13 @@ volatile: true
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.2** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.2.0.0` / `v4.2`) eşitlendi; installer adı `TeklifYonetim_Setup_v4.2.exe`
-- **Doğrulama durumu:** v4.2 temiz build **ALINDI** (build commit `227656b`, exit 0); frozen smoke (**B**) ve installer (**C**: yerinde upgrade) **GEÇTİ**; R12a'nın iki frozen yolu da kapandı → `artifact_verification_status = verified`, `release_candidate_ready = true`, `--release` kapısı **exit 0**. ⚠️ Bu **yayımlandı demek değildir**: push, tag, GitHub Release, read-back ve canlı updater (D1/D2) **yapılmadı**.
+- **Doğrulama durumu:** v4.2 temiz build **ALINDI** (build commit `227656b`, exit 0); frozen smoke (**B**) ve installer (**C**: yerinde upgrade) **GEÇTİ**; R12a'nın iki frozen yolu da kapandı → `artifact_verification_status = verified`, `release_candidate_ready = true`, `--release` kapısı **exit 0**. ⚠️ Bu **yayımlandı demek değildir**: push, tag, GitHub Release, read-back ve canlı updater (D1/D2) bu satır yazıldığında henüz yapılmamıştı.
 - v4.2 artifact'ları: dist EXE `476015268A26…5353B` (9.476.704 B, 4.2.0.0 / v4.2) · installer `TeklifYonetim_Setup_v4.2.exe` `D61488DFE55D…82B2` (52.548.738 B). İkisi de v4.1 hash'lerinden **farklıdır**.
 - **Makinede kurulu sürüm artık v4.2**: yerinde upgrade exit 0 (tek UAC onayı elle verildi); kurulu EXE dist EXE ile birebir aynı (`476015268A26…5353B`), registry `DisplayVersion v4.2`, AppId ve kurulum dizini korundu, `dist` dışı artık dosya yok. **Gerçek `database.db` byte-birebir aynı** (`AB7B8AE5…`), yedekler 0/0/0, `integrity_check=ok`. **Kaldırma ve temiz yeniden kurulum bu turda ATLANDI** — installer mekanizması v4.1'den beri değişmedi ve o senaryolar v4.1 turunda tam yürütüldü; v4.2 için **doğrulanmamıştır**.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **940 passed, 5 skipped, 267 subtests** (2026-08-02, temiz ağaç). Beş skip, artifact `verified` + `release_candidate_ready=true` durumunun beklenen sonucudur (stale/installer_pending/eski-asset kontrolleri artık geçerli değil).
+- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **941 passed, 4 skipped, 267 subtests** (2026-08-02, temiz ağaç; bağımsız Codex ölçümüyle aynı). Dört skip, artifact `verified` + `release_candidate_ready=true` durumunun beklenen sonucudur; `--release` kapısı artık ATLANMIYOR ve geçiyor.
 - `py_compile` tüm proje dosyalarında temiz
 - Upstream durumu **her release öncesi canlı git komutlarıyla** doğrulanır; bu belgede canlı remote hash tutulmaz
 
@@ -100,15 +100,14 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 ## Kalan aşamalar
 
-**Aşama 1 (bu tur):** R11 kaynak doğrulaması · v4.2 sürüm hazırlığı · yerel commit · temiz build · frozen smoke (B) · artifact metadata.
+**Tamamlananlar:** R11 kaynak doğrulaması · v4.2 sürüm hazırlığı · temiz build · frozen smoke (**B**) · installer doğrulaması (**C**: yerinde upgrade) · R12a Yol A + Yol B.
 
-**Aşama 2 (Codex incelemesinden sonra):**
+**Yayın adımı:**
 
-1. Installer doğrulaması (kanıt sınıfı **C**): upgrade → uninstall → temiz reinstall
-2. `origin/main`'e push
-3. `v4.2` tag'i ve GitHub Release + asset read-back
-4. Canlı updater doğrulaması **D1** ve **D2** — D2 bu kez ilk kez **paketli U17 istemciden** yapılabilir ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b)
-5. Küçük denetim maddeleri: R10a, R10b, R10c
+1. `origin/main`'e push
+2. `v4.2` tag'i (build commit `227656b`) ve GitHub Release + asset read-back
+3. Canlı updater doğrulaması **D1** ve **D2** — D2 ilk kez **paketli U17 istemciden** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3b/R12d)
+4. Küçük denetim maddeleri: R10a, R10b, R10c, R12c
 
 ## Bu yakalamayı yenilerken
 

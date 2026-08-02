@@ -32,7 +32,7 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 | R11 | **500 kalemli teklifte UI doldurma ~3 sn** (`_add_row`) | Düşük | Gerçek veride maks ~10 kalem; toplu/gecikmeli satır kurulumu ileride |
 | R12 | **Normal kapanış yedeği büyük veritabanında kapanışı uzatır** | Düşük | Ölçüldü ve kabul edildi; gerekirse ilerleme göstergesi |
 
-## R12 — v4.2 Aşama 1 sonrası açık kalanlar (2026-08-02)
+## R12 — v4.2 turu bulguları (2026-08-02)
 
 | No | Risk | Durum |
 |---|---|---|
