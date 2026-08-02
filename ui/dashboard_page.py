@@ -1111,17 +1111,37 @@ class DashboardPage(QWidget):
 
         self._pdf_btn.setEnabled(False)
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        self._pdf_worker = PdfWorker(tasks)
-        self._pdf_worker.result_ready.connect(self._on_pdf_finished)
-        self._pdf_worker.start()
+        worker = PdfWorker(tasks)
+        # `result_ready` run() İÇİNDE yayılır → yalnız SONUÇ işlenir.
+        # Temizlik (deleteLater / referans / imleç / düğme) YALNIZ yerleşik
+        # `finished` yolunda yapılır; aksi hâlde hâlâ çalışan QThread yok
+        # edilir ve süreç 0xC0000409 ile fast-fail verir (ölçüldü).
+        worker.result_ready.connect(self._on_pdf_finished)
+        worker.finished.connect(lambda w=worker: self._on_pdf_worker_finished(w))
+        self._pdf_worker = worker
+        worker.start()
 
-    def _on_pdf_finished(self, generated: list, errors: list):
+    def _on_pdf_worker_finished(self, worker):
+        """Yerleşik `QThread.finished` — TEK temizlik noktası.
+
+        `worker` kimliği taşınır. Gecikmiş ESKİ bir worker'ın sinyali:
+          * kendi C++ nesnesini serbest bırakabilir (her durumda),
+          * fakat YENİ worker'ın UI durumunu (bekleme imleci, PDF düğmesi)
+            ve referansını ELLEMEZ — aksi hâlde yeni iş sürerken imleç kalkar
+            ve kullanıcı düğmeye ikinci kez basabilir.
+        """
+        try:
+            worker.deleteLater()
+        except RuntimeError:
+            pass                      # C++ nesnesi zaten silinmiş
+        if self._pdf_worker is not worker:
+            return                    # gecikmiş eski sinyal: UI'a DOKUNMA
         QApplication.restoreOverrideCursor()
         self._pdf_btn.setEnabled(True)
-        if self._pdf_worker:
-            self._pdf_worker.deleteLater()
-            self._pdf_worker = None
+        self._pdf_worker = None
 
+    def _on_pdf_finished(self, generated: list, errors: list):
+        """YALNIZ sonuçlar ve güvenli hata mesajları — temizlik YAPMAZ."""
         if errors:
             # `errors` = [(exception, güvenli_kayit_id)] — ham metin YOK.
             hata_diyalogu.toplu_hata_goster(
