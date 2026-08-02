@@ -26,6 +26,9 @@ from models.customer import Customer
 from models.offer import calculate_discount
 
 logger = logging.getLogger("create_offer")
+
+from ui.utils import operation_error as op_hata
+from ui.utils import operation_error_dialog as hata_diyalogu
 from core.constants import SYM_MAP, UNIT_LIST, DELIVERY_LIST
 from core.formatting import fmt_money, fmt_number
 
@@ -1661,17 +1664,27 @@ class CreateOfferPage(QWidget):
                 pass
         temp_path = str(preview_dir / f"{data.offer_no or 'Teklif'}.pdf")
 
+        # İki aşama AYRI: üretim hatası ile pencere hatası aynı şey değildir.
         try:
             generate_pdf(data, temp_path)
+        except Exception as exc:                               # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "PDF", "olustur",
+                                      kayit_id=self._current_offer_id)
+            return
+        try:
             from ui.dialogs.pdf_preview_dialog import PdfPreviewDialog
-            dlg = PdfPreviewDialog(
+            PdfPreviewDialog(
                 pdf_path=temp_path, parent=self,
                 offer_no=data.offer_no or "",
                 customer_email=data.customer_email or "",
-            )
-            dlg.exec()
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"PDF Önizleme oluşturulamadı:\n{e}")
+            ).exec()
+        except Exception as exc:                               # noqa: BLE001
+            # PDF ÜRETİLDİ; yalnız önizleme penceresi açılamadı.
+            hata_diyalogu.kismi_hata_goster(
+                self, "Kısmi Sonuç", exc,
+                "PDF oluşturuldu ancak önizleme açılamadı.",
+                islem="Teklif onizleme penceresi",
+                kayit_id=self._current_offer_id)
 
     def _finish_offer(self):
         if not self._validate_step1():
@@ -1702,74 +1715,148 @@ class CreateOfferPage(QWidget):
             # Kullanıcı iptal etti
             return
             
-        # 3. DB'ye kaydet ve PDF'i üret
+        # 3. DB'ye kaydet ve PDF'i üret — AŞAMALAR AYRI ele alınır:
+        #    A) DB kaydı  B) kullanıcının PDF'i  C) program içi arşiv
+        #    D) sonraki kullanıcı eylemleri
+        #    Bir aşamanın hatası ÖNCEKİ başarılı aşamayı İNKÂR ETMEZ.
+
+        # ── AŞAMA A — DB kaydı ──────────────────────────────────────────
         try:
             oid = self.offer_svc.save(data)
-            self._current_offer_id = oid
-            self._is_new = False
-            # save() teklif numarasını KENDİSİ üretir ve data.offer_no'ya
-            # yazar; bu, sayfadaki önizleme numarasından farklı olabilir
-            # (ör. önek Ayarlar'dan değiştiyse). Arşiv adı ve sonraki tüm
-            # yollar GERÇEK numaradan üretilmeli — aksi hâlde arşiv PDF'i
-            # yanlış adla yazılır ve teklif silinince yetim kalır.
-            self._offer_no = data.offer_no or self._offer_no
-            self.offer_no_lbl.setText(self._offer_no)
+        except Exception as exc:                               # noqa: BLE001
+            # Hiçbir şey yazılmadı: sayfa durumu ve form KORUNUR.
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif", "kaydet")
+            return
+        self._current_offer_id = oid
+        self._is_new = False
+        # save() teklif numarasını KENDİSİ üretir ve data.offer_no'ya
+        # yazar; bu, sayfadaki önizleme numarasından farklı olabilir
+        # (ör. önek Ayarlar'dan değiştiyse). Arşiv adı ve sonraki tüm
+        # yollar GERÇEK numaradan üretilmeli — aksi hâlde arşiv PDF'i
+        # yanlış adla yazılır ve teklif silinince yetim kalır.
+        self._offer_no = data.offer_no or self._offer_no
+        self.offer_no_lbl.setText(self._offer_no)
 
-            from pdf.pdf_generator import generate_pdf
+        # ── AŞAMA B — kullanıcının seçtiği ana PDF ──────────────────────
+        from pdf.pdf_generator import generate_pdf
+        try:
+            generate_pdf(data, out_path)
+        except Exception as exc:                               # noqa: BLE001
+            # Teklif KAYDEDİLDİ. Form ve kimlik korunur; `_reset_to_new` ve
+            # `offer_saved` ÇAĞRILMAZ — kullanıcı aynı ekranda yeniden
+            # deneyebilsin (ikinci deneme aynı id ile UPDATE yapar).
+            hata_diyalogu.kismi_hata_goster(
+                self, "Kısmi Sonuç", exc,
+                "Teklif kaydedildi ancak PDF oluşturulamadı. "
+                "PDF'yi yeniden oluşturmak için bu ekranda tekrar deneyin.",
+                islem="Teklif PDF olustur", kayit_id=oid)
+            return
+
+        # ── AŞAMA C — program içi PDF arşivi (A/B'yi DÜŞÜRMEZ) ──────────
+        arsiv_hatasi = False
+        try:
             from core.app_paths import PDF_DIR
-
             PDF_DIR.mkdir(parents=True, exist_ok=True)
             backup = str(PDF_DIR / f"{self._offer_no}.pdf")
-            generate_pdf(data, out_path)
-            
             if out_path != backup:
                 import shutil as _shutil
-                try:
-                    _shutil.copy2(out_path, backup)
-                except Exception as e:
-                    logger.warning("PDF yedegi kopyalanamadi: %s", e)
-                
-            logger.info("PDF oluşturuldu ve kaydedildi: %s", out_path)
+                _shutil.copy2(out_path, backup)
+        except Exception as exc:                               # noqa: BLE001
+            arsiv_hatasi = True
+            op_hata.logla(exc, "Teklif PDF arsiv", kayit_id=oid)
+        # Tam kullanıcı yolu LOGLANMAZ; yalnız güvenli kayıt kimliği.
+        logger.info("Teklif PDF oluşturuldu (id=%s)", oid)
 
+        # ── AŞAMA D — sonraki kullanıcı eylemleri (her biri AYRI) ───────
+        if arsiv_hatasi:
+            metin = ("Teklif ve seçtiğiniz PDF kaydedildi; program içi PDF "
+                     "arşivi oluşturulamadı. PDF'yi daha sonra yeniden "
+                     f"oluşturabilirsiniz.\n{out_path}\n\n"
+                     f"{hata_diyalogu.IPUCU}")
+        else:
+            metin = f"Teklif kaydedildi ve PDF oluşturuldu.\n{out_path}"
+
+        clicked = None
+        try:
             box = QMessageBox(self)
             box.setWindowTitle("Teklif Kaydedildi")
-            box.setText(f"Teklif kaydedildi ve PDF oluşturuldu.\n{out_path}")
+            box.setText(metin)
             btn_preview = box.addButton("Önizle",      QMessageBox.ButtonRole.AcceptRole)
             btn_mail    = box.addButton("Mail Gönder", QMessageBox.ButtonRole.ActionRole)
             btn_close   = box.addButton("Kapat",       QMessageBox.ButtonRole.RejectRole)
             btn_preview.setMinimumWidth(90)
             btn_mail.setMinimumWidth(130)
             btn_close.setMinimumWidth(80)
+            if arsiv_hatasi:
+                # İpucu ile düğme BİRLİKTE: peş peşe ikinci modal açılmaz.
+                hata_diyalogu.log_dugmesi_ekle(box)
             box.exec()
+            # `is` KULLANILMAZ: `clickedButton()` aynı C++ nesnesi için farklı
+            # bir Python proxy'si döndürebilir; Qt karşılaştırması `==` ile
+            # yapılır.
             clicked = box.clickedButton()
-            if clicked == btn_preview:
+            if clicked == btn_close:
+                clicked = None
+        except Exception as exc:                               # noqa: BLE001
+            # Sonuç penceresi açılamasa bile teklif ve PDF BAŞARILIDIR.
+            # Burada YALNIZ loglanır: QMessageBox altyapısı zaten hata
+            # verdiği için ikinci bir kutu açmak özyineleme riski taşır.
+            op_hata.logla(exc, "Teklif sonuc penceresi", kayit_id=oid)
+
+        if clicked is not None and clicked == btn_preview:
+            try:
                 import os as _os
                 _os.startfile(out_path)
-            elif clicked == btn_mail:
+            except Exception as exc:                           # noqa: BLE001
+                hata_diyalogu.kismi_hata_goster(
+                    self, "Kısmi Sonuç", exc,
+                    "PDF kaydedildi ancak açılamadı. "
+                    "Dosyayı kaydettiğiniz konumdan açın.",
+                    islem="Teklif PDF ac", kayit_id=oid)
+        elif clicked is not None and clicked == btn_mail:
+            try:
                 from ui.dialogs.email_dialog import EmailDialog
                 from core.config import load_company_config
-                from core.credential_store import get_smtp_password
                 cfg = load_company_config()
                 if not cfg.get("smtp_server") or not cfg.get("smtp_user"):
-                    QMessageBox.warning(self, "E-Posta Ayarı Eksik",
+                    hata_diyalogu.dogrulama_goster(
+                        self, "E-Posta Ayarı Eksik",
                         "E-posta göndermek için önce:\n"
                         "Ayarlar → E-Posta Ayarları\n"
                         "bölümünden SMTP bilgilerinizi girin.")
                 else:
-                    dlg = EmailDialog(
+                    EmailDialog(
                         pdf_path=out_path,
                         customer_email=data.customer_email or "",
                         offer_no=self._offer_no,
                         parent=self,
-                    )
-                    dlg.exec()
+                    ).exec()
+            except Exception as exc:                           # noqa: BLE001
+                hata_diyalogu.kismi_hata_goster(
+                    self, "Kısmi Sonuç", exc,
+                    "Teklif ve PDF kaydedildi ancak e-posta penceresi "
+                    "açılamadı.",
+                    islem="Teklif e-posta penceresi", kayit_id=oid)
 
+        # Finalizasyon: ikisi BİRBİRİNDEN BAĞIMSIZ denenir. Hata SESSİZ
+        # KALMAZ — kullanıcı kaydın yapıldığını ve nereye bakacağını bilmeli.
+        try:
             self._reset_to_new()
+        except Exception as exc:                               # noqa: BLE001
+            hata_diyalogu.kismi_hata_goster(
+                self, "Kısmi Sonuç", exc,
+                "Teklif ve PDF kaydedildi ancak yeni teklif formu "
+                "hazırlanamadı. Teklifler ekranına dönüp kaydı kontrol edin.",
+                islem="Teklif formu sifirla", kayit_id=oid)
+        try:
             self.offer_saved.emit()
-            
-        except Exception as e:
-            logger.error("Tamamlama hatası: %s", e, exc_info=True)
-            QMessageBox.warning(self, "Hata", f"İşlem tamamlanamadı:\n{e}")
+        except Exception as exc:                               # noqa: BLE001
+            hata_diyalogu.kismi_hata_goster(
+                self, "Kısmi Sonuç", exc,
+                "Teklif ve PDF kaydedildi ancak Teklifler ekranı "
+                "yenilenemedi. Soldaki Teklifler bölümünü açıp kaydı "
+                "kontrol edin.",
+                islem="Teklif kaydedildi sinyali", kayit_id=oid)
 
     # ──────────────────────────────────────────────────── Sıfırla / Yükle ───
 

@@ -28,18 +28,8 @@ from ui.utils import operation_error as op_hata
 logger = logging.getLogger("islem_hatasi_ui")
 
 LOG_DUGME_METNI = "Log Klasörünü Aç"
-_IPUCU = f'Sorun sürerse "{LOG_DUGME_METNI}" düğmesini kullanın.'
-
-
-def kullanici_mesaji(exc, tur: str, islem: str = "kaydet") -> str:
-    """Temel güvenli mesaj + (yalnız düğme eklenecekse) düğme ipucu.
-
-    Düğme ipucu BURADA eklenir; `operation_error` UI'dan bağımsız kalır ve
-    statik `QMessageBox.warning` kullanan sayfalar (customers/products)
-    olmayan bir düğmeye yönlendirilmez.
-    """
-    temel = op_hata.guvenli_mesaj(exc, tur, islem)
-    return f"{temel} {_IPUCU}" if op_hata.teknik_hata_mi(exc) else temel
+IPUCU = f'Sorun sürerse "{LOG_DUGME_METNI}" düğmesini kullanın.'
+_IPUCU = IPUCU              # geriye uyumlu iç ad
 
 
 def _log_dizini():
@@ -61,6 +51,30 @@ def log_klasorunu_ac() -> bool:
         # Yalnız SINIF ADI loglanır; istisna metni yol/gizli veri taşıyabilir.
         logger.warning("Log klasörü açılamadı — hata=%s", type(exc).__name__)
         return False
+
+
+def log_dugmesi_ekle(kutu):
+    """Var olan bir `QMessageBox`'a log klasörü düğmesini ekler.
+
+    Çağıran kendi kutusunu kuruyorsa (ör. başarı kutusuna eklenen teknik
+    uyarı) düğme metni ve davranışı yine TEK kaynaktan gelir; mesaja
+    `IPUCU` cümlesini eklemek çağıranın sorumluluğudur ve ikisi birlikte
+    kullanılmalıdır.
+    """
+    dugme = kutu.addButton(LOG_DUGME_METNI, QMessageBox.ButtonRole.ActionRole)
+    dugme.clicked.connect(log_klasorunu_ac)
+    return dugme
+
+
+def kullanici_mesaji(exc, tur: str, islem: str = "kaydet") -> str:
+    """Temel güvenli mesaj + (yalnız düğme eklenecekse) düğme ipucu.
+
+    Düğme ipucu BURADA eklenir; `operation_error` UI'dan bağımsız kalır ve
+    statik `QMessageBox.warning` kullanan sayfalar (customers/products)
+    olmayan bir düğmeye yönlendirilmez.
+    """
+    temel = op_hata.guvenli_mesaj(exc, tur, islem)
+    return f"{temel} {_IPUCU}" if op_hata.teknik_hata_mi(exc) else temel
 
 
 def _kutu(parent, baslik: str, mesaj: str, ikon, log_dugmesi: bool):
