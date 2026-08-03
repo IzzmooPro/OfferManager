@@ -1,7 +1,7 @@
 """
 Ayarlar sayfası — sekmeli düzen: Şirket | Yetkililer | Logo & İmza
 """
-import shutil, logging
+import shutil
 from pathlib import Path
 from ui.widgets._section_card import make_section_card
 from PySide6.QtWidgets import (
@@ -61,7 +61,6 @@ class _PreviewBox(QWidget):
             p.drawText(r, int(Qt.AlignmentFlag.AlignCenter), self._text)
         p.end()
 
-logger = logging.getLogger("settings")
 from core.credential_store import (
     CredentialStoreError, get_smtp_password, keyring_available,
     migrate_plaintext_smtp_password, set_smtp_password,
@@ -78,6 +77,36 @@ from core.app_paths import (
 )
 
 SIG_PATHS = (SIG1_PATH, SIG2_PATH, SIG3_PATH, SIG4_PATH)
+
+from ui.utils import operation_error as op_hata
+from ui.utils import operation_error_dialog as hata_diyalogu
+
+# ── Sabit kullanıcı metinleri ────────────────────────────────────────────
+# Hiçbiri istisna, sunucu/port/kullanıcı, parola veya yerel yol İÇERMEZ.
+SMTP_TEST_HATASI = (
+    "Bağlantı testi tamamlanamadı. Sunucu bilgilerini kontrol edin. "
+    "Ayrıntılar uygulama loguna kaydedildi."
+)
+GORSEL_ONIZLEME_MESAJI = (
+    "Görsel yüklendi, ancak önizleme güncellenemedi. "
+    "Ayarları yeniden açtığınızda görsel görünecektir."
+)
+GORSEL_SILME_ONIZLEME_MESAJI = (
+    "Görsel kaldırıldı, ancak önizleme güncellenemedi. "
+    "Ayarları yeniden açtığınızda liste güncel olacaktır."
+)
+LOGO_MARKER_YAZILAMADI_SILINDI = (
+    "Özel logo silindi, ancak logo PDF'de devre dışı bırakılamadı. "
+    "Varsayılan logo PDF'de kullanılmaya devam edebilir; yeniden deneyin."
+)
+LOGO_MARKER_YAZILAMADI = (
+    "Logo PDF'de devre dışı bırakılamadı. "
+    "Mevcut veya varsayılan logo PDF'de kullanılmaya devam edebilir."
+)
+LOGO_MARKER_SILINEMEDI = (
+    "Logo yüklendi, ancak PDF'de etkinleştirilemedi. "
+    "Logo şu an PDF'e eklenmiyor; yeniden deneyin."
+)
 
 
 def _guvenli_oku() -> str:
@@ -134,8 +163,11 @@ class SmtpTestWorker(QThread):
         except TimeoutError:
             self.result.emit(False,
                 f"Bağlantı zaman aşımı (10 sn).\nSunucu adresi ve portu kontrol edin.")
-        except Exception as e:
-            self.result.emit(False, str(e))
+        except Exception as exc:                           # noqa: BLE001
+            # Sunucu, port, kullanıcı, parola ve TLS/sertifika ayrıntısı
+            # sinyale de loga da GİRMEZ (invariant 18).
+            op_hata.logla(exc, "SMTP baglanti testi")
+            self.result.emit(False, SMTP_TEST_HATASI)
 
 
 def _inp(ph="", tip="", w=None) -> QLineEdit:
@@ -625,24 +657,45 @@ class SettingsPage(QWidget):
     def _upload(self, dest: Path, preview: QLabel, placeholder: str):
         path, _ = QFileDialog.getOpenFileName(
             self, "Görsel Seç", "", "Resim (*.png *.jpg *.jpeg *.bmp)")
-        if not path: return
+        if not path:
+            return False                    # iptal: hiçbir dosya yazılmadı
+        # A) Dosyayı kaydet. Başarısızsa görsel YOKTUR; sonraki aşama çalışmaz.
         try:
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, str(dest))
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Görsel", "yukle")
+            return False
+        # B) Önizleme — bu aşamanın hatası KAYDEDİLEN dosyayı inkâr etmez
+        #    ve kopyalamayı tekrarlamaz (invariant 18b). Dosya diske yazıldığı
+        #    için dönüş değeri yine True'dur.
+        try:
             self._set_preview(preview, dest)
-            QMessageBox.information(self, "Yüklendi", "Görsel başarıyla yüklendi.")
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Yüklenemedi:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.kismi_hata_goster(
+                self, "Görsel yüklendi", exc, GORSEL_ONIZLEME_MESAJI,
+                "Gorsel onizleme")
+            return True
+        QMessageBox.information(self, "Yüklendi", "Görsel başarıyla yüklendi.")
+        return True
 
     def _remove(self, dest: Path, preview, placeholder: str):
+        # A) Dosyayı sil. Başarısızsa önizleme temizlenmez, "Kaldırıldı" denmez.
         try:
             if dest.exists():
                 dest.unlink()
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Görsel kaldırılamadı:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Görsel", "sil")
             return
-        self._preview_label(preview).setPixmap(QPixmap())
-        self._preview_label(preview).setText(placeholder)
+        # B) Önizleme — istisna KORUMASIZ kalmaz ve silmeyi inkâr etmez.
+        try:
+            self._preview_label(preview).setPixmap(QPixmap())
+            self._preview_label(preview).setText(placeholder)
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.kismi_hata_goster(
+                self, "Görsel kaldırıldı", exc, GORSEL_SILME_ONIZLEME_MESAJI,
+                "Gorsel onizleme")
+            return
         QMessageBox.information(self, "Kaldırıldı", "Görsel kaldırıldı.")
 
     def _toggle_img(self, dest: Path, preview: QLabel, placeholder: str, btn: QPushButton):
@@ -663,27 +716,56 @@ class SettingsPage(QWidget):
             LOGO_PATH.exists() or DEFAULT_LOGO_PATH.exists())
         if logo_active:
             # Aktif → kaldır (disabled marker oluştur, özel logo varsa sil)
+            ozel_logo_silindi = False
             if LOGO_PATH.exists():
                 try:
                     LOGO_PATH.unlink()
-                except Exception as e:
-                    QMessageBox.warning(self, "Hata", f"Logo kaldırılamadı:\n{e}")
+                    ozel_logo_silindi = True
+                except Exception as exc:                   # noqa: BLE001
+                    hata_diyalogu.hata_goster(self, "Hata", exc, "Logo", "sil")
                     return
             try:
                 LOGO_DISABLED_PATH.touch()
-            except OSError as e:
-                logger.warning("Logo disabled marker oluşturulamadı: %s", e)
+            except OSError as exc:
+                # Marker yazılamadıysa logo PDF'de GERÇEKTEN devre dışı
+                # kalmamıştır: koşulsuz "kaldırıldı" DENMEZ. Tamamlanmış olan
+                # özel logo silme aşaması da inkâr edilmez (invariant 18b).
+                # Önizleme GERÇEK durumu gösterir: varsayılan logo hâlâ
+                # aktifse "Logo Yok" DENMEZ, varsayılana dönülür.
+                if DEFAULT_LOGO_PATH.exists():
+                    self._set_preview(self.logo_preview, DEFAULT_LOGO_PATH)
+                else:
+                    self._preview_label(self.logo_preview).setPixmap(QPixmap())
+                    self._preview_label(self.logo_preview).setText(
+                        "Logo Yok\n(Yükleyin)")
+                hata_diyalogu.kismi_hata_goster(
+                    self, "Logo", exc,
+                    LOGO_MARKER_YAZILAMADI_SILINDI if ozel_logo_silindi
+                    else LOGO_MARKER_YAZILAMADI,
+                    "Logo devre disi birak")
+                self._sync_logo_btn()
+                return
             self._preview_label(self.logo_preview).setPixmap(QPixmap())
             self._preview_label(self.logo_preview).setText("Logo Yok\n(Yükleyin)")
             QMessageBox.information(self, "Kaldırıldı", "Logo PDF'den kaldırıldı.")
         else:
-            # Kaldırılmış → yükle (disabled marker'ı da temizle)
-            self._upload(LOGO_PATH, self.logo_preview, "Logo Yok\n(Yükleyin)")
+            # Kaldırılmış → yükle (disabled marker'ı da temizle).
+            # Marker YALNIZ bu turda gerçekten yeni bir dosya kaydedildiyse
+            # silinir: iptal veya kopyalama hatasında ESKİ logo dosyası hâlâ
+            # diskte olabilir ve marker silinirse sessizce yeniden etkinleşirdi.
+            yuklendi = self._upload(LOGO_PATH, self.logo_preview,
+                                    "Logo Yok\n(Yükleyin)")
+            if yuklendi is not True:
+                self._sync_logo_btn()
+                return
             if LOGO_PATH.exists() and LOGO_DISABLED_PATH.exists():
                 try:
                     LOGO_DISABLED_PATH.unlink()
-                except OSError as e:
-                    logger.warning("Logo disabled marker silinemedi: %s", e)
+                except OSError as exc:
+                    # Görsel yüklendi ama PDF'de etkinleşmedi — kısmi başarı.
+                    hata_diyalogu.kismi_hata_goster(
+                        self, "Logo yüklendi", exc, LOGO_MARKER_SILINEMEDI,
+                        "Logo etkinlestir")
         self._sync_logo_btn()
 
     def _sync_logo_btn(self):
@@ -795,8 +877,10 @@ class SettingsPage(QWidget):
             **{f"{k}_enabled": "1" if chk.isChecked() else "0"
                for k, chk in self._pdf_toggles.items()},
         })
-        except Exception as e:
-            QMessageBox.critical(self, "Kaydetme Hatası", f"Ayarlar kaydedilemedi:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            # Config yolu ve ham istisna sızmaz. Kayıt başarısızsa SMTP
+            # parolası da yazılmaz (aşağıdaki aşama çalışmaz).
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Ayarlar", "kaydet")
             return
         # SMTP şifresini güvenli depoya yaz; başarısızlık SESSİZ geçilmez.
         sifre_uyarisi = self._sifreyi_kaydet(self.f_smtp_pass.text().strip())
