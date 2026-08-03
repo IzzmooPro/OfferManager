@@ -1,5 +1,4 @@
 """Raporlama sayfası — analiz tabloları ve grafikler."""
-import logging
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFrame, QComboBox, QTableWidget, QTableWidgetItem,
@@ -12,7 +11,8 @@ from core.constants import SYM_MAP
 from core.formatting import fmt_money, fmt_number
 from core.date_utils import to_display_date
 
-logger = logging.getLogger("reports_page")
+from ui.utils import operation_error as op_hata
+from ui.utils import operation_error_dialog as hata_diyalogu
 
 
 class ReportsPage(QWidget):
@@ -107,9 +107,12 @@ class ReportsPage(QWidget):
                 self._report_product_ranking()
             elif idx == 3:
                 self._report_conversion()
-        except Exception as e:
-            logger.error("Rapor oluşturma hatası: %s", e, exc_info=True)
-            self._summary_label.setText(f"Rapor oluşturulamadı: {e}")
+        except Exception as exc:                           # noqa: BLE001
+            # Ham istisna, SQL, yerel yol ve müşteri/teklif verisi ne özet
+            # etiketine ne loga girer; `exc_info` KULLANILMAZ (invariant 18).
+            op_hata.logla(exc, "Rapor olustur")
+            self._summary_label.setText(
+                "Rapor oluşturulamadı. Ayrıntılar uygulama loguna kaydedildi.")
 
     def _reset_table(self):
         self._table.clear()
@@ -279,5 +282,7 @@ class ReportsPage(QWidget):
 
             wb.save(path)
             QMessageBox.information(self, "Kaydedildi", f"Rapor kaydedildi:\n{path}")
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Export hatası:\n{e}")
+        except Exception as exc:                           # noqa: BLE001
+            # Hedef yol; mesaja, işlem adına, log satırına veya `kayit_id`'ye
+            # GEÇMEZ. Başarısız dışa aktarımda "kaydedildi" DENMEZ.
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Rapor", "aktar")
