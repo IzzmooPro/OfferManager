@@ -11,6 +11,7 @@ from PySide6.QtGui import QFont, QAction, QCloseEvent, QKeySequence, QShortcut
 logger = logging.getLogger("main_window")
 
 from core.constants import APP_VERSION
+from ui.utils import operation_error as op_hata
 
 # Sidebar menü kartları — (başlık, sayfa_idx)
 NAV_CARDS = [
@@ -160,11 +161,13 @@ class MainWindow(QMainWindow):
         if restart.restart_requested():
             logger.info("Yeniden başlatma kapanışı: kapanma yedeği atlandı.")
         else:
+            # `trigger_now` yedek hatasını İÇERİDE yakalar; buradan başarı
+            # BİLİNEMEZ, bu yüzden koşulsuz "alındı" logu yazılmaz. Gerçek
+            # başarı logu AutoBackupService._on_backup_done'da atılır.
             try:
                 self._backup_svc.trigger_now(reason="kapanma")
-                logger.info("Kapanma yedeği alındı.")
-            except Exception as e:
-                logger.warning("Kapanma yedeği alınamadı: %s", e)
+            except Exception as exc:                       # noqa: BLE001
+                op_hata.logla(exc, "Kapanma yedegi")
         self._shutdown_prepared = True
         # Yedekten SONRA: arka planda iş (güncelleme kontrolü, toplu PDF,
         # SMTP testi) sürüyorsa pencere yok edilmeden önce bitmesini bekle.
@@ -515,10 +518,11 @@ class MainWindow(QMainWindow):
 
     def _on_offer_saved(self):
         # Teklif kaydedilince yedek al (arka planda)
+        # Yedek başarısızlığı TAMAMLANMIŞ teklif kaydını inkâr etmez.
         try:
             self._backup_svc.trigger_now(reason="teklif kaydı")
-        except Exception as e:
-            logger.debug("Teklif kaydı yedeği alınamadı: %s", e)
+        except Exception as exc:                           # noqa: BLE001
+            op_hata.logla(exc, "Teklif kaydi yedegi")
         self.show_status("Teklif başarıyla kaydedildi.")
         self._navigate(0)
 
@@ -582,12 +586,16 @@ class MainWindow(QMainWindow):
         from ui.dialogs.backup_manager import AutoBackupService
         self._backup_svc = AutoBackupService(self)
         self._backup_svc.backup_done.connect(self._on_backup_done)
-        self._backup_svc.backup_failed.connect(
-            lambda e: logger.warning("Otomatik yedek başarısız: %s", e))
+        # Hata SERVİS katmanında zaten güvenli biçimde TAM BİR KEZ loglandı;
+        # tüketici burada yeniden loglamaz (invariant 18).
+        self._backup_svc.backup_failed.connect(self._on_backup_failed)
+
+    def _on_backup_failed(self, mesaj: str):
+        self.show_status(mesaj)
 
     def _on_backup_done(self, path: str):
         from datetime import datetime
-        logger.info("Otomatik yedek: %s", path)
+        logger.info("Otomatik yedek tamamlandı.")
         self.show_status(f"Yedek alındı — {datetime.now().strftime('%H:%M')}")
 
     # ── Güncelleme kontrolü ──────────────────────────────────────────────────

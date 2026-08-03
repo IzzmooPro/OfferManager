@@ -37,8 +37,63 @@ from core.app_paths import (
     DATA_ROOT   as _BASE,
 )
 from core.constants import APP_VERSION
+from ui.utils import operation_error as op_hata
+from ui.utils import operation_error_dialog as hata_diyalogu
 
 _META_PATH = _DATA_DIR / "backup_meta.json"
+
+
+# ── Geri yükleme durum sözleşmesi ────────────────────────────────────────
+PREFLIGHT_FAILED = "preflight_failed"   # hedef veriler HİÇ değişmedi
+ROLLED_BACK = "rolled_back"             # yazma başladı, önceki durum geri geldi
+ROLLBACK_FAILED = "rollback_failed"     # geri alma tamamlanamadı → BELİRSİZ
+
+_RESTORE_METINLERI = {
+    # Preflight yalnız yedek dosyası yüzünden değil, mevcut verinin rollback
+    # anlık görüntüsü hazırlanamadığı için de düşebilir. Metin bu yüzden
+    # nedeni tek bir sebebe indirgemez; yalnız GARANTİYİ söyler.
+    PREFLIGHT_FAILED: (
+        "Geri yükleme başlatılamadı. Mevcut verileriniz değiştirilmedi."),
+    ROLLED_BACK: (
+        "Geri yükleme tamamlanamadı. Önceki durumunuz geri getirildi; "
+        "verileriniz geri yükleme öncesindeki hâliyle duruyor."),
+    ROLLBACK_FAILED: (
+        "Geri yükleme tamamlanamadı ve önceki duruma dönüş de tamamlanamadı. "
+        "Veri durumu doğrulanamadı: programda işlem yapmayın ve sağlam "
+        "yedeğinizi koruyun."),
+}
+
+
+class RestoreError(ValueError):
+    """Geri yükleme hatası — metni SABİTTİR.
+
+    Ham istisnalar yalnız `nedenler` alanında iç kullanım için tutulur;
+    `__str__` hiçbir koşulda yol, SQL veya istisna metni döndürmez.
+
+    `ValueError` türevidir: geçersiz yedek için `ValueError` bekleyen mevcut
+    çağıran ve test sözleşmesi (`test_regressions`) aynen korunur; durum
+    makinesi bunun ÜSTÜNE eklenir.
+    """
+
+    def __init__(self, durum: str, nedenler=None):
+        self.durum = durum
+        self.nedenler = list(nedenler or [])
+        super().__init__(durum)
+
+    def __str__(self):
+        return _RESTORE_METINLERI.get(self.durum, _RESTORE_METINLERI[ROLLBACK_FAILED])
+
+
+# Yedekleme tarafı sabit metinleri
+YEDEK_OLUSTURULDU = (
+    "Yedek oluşturuldu. Seçtiğiniz klasörde backup_ ile başlayan bir dosya "
+    "olarak saklanır."
+)
+YEDEK_META_UYARISI =(
+    "Yedek dosyası oluşturuldu, ancak yedek bilgisi kaydedilemedi. "
+    "Yedeğiniz klasörde duruyor; ayar bilgisi bir sonraki yedekte güncellenir.")
+OTOMATIK_YEDEK_HATASI = (
+    "Otomatik yedekleme tamamlanamadı. Ayrıntılar uygulama loguna kaydedildi.")
 
 # Güncelleme sistemi bu yolların içine asla yazamaz (güvenlik)
 _PROTECTED_DIRS = [str(_DATA_DIR), str(_DEFAULT_BACKUP_DIR)]
@@ -48,8 +103,8 @@ def _load_meta() -> dict:
     if _META_PATH.exists():
         try:
             return json.loads(_META_PATH.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError, ValueError) as e:
-            logger.warning("Yedek meta dosyası okunamadı: %s", e)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            op_hata.logla(exc, "Yedek bilgisi oku")
     return {
         "auto_backup_dir": str(_DEFAULT_BACKUP_DIR),
         "auto_interval":   30,
@@ -64,8 +119,11 @@ def _save_meta(meta: dict):
         _META_PATH.write_text(
             json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-    except Exception as e:
-        logger.warning("Meta kayıt hatası: %s", e)
+    except Exception:                                          # noqa: BLE001
+        # Sessizce yutulmaz ama BURADA LOGLANMAZ: aşama ayrımını ve güvenli
+        # loglamayı ÇAĞIRAN yapar (`_manual`, `_save_auto`, `_on_backup_done`).
+        # Burada da loglamak aynı istisnayı iki satıra çıkarırdı.
+        raise
 
 
 def _ts() -> str:
@@ -105,7 +163,9 @@ def _validate_database(path: Path):
                     "Yedek veritabanında zorunlu tablolar eksik: "
                     + ", ".join(sorted(missing)))
     except sqlite3.DatabaseError as exc:
-        raise ValueError(f"Geçersiz SQLite veritabanı: {exc}") from exc
+        # Ham SQLite metni taşınmaz; asıl istisna yalnız zincirde kalır ve
+        # `op_hata.logla` tarafından sınıf/konum olarak güvenli loglanır.
+        raise ValueError("Geçersiz SQLite veritabanı") from exc
 
 
 def _create_database_snapshot(source: Path, destination: Path):
@@ -151,51 +211,127 @@ def create_backup(dest_dir: str) -> str:
                 "version":     APP_VERSION,
             }, ensure_ascii=False, indent=2))
 
-    logger.info("Yedek oluşturuldu: %s", zip_path)
+    logger.info("Yedek oluşturuldu.")
     return str(zip_path)
+
+
+def _geri_al(destinations, rollback_dir: Path, onceki_varlik: dict) -> list:
+    """Rollback — İLK HATADA DURMAZ, tüm öğeler denenir.
+
+    Geri yükleme öncesindeki var/yok durumu birebir kurulur: başlangıçta
+    bulunmayan dosyalar (DB dâhil) silinir. Sonunda DB yeniden doğrulanır.
+    Toplanan istisnalar **çağırana** döner; her biri TAM BİR KEZ güvenli
+    loglanır. Rollback hatası ASIL geri yükleme hatasını gizlemez.
+    """
+    hatalar = []
+    for destination, arcname in destinations:
+        try:
+            previous = rollback_dir / arcname
+            if previous.exists():
+                if arcname == "database.db":
+                    _restore_database_snapshot(previous)
+                else:
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(str(previous), str(destination))
+            elif not onceki_varlik.get(arcname, False):
+                # Başlangıçta YOKTU → geri yüklemede oluşmuşsa kaldırılır.
+                if destination.exists():
+                    destination.unlink()
+                if arcname == "database.db":
+                    for ek in ("-wal", "-shm"):
+                        yan = Path(str(destination) + ek)
+                        if yan.exists():
+                            yan.unlink()
+        except Exception as exc:                               # noqa: BLE001
+            hatalar.append(exc)                                # devam edilir
+    try:
+        if onceki_varlik.get("database.db") and _DB_PATH.exists():
+            _validate_database(_DB_PATH)
+    except Exception as exc:                                   # noqa: BLE001
+        hatalar.append(exc)
+    for exc in hatalar:
+        op_hata.logla(exc, "Geri yukleme geri alma")
+    return hatalar
+
+
+def _gecici_temizle(gecici):
+    """Geçici çalışma klasörünü siler; DIŞARI HİÇ HATA SIZDIRMAZ.
+
+    Temizlik, asıl işin sonucundan sonra gelen ayrı bir aşamadır: tamamlanmış
+    bir geri yüklemeyi "başarısız" yapamaz ve oluşmuş `RestoreError.durum`
+    değerini (ör. `rolled_back`) `rollback_failed`e dönüştüremez. Hata yalnız
+    SABİT işlem adıyla tam bir kez güvenli loglanır.
+    """
+    if gecici is None:
+        return
+    try:
+        gecici.cleanup()
+    except Exception as exc:                                   # noqa: BLE001
+        op_hata.logla(exc, "Geri yukleme gecici temizle")
 
 
 def restore_backup(zip_path: str) -> bool:
     """
     ZIP yedeği geri yükler.
-    Hata durumunda orijinal veriyi korur (tmp dosyası mekanizması).
+    Hedefe yazma hatasında önceki durumu geri almaya çalışır; sonuç
+    `RestoreError.durum` ile bildirilir.
     """
     zp = Path(zip_path)
-    if not zp.exists():
-        raise FileNotFoundError(f"Dosya bulunamadı: {zip_path}")
-
     destinations = [(Path(_DB_PATH), "database.db")] + [
         (Path(path), arcname) for path, arcname in _OPTIONAL_BACKUP_FILES
     ]
 
-    with tempfile.TemporaryDirectory(prefix="oms_restore_") as tmp_dir:
-        tmp_root = Path(tmp_dir)
+    # ── AŞAMA 0: ÇALIŞMA ALANI — hedef verilere dokunulmadan oluşan her
+    #    başlangıç hatası (eksik dosya, geçici kök veya alt klasör
+    #    açılamaması) preflight sözleşmesindedir.
+    #    `with` KULLANILMAZ: `with` çıkışındaki temizlik hatası asıl sonucu
+    #    maskeler; temizlik aşağıda `finally` içinde ayrıca ele alınır.
+    gecici = None
+    try:
+        if not zp.exists():
+            raise FileNotFoundError("Yedek dosyası bulunamadı")
+        gecici = tempfile.TemporaryDirectory(prefix="oms_restore_")
+        tmp_root = Path(gecici.name)
         incoming = tmp_root / "incoming"
         rollback = tmp_root / "rollback"
         incoming.mkdir(); rollback.mkdir()
+    except Exception as exc:                                   # noqa: BLE001
+        _gecici_temizle(gecici)
+        op_hata.logla(exc, "Geri yukleme on kontrol")
+        raise RestoreError(PREFLIGHT_FAILED, [exc]) from None
 
-        with zipfile.ZipFile(str(zp), "r") as zf:
-            bad_member = zf.testzip()
-            if bad_member:
-                raise ValueError(f"ZIP bütünlük kontrolü başarısız: {bad_member}")
-            names = set(zf.namelist())
-            if "database.db" not in names:
-                raise ValueError("Geçersiz yedek — database.db içermiyor.")
-            for _, arcname in destinations:
-                if arcname in names:
-                    target = incoming / arcname
-                    with zf.open(arcname) as src, target.open("wb") as dst:
-                        shutil.copyfileobj(src, dst)
+    try:
+        # ── AŞAMA 1: ÖN KONTROL — hedef verilere HİÇ dokunulmaz ─────────
+        try:
+            with zipfile.ZipFile(str(zp), "r") as zf:
+                bad_member = zf.testzip()
+                if bad_member:
+                    raise ValueError(f"ZIP bütünlük kontrolü başarısız: {bad_member}")
+                names = set(zf.namelist())
+                if "database.db" not in names:
+                    raise ValueError("Geçersiz yedek — database.db içermiyor.")
+                for _, arcname in destinations:
+                    if arcname in names:
+                        target = incoming / arcname
+                        with zf.open(arcname) as src, target.open("wb") as dst:
+                            shutil.copyfileobj(src, dst)
 
-        _validate_database(incoming / "database.db")
+            _validate_database(incoming / "database.db")
 
-        # Mevcut durumun tam rollback kopyasını oluştur.
-        if _DB_PATH.exists():
-            _create_database_snapshot(_DB_PATH, rollback / "database.db")
-        for path, arcname in _OPTIONAL_BACKUP_FILES:
-            if path.exists():
-                shutil.copy2(str(path), str(rollback / arcname))
+            # Geri yükleme ÖNCESİ var/yok durumu — rollback bunu birebir kurar.
+            onceki_varlik = {arcname: destination.exists()
+                             for destination, arcname in destinations}
+            # Mevcut durumun tam rollback kopyasını oluştur.
+            if _DB_PATH.exists():
+                _create_database_snapshot(_DB_PATH, rollback / "database.db")
+            for path, arcname in _OPTIONAL_BACKUP_FILES:
+                if path.exists():
+                    shutil.copy2(str(path), str(rollback / arcname))
+        except Exception as exc:                               # noqa: BLE001
+            op_hata.logla(exc, "Geri yukleme on kontrol")
+            raise RestoreError(PREFLIGHT_FAILED, [exc]) from None
 
+        # ── AŞAMA 2: UYGULAMA — buradan sonra hedefler değişebilir ──────
         try:
             for destination, arcname in destinations:
                 source = incoming / arcname
@@ -209,19 +345,15 @@ def restore_backup(zip_path: str) -> bool:
                     destination.unlink()
             _validate_database(_DB_PATH)
             return True
-        except (OSError, sqlite3.Error, ValueError, zipfile.BadZipFile) as exc:
-            logger.error("Geri yükleme hatası, rollback yapılıyor: %s", exc)
-            for destination, arcname in destinations:
-                previous = rollback / arcname
-                if arcname == "database.db" and previous.exists():
-                    _restore_database_snapshot(previous)
-                    continue
-                if previous.exists():
-                    destination.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(str(previous), str(destination))
-                elif destination.exists():
-                    destination.unlink()
-            raise
+        except Exception as exc:                               # noqa: BLE001
+            op_hata.logla(exc, "Geri yukleme")
+            hatalar = _geri_al(destinations, rollback, onceki_varlik)
+            if hatalar:
+                raise RestoreError(ROLLBACK_FAILED, [exc] + hatalar) from None
+            raise RestoreError(ROLLED_BACK, [exc]) from None
+    finally:
+        # Sonucu (True / RestoreError.durum) DEĞİŞTİRMEZ.
+        _gecici_temizle(gecici)
 
 
 def check_and_restore_on_startup(parent=None) -> bool:
@@ -254,24 +386,28 @@ def check_and_restore_on_startup(parent=None) -> bool:
 
     try:
         restore_backup(str(latest))
-        QMessageBox.information(
-            parent, "Geri Yükleme Tamamlandı",
-            "Veriler başarıyla geri yüklendi."
-        )
-        return True
-    except Exception as e:
-        QMessageBox.critical(
-            parent, "Geri Yükleme Hatası",
-            f"Geri yükleme başarısız:\n{e}"
-        )
+    except RestoreError as exc:
+        # Nedenleri alt katman zaten TAM BİR KEZ logladı; tekrarlanmaz.
+        QMessageBox.critical(parent, "Geri Yükleme Hatası", str(exc))
         return False
+    except Exception as exc:                                   # noqa: BLE001
+        # Beklenmeyen kaçak: burada güvenli biçimde TAM BİR KEZ loglanır.
+        op_hata.logla(exc, "Acilista geri yukleme")
+        QMessageBox.critical(parent, "Geri Yükleme Hatası",
+                             _RESTORE_METINLERI[ROLLBACK_FAILED])
+        return False
+    QMessageBox.information(
+        parent, "Geri Yükleme Tamamlandı", "Veriler başarıyla geri yüklendi.")
+    return True
 
 
 # ── Otomatik Yedekleme Servisi ───────────────────────────────────────────────
 
 class _BackupWorker(QThread):
     completed = Signal(str, str)
-    failed = Signal(str, str)
+    # Ham metin DEĞİL, istisna NESNESİ taşınır: sınıf bilgisi korunur ve
+    # güvenli loglama servis katmanında TAM BİR KEZ yapılır (invariant 18).
+    failed = Signal(object, str)
 
     def __init__(self, destination: str, reason: str = "", parent=None):
         super().__init__(parent)
@@ -281,8 +417,8 @@ class _BackupWorker(QThread):
     def run(self):
         try:
             self.completed.emit(create_backup(self.destination), self.reason)
-        except Exception as exc:
-            self.failed.emit(str(exc), self.reason)
+        except Exception as exc:                               # noqa: BLE001
+            self.failed.emit(exc, self.reason)
 
 
 class AutoBackupService(QObject):
@@ -305,8 +441,8 @@ class AutoBackupService(QObject):
             if d:
                 ms = int(m.get("auto_interval", 30)) * 60 * 1000
                 self._timer.start(ms)
-                logger.info("Otomatik yedekleme: her %ddk → %s",
-                            m.get("auto_interval", 30), d)
+                logger.info("Otomatik yedekleme etkin: her %d dk.",
+                            m.get("auto_interval", 30))
 
     def reload(self):
         self._meta = _load_meta()
@@ -375,23 +511,36 @@ class AutoBackupService(QObject):
         try:
             p = create_backup(d)
             self._on_backup_done(p, reason)
-        except Exception as e:
-            self._on_backup_failed(str(e), reason)
+        except Exception as exc:                               # noqa: BLE001
+            self._on_backup_failed(exc, reason)
 
     def _on_backup_done(self, path: str, reason: str = ""):
         self._meta["last_backup"] = datetime.now().strftime("%d.%m.%Y %H:%M")
         self._meta["backup_count"] = self._meta.get("backup_count", 0) + 1
-        _save_meta(self._meta)
+        try:
+            _save_meta(self._meta)
+        except Exception as exc:                               # noqa: BLE001
+            # Yedek DOSYASI oluştu; metadata yazımı ayrı bir aşamadır ve
+            # başarısızlığı yedeği geçersiz kılmaz (invariant 18b).
+            # Bu yolda diyalog yok: güvenli log TAM BİR KEZ burada yazılır,
+            # `backup_done` ve `_cleanup` normal şekilde devam eder.
+            op_hata.logla(exc, "Yedek bilgisi kaydet")
         self.backup_done.emit(path)
         self._cleanup(str(Path(path).parent))
-        if reason:
-            logger.info("Yedek alındı (%s): %s", reason, path)
+        if reason == "kapanma":
+            # GERÇEK başarı noktası. `closeEvent` bunu bilemez (trigger_now
+            # hatayı içeride yakalar), bu yüzden kapanma yedeğinin başarı logu
+            # koşulsuz olarak orada değil, burada yazılır.
+            logger.info("Kapanma yedeği alındı.")
+        elif reason:
+            logger.info("Yedek alındı (%s).", reason)
         # `self._worker` BURADA bırakılmaz: bu slot çağrıldığında thread hâlâ
         # çalışıyor olabilir. Bırakma _on_worker_finished'de yapılır.
 
-    def _on_backup_failed(self, error: str, reason: str = ""):
-        self.backup_failed.emit(error)
-        logger.error("Otomatik yedek hatası (%s): %s", reason, error)
+    def _on_backup_failed(self, exc, reason: str = ""):
+        """Güvenli tek hat: TEK güvenli log + SABİT dışa sinyal."""
+        op_hata.logla(exc, "Otomatik yedek olustur")
+        self.backup_failed.emit(OTOMATIK_YEDEK_HATASI)
 
     def _cleanup(self, d: str, keep: int = 20):
         """En fazla `keep` adet yedek tut, eskilerini sil."""
@@ -399,8 +548,8 @@ class AutoBackupService(QObject):
             bkps = sorted(Path(d).glob("backup_*.zip"))
             for old in bkps[:-keep]:
                 old.unlink()
-        except OSError as e:
-            logger.debug("Eski yedek temizleme hatası: %s", e)
+        except OSError as exc:
+            op_hata.logla(exc, "Eski yedek temizle")
 
 
 # ── Dialog ───────────────────────────────────────────────────────────────────
@@ -531,7 +680,8 @@ class BackupDialog(QDialog):
         warn = QLabel(
             "Dikkat: Bu işlem mevcut tüm verilerinizi seçtiğiniz yedekle değiştirir.\n\n"
             "Önce yukarıdaki 'Yedekleme' sekmesinden güncel bir yedek almanızı öneririz.\n"
-            "Bir sorun olursa orijinal verileriniz otomatik olarak geri gelir."
+            "Yazma sırasında bir hata olursa program önceki durumu geri getirmeyi "
+            "dener; bu her koşulda garanti edilemez."
         )
         warn.setWordWrap(True)
         from ui.utils.theme_manager import get_theme
@@ -581,17 +731,25 @@ class BackupDialog(QDialog):
         )
         if not d:
             return
+        # A) Yedek DOSYASINI oluştur.
         try:
-            p = create_backup(d)
-            self._meta["last_backup"] = datetime.now().strftime("%d.%m.%Y %H:%M")
+            create_backup(d)
+        except Exception as exc:                               # noqa: BLE001
+            hata_diyalogu.hata_goster(self, "Hata", exc, "Yedek", "olustur")
+            return
+
+        # B) Metadata AYRI bir aşamadır: hatası oluşmuş yedeği geçersiz kılmaz
+        #    ve `create_backup` TEKRARLANMAZ (invariant 18b).
+        self._meta["last_backup"] = datetime.now().strftime("%d.%m.%Y %H:%M")
+        try:
             _save_meta(self._meta)
-            self.lbl_last.setText(f"Son yedek: {self._meta['last_backup']}")
-            QMessageBox.information(
-                self, "Yedekleme Tamamlandı",
-                f"Yedek oluşturuldu:\n{p}"
-            )
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Yedekleme başarısız:\n{e}")
+        except Exception as exc:                               # noqa: BLE001
+            hata_diyalogu.kismi_hata_goster(
+                self, "Yedekleme Tamamlandı", exc,
+                YEDEK_META_UYARISI, "Yedek bilgisi kaydet")
+            return
+        self.lbl_last.setText(f"Son yedek: {self._meta['last_backup']}")
+        QMessageBox.information(self, "Yedekleme Tamamlandı", YEDEK_OLUSTURULDU)
 
     def _pick_dir(self):
         d = QFileDialog.getExistingDirectory(
@@ -620,7 +778,15 @@ class BackupDialog(QDialog):
         if not self._meta.get("auto_backup_dir"):
             self._meta["auto_backup_dir"] = str(_DEFAULT_BACKUP_DIR)
             self._set_dir_text(str(_DEFAULT_BACKUP_DIR))
-        _save_meta(self._meta)
+        try:
+            _save_meta(self._meta)
+        except Exception as exc:                               # noqa: BLE001
+            # Ayar KALICI OLMADI: başarı bildirilmez, diyalog açık kalır.
+            # `tur` kısa KATEGORİ, `islem` kısa EYLEM olmalıdır; aksi hâlde
+            # üretilen metin "…kaydedilemedi" ifadesini tekrar eder.
+            hata_diyalogu.hata_goster(
+                self, "Hata", exc, "Otomatik yedekleme ayarı", "kaydet")
+            return
         self.settings_changed.emit()
         QMessageBox.information(
             self, "Kaydedildi",
@@ -647,13 +813,22 @@ class BackupDialog(QDialog):
             return
         try:
             restore_backup(path)
-            QMessageBox.information(
-                self, "Geri Yükleme Tamamlandı",
-                "Veriler başarıyla geri yüklendi.\nProgram şimdi yeniden başlatılıyor."
-            )
-            self._restart_app()
-        except Exception as e:
-            QMessageBox.critical(self, "Geri Yükleme Hatası", f"Başarısız:\n{e}")
+        except RestoreError as exc:
+            # `rollback_failed` dahil HER hata durumunda yeniden başlatma
+            # YAPILMAZ. Nedenler alt katmanda loglandı; tekrarlanmaz.
+            QMessageBox.critical(self, "Geri Yükleme Hatası", str(exc))
+            return
+        except Exception as exc:                               # noqa: BLE001
+            # Beklenmeyen kaçak: güvenli biçimde TAM BİR KEZ loglanır.
+            op_hata.logla(exc, "Geri yukleme")
+            QMessageBox.critical(self, "Geri Yükleme Hatası",
+                                 _RESTORE_METINLERI[ROLLBACK_FAILED])
+            return
+        QMessageBox.information(
+            self, "Geri Yükleme Tamamlandı",
+            "Veriler başarıyla geri yüklendi.\nProgram şimdi yeniden başlatılıyor."
+        )
+        self._restart_app()
 
     def _restart_app(self):
         """Programı yeniden başlatır (geri yükleme sonrası DB'yi taze açmak için).
