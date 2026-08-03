@@ -50,6 +50,8 @@ Sütunlar: kod · sınıf · kök neden (kısa) · kapanış commit'i · korunan
 |---|---|---|---|---|
 | **R10a** | KESİN | `create_offer_page` içindeki iki müşteri kaydetme yolu (`_check_customer_registration`, `_open_add_customer`) ham `{e}` gösteriyor, istisnayı güvenli loglamıyor; başarı logunda **firma adı** geçiyor; servis kaydı ile ekran yenilemesi tek `try` içinde olduğu için kaydedilmiş müşteri için "Müşteri kaydedilemedi" deniyordu | Güvenli `hata_diyalogu` altyapısı; `add` ile kayıt sonrası ekran aşaması ayrı `try` sınırlarına bölündü (`_yeni_musteriyi_goster`); başarı logu `id=%s`; `_open_add_customer` aynı diyalog nesnesiyle yeniden denemeye izin veriyor, kayıttan sonra diyaloğu yeniden açmıyor | `test_create_offer_customer_save_errors` |
 
+| **R10b** | KESİN | `dashboard_page._open_file` korumasız `os.startfile`: dosya silinmiş/erişilemez olduğunda istisna UI akışına sızıyor, güvenli mesaj ve log oluşmuyor, çoklu PDF döngüsünde sonraki dosyalar açılamıyordu | `os.startfile` minimum try/except sınırına alındı; sabit `PDF_ACILAMADI_MESAJ` ile `kismi_hata_goster` (PDF üretimi inkâr edilmez), yol ve ham hata mesaja/loga girmez, döngü devam eder | `test_dashboard_safe_errors::DosyaAcmaTests` |
+
 ## Not
 
 - O16, **paketli sürümde manuel testle** bulundu; kaynak testleri `QInputDialog.getItem`'i mock'ladığı için gerçek modal entegrasyonu hiç çalıştırılmamıştı. Bu, mock'lu testlerin sınırını gösteren kalıcı bir derstir ([KNOWN_RISKS.md](KNOWN_RISKS.md)).

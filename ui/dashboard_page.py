@@ -25,6 +25,13 @@ from core.constants import SYM_MAP, STATUS_ORDER, get_status_config
 from core.formatting import fmt_money
 from core.date_utils import to_display_date
 
+# PDF üretildi ama açılamadı — SABİT metin. Üretimi inkâr etmez; yolu ve ham
+# hata metnini İÇERMEZ (invariant 18/18b).
+PDF_ACILAMADI_MESAJ = (
+    "PDF oluşturuldu, ancak dosya açılamadı. "
+    "Dosyayı kaydettiğiniz konumdan açabilirsiniz."
+)
+
 
 # ── PDF Worker (QThread) ──────────────────────────────────────────────────────
 class PdfWorker(QThread):
@@ -1265,4 +1272,18 @@ class DashboardPage(QWidget):
 
     # ── Dosya Aç ──────────────────────────────────────────────────────────────
     def _open_file(self, path: str):
-        os.startfile(path)
+        """PDF'i işletim sisteminin varsayılan uygulamasıyla açar.
+
+        Dosya silinmiş, erişim engellenmiş veya ilişkilendirilmiş uygulama
+        yoksa `os.startfile` istisna fırlatır. Bu istisna çağırana SIZMAZ:
+        çoklu PDF döngüsünde bir dosyanın açılamaması sonraki dosyaların
+        açılmasını engellememelidir. PDF **zaten oluşturulmuştur**; bu yüzden
+        "oluşturulamadı" DENMEZ, yalnız açılamadığı söylenir (invariant 18b).
+        Yol; mesaja, log satırına veya `kayit_id`'ye GEÇMEZ (invariant 18).
+        """
+        try:
+            os.startfile(path)
+        except Exception as exc:                           # noqa: BLE001
+            hata_diyalogu.kismi_hata_goster(
+                self, "PDF açılamadı", exc, PDF_ACILAMADI_MESAJ,
+                "PDF dosyasi ac")

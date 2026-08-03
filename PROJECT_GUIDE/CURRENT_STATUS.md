@@ -97,7 +97,7 @@ Salt okunur tarama tamamlandı: **ürün kusuru bulunamadı**. Kaynak envanterin
 - **PdfWorker yaşam döngüsü** `f29ea47` — sonuç sinyali `run()` içinde yayıldığı için temizlik yalnız yerleşik `finished` yolunda yapılıyor. Kusur ölçülmüştü: alt süreç `0xC0000409` ile fast-fail veriyordu.
 - **R10-C** `25518fb` — `_finish_offer` **A/B/C/D** aşamalarına ayrıldı; kaydedilmiş teklif/PDF artık inkâr edilmiyor, `_preview_pdf` üretim ve pencere hatası ayrıldı, başarı logundan tam kullanıcı yolu çıkarıldı.
 
-Kalan alt bulgular **kapatılmadı**, ayrı maddeler olarak izleniyor: [KNOWN_RISKS.md](KNOWN_RISKS.md) R10b (`_open_file`), R10c (import/settings/backup/reports envanteri).
+Kalan alt bulgular **kapatılmadı**, ayrı maddeler olarak izleniyor: [KNOWN_RISKS.md](KNOWN_RISKS.md) R10c (import/settings/backup/reports envanteri).
 
 > **Ayrım — silinmemeli.** *"Yayımlanmış v4.1 geçerlidir"* ile *"mevcut kaynak build edilmedi"* farklı iddialardır. v4.1 tag'i, GitHub Release'i ve canlı updater doğrulaması (D1/D2) **tarihsel olarak geçerlidir**; bu tur yalnız **güncel kaynağın** artifact tazeliğini düşürür.
 
@@ -113,7 +113,7 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 ## Kalan aşamalar
 
-v4.2 yayın turu **kapandı**. **R10a kapandı (2026-08-03)** — teklif ekranındaki iki müşteri kaydetme yolu güvenli hata altyapısına ve iki aşamalı sınıra geçirildi. Açık kalan küçük denetim maddeleri: [KNOWN_RISKS.md](KNOWN_RISKS.md) **R10b** (`_open_file`), **R10c** (import/settings/backup/reports envanteri), **R12c** (build sonrası provenance kuralının testle zorlanması).
+v4.2 yayın turu **kapandı**. **R10a ve R10b kapandı (2026-08-03)** — teklif ekranındaki iki müşteri kaydetme yolu güvenli hata altyapısına ve iki aşamalı sınıra geçirildi; dashboard'daki PDF açma yolu korumaya alındı. Açık kalan küçük denetim maddeleri: [KNOWN_RISKS.md](KNOWN_RISKS.md) **R10c** (import/settings/backup/reports envanteri), **R12c** (build sonrası provenance kuralının testle zorlanması).
 
 ## Bu yakalamayı yenilerken
 

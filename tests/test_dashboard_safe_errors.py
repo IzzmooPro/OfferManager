@@ -435,6 +435,141 @@ class DogrulamaMesajTests(_Temel):
 
 # ── 4. Kaynak temizliği ─────────────────────────────────────────────────────
 
+class DosyaAcmaTests(_Temel):
+    """R10b — `_open_file`: PDF üretildi, açılamadı sınırı.
+
+    `os.startfile` yalnız çoklu PDF üretiminden sonra "Hepsini açmak ister
+    misiniz?" onayında çağrılır. Dosya silinmiş, erişim engellenmiş ya da
+    Windows dosyayı açamıyorsa istisna UI akışına SIZMAMALI; PDF'in
+    oluşturulduğu İNKÂR EDİLMEMELİ ve döngüdeki sonraki dosyalar yine
+    açılabilmelidir.
+    """
+
+    YOL1 = r"C:/Users/Universe/Documents/gizli_teklif_SNS-000042.pdf"
+    YOL2 = r"C:/Users/Universe/Documents/gizli_teklif_SNS-000043.pdf"
+
+    ACMA_HATALARI = {
+        "yok": FileNotFoundError(2, "The system cannot find the file specified",
+                                 YOL1),
+        "izin": PermissionError(13, "Access is denied", YOL1),
+        "os": OSError(1155, "No application is associated with the specified file",
+                      YOL1),
+    }
+
+    def _yol_sizintisi_yok(self):
+        """Yol parçaları hiçbir mesaja/loga girmemeli."""
+        parcalar = ("gizli_teklif", "SNS-000042", "SNS-000043", ".pdf",
+                    "C:/Users", r"C:\Users", "Access is denied",
+                    "cannot find the file", "No application is associated")
+        for _b, metin, _d in self.kutular:
+            for parca in parcalar:
+                self.assertNotIn(parca, metin, f"mesajda yol/hata sızıntısı: {parca}")
+        for parca in parcalar:
+            self.assertNotIn(parca, self.log.birlesik,
+                             f"logda yol/hata sızıntısı: {parca}")
+
+    # ── 1) başarılı açma ────────────────────────────────────────────────
+    def test_basarili_acmada_hic_kutu_ve_log_yok(self):
+        d = self._sayfa()
+        d._open_file(self.YOL1)
+        self.assertEqual(self.startfile.call_count, 1)
+        self.assertEqual(self.startfile.call_args.args[0], self.YOL1)
+        self.assertEqual(self.kutular, [], "başarıda kutu açıldı")
+        self._tam_bir_kez_loglandi(0)
+
+    # ── 2/3) hata sınıfları ─────────────────────────────────────────────
+    def test_acma_hatasi_disari_sizmaz(self):
+        for ad, hata in self.ACMA_HATALARI.items():
+            with self.subTest(hata=ad):
+                self.kutular.clear(); self.log.satirlar.clear()
+                self.startfile.reset_mock(); self.startfile.side_effect = hata
+                d = self._sayfa()
+                d._open_file(self.YOL1)          # İSTİSNA SIZMAMALI
+                self.assertEqual(self.startfile.call_count, 1)
+                self._sizinti_yok()
+                self._yol_sizintisi_yok()
+                self._tam_bir_kez_loglandi(1)
+
+    def test_acma_hatasinda_pdf_inkar_edilmez(self):
+        for ad, hata in self.ACMA_HATALARI.items():
+            with self.subTest(hata=ad):
+                self.kutular.clear(); self.log.satirlar.clear()
+                self.startfile.reset_mock(); self.startfile.side_effect = hata
+                self._sayfa()._open_file(self.YOL1)
+                self.assertTrue(self.kutular, "kullanıcıya hiçbir şey söylenmedi")
+                metin = " ".join(m for _b, m, _d in self.kutular)
+                self.assertRegex(metin, r"(?i)olu[şs]turuldu|kaydedildi",
+                                 "PDF'in oluşturulduğu söylenmiyor")
+                self.assertNotRegex(metin, r"(?i)olu[şs]turulamad|kaydedilemedi",
+                                    "oluşturulmuş PDF inkâr edildi")
+                self.assertRegex(metin, r"(?i)a[çc]ılamad",
+                                 "dosyanın açılamadığı söylenmiyor")
+
+    def test_kismi_hata_goster_dogru_parametrelerle(self):
+        cagrilar = []
+        gercek = ohd.kismi_hata_goster
+        mock.patch.object(
+            ohd, "kismi_hata_goster",
+            lambda parent, baslik, exc, mesaj, islem, kayit_id=None:
+                cagrilar.append({"baslik": baslik, "mesaj": mesaj,
+                                 "islem": islem, "kayit_id": kayit_id})
+            or gercek(parent, baslik, exc, mesaj, islem, kayit_id=kayit_id)).start()
+        self.startfile.side_effect = self.ACMA_HATALARI["yok"]
+        self._sayfa()._open_file(self.YOL1)
+
+        self.assertEqual(len(cagrilar), 1, "kismi_hata_goster kullanılmadı")
+        c = cagrilar[0]
+        self.assertIsNone(c["kayit_id"], "kayit_id None kalmalı")
+        # `path` hiçbir alana geçmemeli
+        for alan in ("baslik", "mesaj", "islem"):
+            for parca in ("gizli_teklif", "SNS-000042", ".pdf", "C:/Users"):
+                self.assertNotIn(parca, str(c[alan]),
+                                 f"{alan} içinde yol var: {parca}")
+        self.assertTrue(str(c["islem"]).strip(), "güvenli işlem adı boş")
+        self.assertLess(len(str(c["islem"])), 40,
+                        "işlem adı sabit ve kısa olmalı")
+
+    # ── 4) çoklu PDF döngüsü ────────────────────────────────────────────
+    def test_ilk_dosya_hata_verse_de_ikinci_acilir(self):
+        acilanlar = []
+
+        def _ac(yol, *a, **k):
+            acilanlar.append(yol)
+            if yol == self.YOL1:
+                raise self.ACMA_HATALARI["yok"]
+
+        self.startfile.side_effect = _ac
+        d = self._sayfa()
+        for yol in (self.YOL1, self.YOL2):
+            d._open_file(yol)
+
+        self.assertEqual(acilanlar, [self.YOL1, self.YOL2],
+                         "ilk hatadan sonra ikinci dosya açılmadı")
+        self._tam_bir_kez_loglandi(1)
+        self._yol_sizintisi_yok()
+        # Başarılı ikinci dosya için ek/yanlış hata üretilmemeli
+        self.assertEqual(len(self.kutular), 1,
+                         "başarılı dosya için de kutu açıldı")
+
+    # ── 5) kaynak koruması ──────────────────────────────────────────────
+    def test_open_file_korumasiz_degil(self):
+        import inspect
+        kaynak = inspect.getsource(dp.DashboardPage._open_file)
+        self.assertIn("try:", kaynak, "os.startfile korumasız")
+        self.assertIn("hata_diyalogu", kaynak,
+                      "güvenli hata altyapısı kullanılmıyor")
+        yasaklar = ["{e}", "{exc}", "str(e)", "str(exc)", "exc_info=True",
+                    "{path}"]
+        for yasak in yasaklar:
+            self.assertNotIn(yasak, kaynak,
+                             f"_open_file ham hata/yol biçimlendiriyor: {yasak}")
+        # `path` bir log/mesaj biçimlendirme argümanı olarak GEÇMEMELİ
+        for satir in kaynak.splitlines():
+            if "logger" in satir or "logla" in satir or "hata_diyalogu" in satir:
+                self.assertNotIn("path", satir,
+                                 f"path log/mesaj argümanı olarak geçiyor: {satir}")
+
+
 class KaynakTemizligiTests(unittest.TestCase):
 
     def test_ham_hata_gosterimi_kalmadi(self):
