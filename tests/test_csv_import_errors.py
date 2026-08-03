@@ -56,12 +56,21 @@ class CsvReadErrorTests(unittest.TestCase):
     def test_last_meaningful_error_is_preserved(self):
         # Tüm kodlama denemeleri ayrıştırmada başarısız olsun
         yol = self._yaz("bozuk.csv", "a,b\n1,2\n")
+        # R10c-4: son anlamlı teknik neden artık GÜVENLİ log kanalına
+        # (`operation_error`) yazılır — kaybolmaz ama ham metin taşımaz.
         with mock.patch.object(excel_import.csv, "DictReader",
                                side_effect=csv.Error("alan sınırı aşıldı")):
-            with self.assertLogs("excel_import", level="WARNING"):
+            with self.assertLogs("islem_hatasi", level="ERROR") as kayit:
                 rows, err = _read_file(yol)
         self.assertEqual(rows, [])
         self.assertTrue(err, "son anlamlı hata kaybedildi (err boş döndü)")
+        birlesik = "\n".join(kayit.output)
+        self.assertIn("Error", birlesik, "istisna sınıfı loglanmadı")
+        self.assertNotIn("alan sınırı aşıldı", birlesik,
+                         "ham istisna metni güvenli loga sızdı")
+        self.assertNotIn("bozuk.csv", birlesik, "dosya adı güvenli loga sızdı")
+        self.assertNotIn("alan sınırı aşıldı", err,
+                         "ham istisna metni kullanıcı mesajına sızdı")
 
     def test_sniffer_failure_is_logged_not_swallowed(self):
         # Tek sütunlu dosyada csv.Sniffer ayıracı belirleyemez

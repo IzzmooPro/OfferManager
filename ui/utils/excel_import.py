@@ -11,8 +11,25 @@ import logging, csv, io, re
 from pathlib import Path
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QCheckBox
 from core.constants import normalize_currency
+from ui.utils import operation_error as op_hata
+from ui.utils import operation_error_dialog as hata_diyalogu
 
 logger = logging.getLogger("excel_import")
+
+# ── Sabit kullanıcı metinleri (invariant 18) ─────────────────────────────────
+# Teknik neden ASLA metne girmez; yalnız güvenli loga yazılır.
+DOSYA_OKUMA_HATASI = (
+    "Dosya okunamadı. Dosyanın başka bir programda açık olmadığından ve "
+    "biçiminin doğru olduğundan emin olup yeniden deneyin.")
+SATIR_YAZILAMADI = "Satır {sira}: kaydedilemedi."
+TEKLIF_YAZILAMADI = "{sira}. teklif kaydedilemedi."
+KATEGORI_UYARISI = (
+    "Bazı kategoriler oluşturulamadı; ilgili ürünler kategorisiz kaydedildi.")
+ASAMA_BASARISIZ = {
+    "customers": "Müşteri: aktarılamadı",
+    "products":  "Ürün: aktarılamadı",
+    "offers":    "Teklif: aktarılamadı",
+}
 
 # Sütun eşleştirme haritaları (olası başlık → alan adı)
 CUSTOMER_MAP = {
@@ -112,6 +129,22 @@ _CSV_OKUMA_HATASI = (
     "Dosyayı Excel'de açıp 'CSV UTF-8' biçiminde yeniden kaydedip deneyin.")
 
 
+def _workbook_kapat(wb) -> None:
+    """Workbook'u kapatır; kapatma hatasını DIŞARI SIZDIRMAZ.
+
+    Kapatma, okumadan AYRI bir aşamadır: başarılı bir okumayı "dosya
+    okunamadı"ya çeviremez, sayfa seçimi/iptal sonucunu değiştiremez ve asıl
+    okuma hatasını maskeleyemez. Hata sabit işlem adıyla tam bir kez güvenli
+    loglanır (asıl istisna ayrıca kendi yerinde loglanır).
+    """
+    if wb is None:
+        return
+    try:
+        wb.close()
+    except Exception as exc:                                   # noqa: BLE001
+        op_hata.logla(exc, "Calisma kitabi kapat")
+
+
 def _ikili_gorunumlu(ham: bytes) -> bool:
     """İçerik metin mi? NUL baytı veya yoğun kontrol karakteri → metin değil.
 
@@ -142,8 +175,10 @@ def _csv_ayraci(text: str, kaynak: str) -> str:
         ayrac = max(_CSV_DELIMITERS, key=ilk_satir.count)
         if ilk_satir.count(ayrac) == 0:
             ayrac = ","
-        logger.info("CSV ayıracı belirlenemedi (%s): %s — yedek ayıraç %r "
-                    "kullanılıyor", kaynak, exc, ayrac)
+        # BEKLENEN fallback: hata değil. Ham istisna ve dosya adı (kullanıcı
+        # verisi taşıyabilir) loga yazılmaz; yalnız seçilen yedek ayıraç.
+        logger.info("CSV ayıracı belirlenemedi (%s) — yedek ayıraç %r "
+                    "kullanılıyor", type(exc).__name__, ayrac)
         return ayrac
 
 
@@ -158,13 +193,14 @@ def _read_csv(path: Path) -> tuple[list, str]:
     try:
         ham = path.read_bytes()
     except OSError as exc:
-        logger.warning("CSV açılamadı (%s): %s", path.name, exc)
+        op_hata.logla(exc, "CSV oku")
         return [], _CSV_OKUMA_HATASI
 
     if not ham.strip():
         return [], ""                      # gerçekten boş dosya
     if _ikili_gorunumlu(ham):
-        logger.warning("CSV metin içermiyor (%s): ikili/bozuk içerik", path.name)
+        # İstisna yok; dosya adı kullanıcı verisi taşıyabildiği için yazılmaz.
+        logger.warning("CSV metin içermiyor: ikili/bozuk içerik")
         return [], _CSV_OKUMA_HATASI
 
     son_hata = None
@@ -173,8 +209,9 @@ def _read_csv(path: Path) -> tuple[list, str]:
             text = ham.decode(enc)
         except (UnicodeDecodeError, LookupError) as exc:
             son_hata = exc
-            logger.debug("CSV kodlama denemesi başarısız (%s/%s): %s",
-                         path.name, enc, exc)
+            # Beklenen deneme: ham istisna ve dosya adı yazılmaz.
+            logger.debug("CSV kodlama denemesi başarısız (%s): %s",
+                         enc, type(exc).__name__)
             continue
         try:
             reader = csv.DictReader(io.StringIO(text),
@@ -182,10 +219,15 @@ def _read_csv(path: Path) -> tuple[list, str]:
             return [dict(r) for r in reader], ""
         except csv.Error as exc:
             son_hata = exc
-            logger.debug("CSV ayrıştırma başarısız (%s/%s): %s",
-                         path.name, enc, exc)
+            logger.debug("CSV ayrıştırma başarısız (%s): %s",
+                         enc, type(exc).__name__)
 
-    logger.warning("CSV ayrıştırılamadı (%s): %s", path.name, son_hata)
+    # Tüm denemeler tükendi: SON anlamlı teknik neden tam bir kez güvenli
+    # loglanır (kaybolmaz), kullanıcıya sabit metin döner.
+    if son_hata is not None:
+        op_hata.logla(son_hata, "CSV ayristir")
+    else:
+        logger.warning("CSV ayrıştırılamadı: bilinen kodlama bulunamadı")
     return [], _CSV_OKUMA_HATASI
 
 
@@ -302,7 +344,7 @@ def _sayfa_sec_onceden(path: str, import_type: str, parent) -> tuple:
             return None, SAYFA_SECIMI_IPTAL
         return secilen, ""
     finally:
-        wb.close()
+        _workbook_kapat(wb)
 
 
 def _read_file(path: str, progress=None, import_type: str = "products",
@@ -364,13 +406,16 @@ def _read_file(path: str, progress=None, import_type: str = "products",
                 if headers is None:
                     return [], "Dosya boş."
             finally:
-                wb.close()
+                _workbook_kapat(wb)
         elif ext == ".csv":
             return _read_csv(p)
         else:
             return [], f"Desteklenmeyen dosya türü: {ext}\nDesteklenen: .xlsx, .csv"
-    except Exception as e:
-        return [], str(e)
+    except Exception as exc:                                   # noqa: BLE001
+        # Ham istisna kullanıcıya GİTMEZ; teknik neden tam bir kez güvenli
+        # loglanır. `_sayfa_sec_onceden` aynı hatayı bilerek loglamaz.
+        op_hata.logla(exc, "Dosya oku")
+        return [], DOSYA_OKUMA_HATASI
     return rows, ""
 
 
@@ -511,10 +556,17 @@ def _validate_rows(import_type: str, raw_rows: list,
 # ── Veritabanına yazma ────────────────────────────────────────────────────────
 
 def _perform_import(import_type: str, rows_to_process: list,
-                    update_dups: bool, progress=None) -> tuple[int, int, int, list]:
+                    update_dups: bool, progress=None,
+                    stage_state: dict = None) -> tuple[int, int, int, list]:
     """Satırları veritabanına yazar. (eklenen, güncellenen, atlanan, hatalar)
 
     `progress(current, total)` verilirse kaydetme ilerlemesi bildirilir.
+
+    `stage_state` verilirse, ürün transaction'ından ÖNCE tamamlanan bağımsız
+    aşamalar buraya işlenir (`kategori_yazildi` = kaç yeni kategori yazıldı).
+    Böylece transaction düşse bile çağıran, DB'nin gerçekten değiştiğini
+    bilir. İçine YALNIZ sayı/boolean yazılır — kategori adı ya da başka
+    kullanıcı verisi taşımaz (invariant 18).
     """
     from database.db_manager import get_db
     db = get_db()
@@ -552,8 +604,11 @@ def _perform_import(import_type: str, rows_to_process: list,
                              row.get("address", ""), row.get("phone", ""),
                              row.get("email", ""), row.get("notes", "")))
                         added += 1
-                except Exception as e:
-                    errors.append(f"Satır {i+1} ({company}): {e}")
+                except Exception as exc:                       # noqa: BLE001
+                    # Firma adı ve ham istisna kullanıcıya GİTMEZ; güvenli
+                    # kayit_id olarak yalnız satır SIRASI kullanılır.
+                    op_hata.logla(exc, "Musteri satiri yaz", kayit_id=i + 1)
+                    errors.append(SATIR_YAZILAMADI.format(sira=i + 1))
                     skipped += 1
                 if progress and (i & 0xFF) == 0:
                     progress(i + 1, total)
@@ -564,13 +619,30 @@ def _perform_import(import_type: str, rows_to_process: list,
         from models.category import Category
         cat_svc = CategoryService()
         cat_cache = {c.name.strip().casefold(): c.id for c in cat_svc.get_all()}
+        kategori_hatasi = False
+        kategori_yazildi = 0
         for row in rows_to_process:
             nm = (row.get("category", "") or "").strip()
             if nm and nm.casefold() not in cat_cache:
                 try:
                     cat_cache[nm.casefold()] = cat_svc.add(Category(name=nm))
-                except Exception as e:
-                    logger.warning("Kategori oluşturulamadı (%s): %s", nm, e)
+                    kategori_yazildi += 1
+                except Exception as exc:                       # noqa: BLE001
+                    # Başarısızlık ÖNBELLEĞE alınır: AYNI kategori yeniden
+                    # denenmez. FARKLI kategoriler ayrı istisnalardır ve her
+                    # biri tam bir kez loglanır; kullanıcıya ise tek toplu
+                    # uyarı gösterilir. Kategori adı hiçbir yere yazılmaz.
+                    cat_cache[nm.casefold()] = None
+                    kategori_hatasi = True
+                    op_hata.logla(exc, "Kategori olustur")
+        if stage_state is not None:
+            # Kategoriler ürün transaction'ından ÖNCE ve ONDAN BAĞIMSIZ
+            # yazılır: transaction düşse bile bu değişiklik DB'de kalır.
+            stage_state["kategori_yazildi"] = kategori_yazildi
+        if kategori_hatasi:
+            # Ürünler kategorisiz KAYDEDİLMEYE devam eder; bu tamamlanmış
+            # ürün kaydını inkâr etmeyen tek satırlık kısmi sonuçtur (18b).
+            errors.append(KATEGORI_UYARISI)
 
         def _category_id(raw_name: str):
             nm = (raw_name or "").strip()
@@ -608,8 +680,10 @@ def _perform_import(import_type: str, rows_to_process: list,
                             (code, name, row.get("description", ""),
                              price, currency, stock, unit, cat_id))
                         added += 1
-                except Exception as e:
-                    errors.append(f"Satır {i+1} ({code}): {e}")
+                except Exception as exc:                       # noqa: BLE001
+                    # Ürün kodu ve ham istisna kullanıcıya GİTMEZ.
+                    op_hata.logla(exc, "Urun satiri yaz", kayit_id=i + 1)
+                    errors.append(SATIR_YAZILAMADI.format(sira=i + 1))
                     skipped += 1
                 if progress and (i & 0xFF) == 0:
                     progress(i + 1, total)
@@ -655,12 +729,25 @@ def run_import_flow(parent, import_type: str) -> bool:
         return False
 
     if import_type == "offers":
-        # Teklifler satır-bazlı değil grup-bazlı doğrulanır (kalemli format)
+        # Teklifler satır-bazlı değil grup-bazlı doğrulanır (kalemli format).
+        # Okuma ilerleme penceresi BURADA kapanır; alt akış kendi penceresini
+        # yönetir. Alt akıştan kaçan beklenmeyen istisna dışarı sızmaz.
         prog.close()
-        return _run_offer_import_flow(parent, path, raw_rows)
+        try:
+            return _run_offer_import_flow(parent, path, raw_rows)
+        except Exception as exc:                               # noqa: BLE001
+            hata_diyalogu.hata_goster(parent, "Hata", exc, "Teklif", "aktar")
+            return False
 
+    # ── AŞAMA: DOĞRULAMA — henüz DB'ye hiçbir şey yazılmadı ──────────────
     prog.set_label("Kayıtlar denetleniyor…")
-    valid, duplicates, invalid = _validate_rows(import_type, raw_rows, progress=prog)
+    try:
+        valid, duplicates, invalid = _validate_rows(
+            import_type, raw_rows, progress=prog)
+    except Exception as exc:                                   # noqa: BLE001
+        prog.close()
+        hata_diyalogu.hata_goster(parent, "Hata", exc, "İçe aktarma", "denetle")
+        return False
     prog.close()
     if not valid and not duplicates:
         msg = f"Dosyada aktarılabilir {label} kaydı bulunamadı."
@@ -702,12 +789,36 @@ def run_import_flow(parent, import_type: str) -> bool:
 
     update_dups = bool(chk and chk.isChecked())
     rows = list(valid) + (list(duplicates) if update_dups else [])
+    # ── AŞAMA: YAZMA — transaction ya tümüyle işler ya geri döner ────────
     prog = _ImportProgress(parent, f"{label.capitalize()} kaydediliyor…")
-    added, updated, skipped, errors = _perform_import(
-        import_type, rows, update_dups, progress=prog)
+    asama = {}
+    try:
+        added, updated, skipped, errors = _perform_import(
+            import_type, rows, update_dups, progress=prog, stage_state=asama)
+    except Exception as exc:                                   # noqa: BLE001
+        # Satır dışı fatal hata (ör. commit): ürün transaction'ı geri döndü.
+        # Ama kategoriler transaction'dan ÖNCE yazılmış olabilir; tamamlanan
+        # o aşama İNKÂR EDİLMEZ ve DB değiştiyse çağıran cache'i yeniler (18b).
+        prog.close()
+        kategori_yazildi = int(asama.get("kategori_yazildi", 0))
+        if kategori_yazildi:
+            # TEK kutu: hem tamamlanan aşamayı hem tamamlanamayanı söyler.
+            hata_diyalogu.kismi_hata_goster(
+                parent, "Kısmen Tamamlandı", exc,
+                f"{kategori_yazildi} kategori oluşturuldu. "
+                f"{label.capitalize()} aktarımı tamamlanamadı; "
+                f"{label} kayıtları yazılmadı.",
+                "Ice aktarma kaydet")
+            return True
+        hata_diyalogu.hata_goster(parent, "Hata", exc, "İçe aktarma", "kaydet")
+        return False
     prog.close()
 
+    kategori_yazildi = int(asama.get("kategori_yazildi", 0))
     parts = []
+    if kategori_yazildi:
+        # Kategoriler ayrı bir aşamadır; ürün sayısı 0 olsa bile DB değişti.
+        parts.append(f"{kategori_yazildi} kategori oluşturuldu")
     if added:
         parts.append(f"{added} {label} eklendi")
     if updated:
@@ -727,7 +838,10 @@ def run_import_flow(parent, import_type: str) -> bool:
     QMessageBox.information(parent, "İçe Aktarma Tamamlandı", msg)
     logger.info("Excel import: type=%s added=%d updated=%d skipped=%d errors=%d",
                 import_type, added, updated, skipped, len(errors))
-    return True
+    # Dönüş değeri YALNIZ "DB gerçekten değişti mi" sorusunu yanıtlar; çağıran
+    # buna bakarak cache/ekran yeniler. Yalnız atlanan veya mükerrer satırlar
+    # DB'yi değiştirmez.
+    return bool(added or updated or kategori_yazildi)
 
 
 def export_data_interactive(parent, import_type: str):
@@ -756,8 +870,8 @@ def export_data_interactive(parent, import_type: str):
             records = ProductService().get_all()
             default = f"urunler_{today}.xlsx"
             label = "ürün"
-    except Exception as e:
-        QMessageBox.warning(parent, "Hata", f"Veriler okunamadı:\n{e}")
+    except Exception as exc:                                   # noqa: BLE001
+        hata_diyalogu.hata_goster(parent, "Hata", exc, "Veri", "oku")
         return
 
     path, _ = QFileDialog.getSaveFileName(
@@ -780,8 +894,9 @@ def export_data_interactive(parent, import_type: str):
             parent, "Tamamlandı",
             f"{len(records)} {label} dışa aktarıldı.\n{out}\n\n"
             "Bu dosya 'Dosya → İçeri Aktar' ile olduğu gibi geri yüklenebilir.")
-    except Exception as e:
-        QMessageBox.warning(parent, "Hata", f"Export hatası:\n{e}")
+    except Exception as exc:                                   # noqa: BLE001
+        # Veri OKUMA başarılıydı; yalnız dosyaya yazma başarısız oldu (18b).
+        hata_diyalogu.hata_goster(parent, "Hata", exc, "Dışa aktarma", "kaydet")
 
 
 # ── Teklif içe aktarma (kalemli format) ───────────────────────────────────────
@@ -888,7 +1003,7 @@ def _perform_offer_import(offer_groups: list) -> tuple[int, list]:
 
     svc = OfferService()
     added, errors = 0, []
-    for g in offer_groups:
+    for sira, g in enumerate(offer_groups, 1):
         try:
             items = [OfferItem(
                 product_code=i["product_code"], product_name=i["product_name"],
@@ -915,8 +1030,12 @@ def _perform_offer_import(offer_groups: list) -> tuple[int, list]:
             )
             svc.save(offer, keep_offer_no=True)
             added += 1
-        except Exception as e:
-            errors.append(f"{g.get('offer_no', '?')}: {e}")
+        except Exception as exc:                               # noqa: BLE001
+            # Teklif no, firma verisi ve ham istisna kullanıcıya GİTMEZ;
+            # güvenli kayit_id olarak yalnız grup SIRASI kullanılır. Bir
+            # grubun hatası sonraki grupları engellemez.
+            op_hata.logla(exc, "Teklif yaz", kayit_id=sira)
+            errors.append(TEKLIF_YAZILAMADI.format(sira=sira))
     return added, errors
 
 
@@ -942,7 +1061,7 @@ def _run_offer_import_flow(parent, path: str, raw_rows: list) -> bool:
     text = Path(path).name + "\n\n" + "\n".join(f"• {p}" for p in parts)
     if invalid:
         text += "\n\nHatalı satır örnekleri:\n" + "\n".join(
-            f"  - {e}" for e in invalid[:3])
+            f"  - {dogrulama}" for dogrulama in invalid[:3])
     text += "\n\nAktarım başlatılsın mı?"
 
     box = QMessageBox(parent)
@@ -978,6 +1097,9 @@ def _read_xlsx_sheets(path: str) -> tuple[dict, str]:
         import openpyxl
     except ImportError:
         return {}, "openpyxl kütüphanesi bulunamadı."
+    # Kapatma GERÇEK `finally` içindedir: okuma yarıda hata verirse de
+    # workbook açık kalmaz (Windows'ta dosya kilidi bırakırdı).
+    wb = None
     try:
         wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
         result = {}
@@ -993,10 +1115,13 @@ def _read_xlsx_sheets(path: str) -> tuple[dict, str]:
                 rows.append({headers[i]: (str(v) if v is not None else "")
                              for i, v in enumerate(row) if i < len(headers)})
             result[ws.title] = rows
-        wb.close()
         return result, ""
-    except Exception as e:
-        return {}, str(e)
+    except Exception as exc:                                   # noqa: BLE001
+        op_hata.logla(exc, "Dosya oku")
+        return {}, DOSYA_OKUMA_HATASI
+    finally:
+        # Kapatma hatası ne başarıyı ne de asıl okuma hatasını değiştirir.
+        _workbook_kapat(wb)
 
 
 def run_import_all_flow(parent) -> bool:
@@ -1037,17 +1162,25 @@ def run_import_all_flow(parent) -> bool:
     prog = _ImportProgress(parent, "Kayıtlar denetleniyor…")
     c_valid = c_dup = p_valid = p_dup = []
     o_new, o_dup, all_invalid = [], [], []
-    if cust_rows:
-        prog.set_label("Müşteriler denetleniyor…")
-        c_valid, c_dup, c_inv = _validate_rows("customers", cust_rows, progress=prog)
-        all_invalid += [f"Müşteri: {r.get('_error','?')}" for r in c_inv]
-    if prod_rows:
-        prog.set_label("Ürünler denetleniyor…")
-        p_valid, p_dup, p_inv = _validate_rows("products", prod_rows, progress=prog)
-        all_invalid += [f"Ürün: {r.get('_error','?')}" for r in p_inv]
-    if off_rows:
-        o_new, o_dup, o_inv = _validate_offer_rows(off_rows)
-        all_invalid += [f"Teklif: {e}" for e in o_inv]
+    try:
+        if cust_rows:
+            prog.set_label("Müşteriler denetleniyor…")
+            c_valid, c_dup, c_inv = _validate_rows("customers", cust_rows,
+                                                   progress=prog)
+            all_invalid += [f"Müşteri: {r.get('_error','?')}" for r in c_inv]
+        if prod_rows:
+            prog.set_label("Ürünler denetleniyor…")
+            p_valid, p_dup, p_inv = _validate_rows("products", prod_rows,
+                                                   progress=prog)
+            all_invalid += [f"Ürün: {r.get('_error','?')}" for r in p_inv]
+        if off_rows:
+            o_new, o_dup, o_inv = _validate_offer_rows(off_rows)
+            all_invalid += [f"Teklif: {d}" for d in o_inv]
+    except Exception as exc:                                   # noqa: BLE001
+        # Doğrulama aşaması: DB'ye HENÜZ hiçbir şey yazılmadı.
+        prog.close()
+        hata_diyalogu.hata_goster(parent, "Hata", exc, "İçe aktarma", "denetle")
+        return False
     prog.close()
 
     if not (c_valid or c_dup or p_valid or p_dup or o_new):
@@ -1090,29 +1223,61 @@ def run_import_all_flow(parent) -> bool:
     update_dups = bool(chk and chk.isChecked())
 
     # ── Aktarım: müşteri → ürün → teklif ─────────────────────────────────
+    # Müşteri / ürün / teklif AYRI aşamalardır ve ayrı transaction kullanır.
+    # Bir aşamanın düşmesi diğerlerinin verisini bozmaz; bu yüzden sonraki
+    # aşama ATLANMAZ — kullanıcının aktarmayı istediği veri sessizce
+    # düşürülmez. Tamamlanan aşama "başarısız" gibi anlatılmaz (18b).
     prog = _ImportProgress(parent, "Kaydediliyor…")
     summary, errors = [], []
-    if cust_rows:
-        prog.set_label("Müşteriler kaydediliyor…")
-        rows = list(c_valid) + (list(c_dup) if update_dups else [])
-        a, u, s, e = _perform_import("customers", rows, update_dups, progress=prog)
-        summary.append(f"Müşteri: {a} eklendi"
-                       + (f", {u} güncellendi" if u else ""))
-        errors += e
-    if prod_rows:
-        prog.set_label("Ürünler kaydediliyor…")
-        rows = list(p_valid) + (list(p_dup) if update_dups else [])
-        a, u, s, e = _perform_import("products", rows, update_dups, progress=prog)
-        summary.append(f"Ürün: {a} eklendi"
-                       + (f", {u} güncellendi" if u else ""))
-        errors += e
-    if off_rows:
-        prog.set_label("Teklifler kaydediliyor…")
-        a, e = _perform_offer_import(o_new)
-        summary.append(f"Teklif: {a} eklendi"
-                       + (f", {len(o_dup)} mevcut atlandı" if o_dup else ""))
-        errors += e
-    prog.close()
+    yazildi = False
+    try:
+        if cust_rows:
+            prog.set_label("Müşteriler kaydediliyor…")
+            rows = list(c_valid) + (list(c_dup) if update_dups else [])
+            try:
+                a, u, s, e = _perform_import("customers", rows, update_dups,
+                                             progress=prog)
+                summary.append(f"Müşteri: {a} eklendi"
+                               + (f", {u} güncellendi" if u else ""))
+                errors += e
+                yazildi = yazildi or bool(a or u)
+            except Exception as exc:                           # noqa: BLE001
+                op_hata.logla(exc, "Musteri asamasi")
+                summary.append(ASAMA_BASARISIZ["customers"])
+        if prod_rows:
+            prog.set_label("Ürünler kaydediliyor…")
+            rows = list(p_valid) + (list(p_dup) if update_dups else [])
+            asama = {}
+            try:
+                a, u, s, e = _perform_import("products", rows, update_dups,
+                                             progress=prog, stage_state=asama)
+                urun_ozet = (f"Ürün: {a} eklendi"
+                             + (f", {u} güncellendi" if u else ""))
+                errors += e
+                yazildi = yazildi or bool(a or u)
+            except Exception as exc:                           # noqa: BLE001
+                op_hata.logla(exc, "Urun asamasi")
+                urun_ozet = ASAMA_BASARISIZ["products"]
+            # Kategoriler ürün transaction'ından BAĞIMSIZ yazılır: transaction
+            # düşse bile DB değişmiş olabilir → özette görünür, yenileme gerekir.
+            kategori_yazildi = int(asama.get("kategori_yazildi", 0))
+            if kategori_yazildi:
+                summary.append(f"Kategori: {kategori_yazildi} oluşturuldu")
+                yazildi = True
+            summary.append(urun_ozet)
+        if off_rows:
+            prog.set_label("Teklifler kaydediliyor…")
+            try:
+                a, e = _perform_offer_import(o_new)
+                summary.append(f"Teklif: {a} eklendi"
+                               + (f", {len(o_dup)} mevcut atlandı" if o_dup else ""))
+                errors += e
+                yazildi = yazildi or bool(a)
+            except Exception as exc:                           # noqa: BLE001
+                op_hata.logla(exc, "Teklif asamasi")
+                summary.append(ASAMA_BASARISIZ["offers"])
+    finally:
+        prog.close()
 
     msg = "\n".join(summary)
     if all_invalid:
@@ -1121,7 +1286,8 @@ def run_import_all_flow(parent) -> bool:
         msg += "\n\nHatalar:\n" + "\n".join(errors[:10])
     QMessageBox.information(parent, "İçe Aktarma Tamamlandı", msg)
     logger.info("Tumunu import: %s | hatalar=%d", " / ".join(summary), len(errors))
-    return True
+    # DB gerçekten değiştiyse çağıran ekran/cache yenilemesi yapar.
+    return yazildi
 
 
 def export_all_interactive(parent):
@@ -1137,8 +1303,8 @@ def export_all_interactive(parent):
         svc = OfferService()
         offers_full = [o for o in (svc.get_by_id(x.id) for x in svc.get_all()) if o]
         cats = {c.id: c.name for c in CategoryService().get_all()}
-    except Exception as e:
-        QMessageBox.warning(parent, "Hata", f"Veriler okunamadı:\n{e}")
+    except Exception as exc:                                   # noqa: BLE001
+        hata_diyalogu.hata_goster(parent, "Hata", exc, "Veri", "oku")
         return
 
     default = f"teklif_yonetim_verileri_{datetime.date.today().strftime('%Y%m%d')}.xlsx"
@@ -1156,5 +1322,5 @@ def export_all_interactive(parent):
             f"{len(offers_full)} teklif tek dosyaya aktarıldı.\n{out}\n\n"
             "Bu dosya 'Dosya → İçeri Aktar → Tümünü İçe Aktar' ile "
             "olduğu gibi geri yüklenebilir.")
-    except Exception as e:
-        QMessageBox.warning(parent, "Hata", f"Export hatası:\n{e}")
+    except Exception as exc:                                   # noqa: BLE001
+        hata_diyalogu.hata_goster(parent, "Hata", exc, "Dışa aktarma", "kaydet")
