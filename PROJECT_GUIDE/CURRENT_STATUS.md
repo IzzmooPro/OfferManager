@@ -3,14 +3,15 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: 9e89370
-last_verified_date: 2026-08-02
+last_verified_commit: 46d4d75
+last_verified_date: 2026-08-04
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-02 · sürüm: `v4.2` — YAYINLANDI (public, latest).**
+> **Yakalama tarihi: 2026-08-04 · sürüm: `v4.2` — YAYINLANDI (public, latest).**
+> **Kaynak, yayımlanmış v4.2 artifact'ından ileridedir** (R10a/R10b/R10c güvenli hata turları). Bu turlar için **yeni build, paketli EXE veya installer kanıtı YOKTUR**; v4.2 tag/release/artifact kanıtları değişmemiştir.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
@@ -97,7 +98,24 @@ Salt okunur tarama tamamlandı: **ürün kusuru bulunamadı**. Kaynak envanterin
 - **PdfWorker yaşam döngüsü** `f29ea47` — sonuç sinyali `run()` içinde yayıldığı için temizlik yalnız yerleşik `finished` yolunda yapılıyor. Kusur ölçülmüştü: alt süreç `0xC0000409` ile fast-fail veriyordu.
 - **R10-C** `25518fb` — `_finish_offer` **A/B/C/D** aşamalarına ayrıldı; kaydedilmiş teklif/PDF artık inkâr edilmiyor, `_preview_pdf` üretim ve pencere hatası ayrıldı, başarı logundan tam kullanıcı yolu çıkarıldı.
 
-Kalan alt bulgular **kapatılmadı**, ayrı maddeler olarak izleniyor: [KNOWN_RISKS.md](KNOWN_RISKS.md) R10c (import/settings/backup/reports envanteri).
+Kalan alt bulgular sonraki turlarda kapatıldı: R10a/R10b (2026-08-03) ve **R10c (2026-08-04, aşağıda)**.
+
+## R10c güvenli hata turu (2026-08-04) — **DÖRT ALT TURLA TAMAMLANDI**
+
+Hepsi test-first yürütüldü: önce kırmızı regresyon testi, sonra en küçük genel düzeltme.
+
+| Alt tur | Commit | Kapsam | Test |
+|---|---|---|---|
+| **R10c-1 REPORTS** | `c2dfca0` | Rapor oluşturma ve dışa aktarma hata yolları güvenli altyapıya geçirildi; ham istisna, traceback, SQL, kullanıcı yolu ve müşteri verisi gösterilmiyor | `tests/test_reports_safe_errors.py` |
+| **R10c-2 SETTINGS** | `745fd55` | Ayarlar, SMTP ve logo yükleme/kaldırma hata yolları; logo yükleme başarısı açık dönüş değeriyle ayrıldı; iptal/kopyalama hatasında logo devre dışı işareti korunuyor; marker yazılamazsa önizleme gerçek aktif logoyu gösteriyor | `tests/test_settings_safe_errors.py` |
+| **R10c-3 BACKUP** | `8616862` | Restore durumları ayrıldı (`preflight_failed` / `rolled_back` / `rollback_failed`); rollback tüm hedefleri deniyor, ilk hatada durmuyor; metadata aşaması asıl yedekleme başarısını inkâr etmiyor; geçici klasör temizleme hatası restore sonucunu değiştirmiyor; başarı ve restart yalnız gerçek başarıda | `tests/test_backup_safe_errors.py` |
+| **R10c-4 IMPORT** | `46d4d75` | Dosya okuma, CSV/XLSX, satır, kategori, teklif, doğrulama, aşama ve dışa aktarma hata yolları; aşamalar birbirinin başarısını inkâr etmiyor; kategori yazımı yalnız güvenli sayısal `stage_state` ile taşınıyor; workbook başarı ve hata yollarında güvenli kapatılıyor | `tests/test_import_safe_errors.py`, `tests/test_csv_import_errors.py` |
+
+- Son doğrulanmış tam paket: **1127 passed, 5 skipped, 343 subtests**. Ölçüm, `46d4d75`'e giren **aynı kaynak/test içeriğiyle commit'ten ÖNCE** yapıldı; **commit sonrasında tam paket yeniden çalıştırılmadı**. Aynı turda `py_compile`, `verify_project_guide.py` ve `git diff --check` temizdi. Commit/push sonrası ağaç temizliği ve upstream eşitliği **ayrı bir git kanıtıdır**; bu snapshot'tan okunmaz, canlı git komutlarıyla ölçülür.
+- Kurallar [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) 18, 18-1, 18b, 18b-2, 18b-3 maddelerine bağlandı.
+
+> **Kanıt sınırı — silinmemeli.** R10c'nin kanıt sınıfı: **kaynak testleri**, **mock/izole geçici profil ölçümleri** (gerektiği yerde test DB veya geçici dosya) ve **bazı alt turlarda izole kaynak-modu Windows Qt smoke/probları**. Bu tur için **yeni frozen/paketli EXE, installer, gerçek disk-dolu, gerçek dosya kilidi ve gerçek SQLite commit hatası kanıtı ÜRETİLMEDİ**. Bu yüzden tur, **R6**'daki paketli gerçek geri yükleme → restart kanıtını ve **R8**'deki gizli sayfa politikası maddesini **kapatmaz**; R8 davranışı yalnız korunmuştur.
+> **Bu tur yeni build/paketli EXE/installer üretmedi.** Mevcut kaynak, yayımlanmış v4.2 artifact'ından **ileridedir**; v4.2 tag'i, release'i, artifact hash'leri ve D1/D2/D2b kanıtları **değişmemiştir**.
 
 > **Ayrım — silinmemeli.** *"Yayımlanmış v4.1 geçerlidir"* ile *"mevcut kaynak build edilmedi"* farklı iddialardır. v4.1 tag'i, GitHub Release'i ve canlı updater doğrulaması (D1/D2) **tarihsel olarak geçerlidir**; bu tur yalnız **güncel kaynağın** artifact tazeliğini düşürür.
 
@@ -113,7 +131,14 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 ## Kalan aşamalar
 
-v4.2 yayın turu **kapandı**. **R10a ve R10b kapandı (2026-08-03)** — teklif ekranındaki iki müşteri kaydetme yolu güvenli hata altyapısına ve iki aşamalı sınıra geçirildi; dashboard'daki PDF açma yolu korumaya alındı. Açık kalan küçük denetim maddeleri: [KNOWN_RISKS.md](KNOWN_RISKS.md) **R10c** (import/settings/backup/reports envanteri), **R12c** (build sonrası provenance kuralının testle zorlanması).
+v4.2 yayın turu **kapandı**. **R10a ve R10b kapandı (2026-08-03)** — teklif ekranındaki iki müşteri kaydetme yolu güvenli hata altyapısına ve iki aşamalı sınıra geçirildi; dashboard'daki PDF açma yolu korumaya alındı. **R10c dört alt turla kapandı (2026-08-04)** — reports, settings, backup ve import hata yolları güvenli altyapıya geçirildi (yukarıdaki tablo).
+
+Açık kalanlar iki ayrı sınıftır:
+
+- **R10 alt serisinden açık kalan küçük madde:** [KNOWN_RISKS.md](KNOWN_RISKS.md) **R12c** (build sonrası provenance kuralının testle zorlanması).
+- **Paketli/ürün davranışı kanıtı gerektiren, ayrıca açık maddeler:** **R6** (paketli gerçek geri yükleme → restart zinciri) ve **R8** ("Tümünü İçe Aktar" gizli sayfa politikası). Bunlar R10c ile kapanmaz; kendi kanıt sınıflarını bekler.
+
+Diğer maddelerin durumu bu turda değişmedi — güncel liste [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
 ## Bu yakalamayı yenilerken
 

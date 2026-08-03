@@ -12,6 +12,8 @@ covers:
   - ui/dialogs/feedback_dialog.py
   - ui/dashboard_page.py
   - ui/create_offer_page.py
+  - ui/reports_page.py
+  - ui/settings_page.py
   - ui/dialogs/category_dialog.py
   - ui/main_window.py
   - ui/dialogs/backup_manager.py
@@ -19,8 +21,8 @@ covers:
   - core/credential_store.py
   - main.py
   - tests/conftest.py
-last_verified_commit: 9e89370
-last_verified_date: 2026-08-02
+last_verified_commit: 46d4d75
+last_verified_date: 2026-08-04
 volatile: false
 ---
 
@@ -59,9 +61,12 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 ## Gizlilik ve hata bildirimi
 
 17. **SMTP parolası yalnız Windows Credential Manager'da tutulur**; config'e düz metin yazılmaz, loglanmaz. Okuma hatası **sessizce yutulmaz**, `CredentialStoreError` fırlatılır ve okuma hatası kaydı silmeye dönüşmez. → `tests/test_credential_store.py`, `tests/test_smtp_credential_ui.py`, `tests/test_smtp_security.py`
-18. **Hiçbir kullanıcı mesajında veya güvenli logda** ham istisna metni, `str(exception)`, traceback, SQL, yerel dosya yolu ya da müşteri/firma/teklif adı bulunmaz. Mesaj sabit metinlerden seçilir; log yalnız işlem adı, istisna sınıf adı, güvenli kayıt id'si ve `dosya:satır` çerçevelerini içerir (`exc_info` kullanılmaz). Diyalog kapanmaz, kullanıcı düzeltip yeniden dener. → `tests/test_save_error_handling.py`, `tests/test_operation_error_dialog.py`, `tests/test_dashboard_safe_errors.py`, `tests/test_create_offer_stage_errors.py`, `tests/test_create_offer_customer_save_errors.py`
-18b. **Kısmi başarı önceki başarılı aşamayı İNKÂR ETMEZ.** Çok aşamalı akışlarda (kaydet → PDF → arşiv → sonraki eylemler; toplu silme/PDF; DB yazımı → ekran yenileme) sonraki bir aşamanın hatası, tamamlanmış aşamayı "yapılamadı" gibi anlatamaz. Toplu işlemlerde yalnız güvenli sayılar gösterilir; "hiçbiri" türü genelleme yapılmaz. → `tests/test_create_offer_stage_errors.py`, `tests/test_dashboard_safe_errors.py`
+18. **Hiçbir kullanıcı mesajında veya güvenli logda** ham istisna metni, `str(exception)`, traceback, SQL, yerel dosya yolu ya da müşteri/firma/teklif adı bulunmaz. Mesaj sabit metinlerden seçilir; log yalnız işlem adı, istisna sınıf adı, güvenli kayıt id'si ve `dosya:satır` çerçevelerini içerir (`exc_info` kullanılmaz). Diyalog kapanmaz, kullanıcı düzeltip yeniden dener. → `tests/test_save_error_handling.py`, `tests/test_operation_error_dialog.py`, `tests/test_dashboard_safe_errors.py`, `tests/test_create_offer_stage_errors.py`, `tests/test_create_offer_customer_save_errors.py`, `tests/test_reports_safe_errors.py`, `tests/test_settings_safe_errors.py`, `tests/test_backup_safe_errors.py`, `tests/test_import_safe_errors.py`
+18-1. **Aynı istisna EN FAZLA BİR KEZ güvenli loglanır.** Loglama sorumluluğu tek katmandadır: diyalog altyapısını (`hata_goster` / `kismi_hata_goster`) çağıran yol ayrıca `op_hata.logla` çağırmaz, alt katman loglayıp yeniden fırlattıysa üst katman tekrarlamaz, tüketici (ör. `main_window` yedek sinyalleri) hata metnini yeniden loglamaz. Güvenli `kayit_id` yalnız sayısal satır/grup sırası olabilir. → `tests/test_backup_safe_errors.py`, `tests/test_import_safe_errors.py`, `tests/test_settings_safe_errors.py`
+18b. **Kısmi başarı önceki başarılı aşamayı İNKÂR ETMEZ.** Çok aşamalı akışlarda (kaydet → PDF → arşiv → sonraki eylemler; toplu silme/PDF; DB yazımı → ekran yenileme; yedek dosyası → yedek metadata'sı; kategori yazımı → ürün transaction'ı; müşteri → ürün → teklif aşamaları) sonraki bir aşamanın hatası, tamamlanmış aşamayı "yapılamadı" gibi anlatamaz. Toplu işlemlerde yalnız güvenli sayılar gösterilir; "hiçbiri" türü genelleme yapılmaz. Aşama durumu çağırana taşınacaksa yalnız sayı/boolean taşınır (`stage_state`), kullanıcı verisi taşınmaz; dönüş değeri gerçek DB değişikliğini gösterir. Uzun işlem penceresi (progress) hata, iptal ve başarı yollarının HEPSİNDE kapanır. → `tests/test_create_offer_stage_errors.py`, `tests/test_dashboard_safe_errors.py`, `tests/test_settings_safe_errors.py`, `tests/test_backup_safe_errors.py`, `tests/test_import_safe_errors.py`
 18b-1. **Kullanıcı dosyasını açmak (`os.startfile`) her zaman korumalıdır.** Dosya silinmiş, erişilemez ya da ilişkilendirilmiş uygulama yoksa istisna çağırana SIZMAZ; üretilmiş çıktı (PDF) **inkâr edilmez**, yalnız açılamadığı söylenir. Dosya yolu; kullanıcı mesajına, log satırına veya `kayit_id`'ye GEÇMEZ. Çoklu dosya döngüsünde bir dosyanın açılamaması sonrakileri engellemez. → `tests/test_dashboard_safe_errors.py`
+18b-2. **Geri yükleme üç sonucu AYIRIR** ve hiçbirini birbirine dönüştürmez: `preflight_failed` (hedef verilere hiç dokunulmadı), `rolled_back` (yazma başladı, önceki durum geri getirildi), `rollback_failed` (geri alma tamamlanamadı → "verileriniz korundu" DENMEZ). Rollback ilk hatada durmaz; tüm hedefler denenir ve başlangıçtaki var/yok durumu birebir kurulur. Yeniden başlatma yalnız tam başarıda ve tam bir kez yapılır. Geçici çalışma klasörünün temizlenmesi ayrı aşamadır ve sonucu değiştiremez. → `tests/test_backup_safe_errors.py`, `tests/test_regressions.py`
+18b-3. **Beklenen fallback hata değildir.** Kodlama/ayraç denemesi gibi tasarlanmış geri düşüşler kullanıcıya hata olarak gösterilmez ve loga ham istisna ya da dosya adı yazmaz; ancak tüm denemeler tükenirse SON anlamlı teknik neden kaybolmaz, tam bir kez güvenli loglanır. Gerçek boş dosya hata değil boş sonuçtur. → `tests/test_csv_import_errors.py`, `tests/test_import_safe_errors.py`
 18c. **"Log Klasörünü Aç" düğmesi** yalnız beklenmeyen/teknik hatalarda gösterilir ve mesajdaki ipucu ile kutudaki gerçek düğme birebir eşleşir; doğrulama mesajlarında bulunmaz. → `tests/test_operation_error_dialog.py`
 18d. **Hata/öneri raporu kullanıcı iradesiyle gider ve gizli alan taşımaz.** Program hiçbir koşulda raporu kendiliğinden göndermez, ağa çıkmaz, kullanıcının SMTP hesabını veya güvenli depodaki parolasını kullanmaz; hiçbir yolda "rapor gönderildi" denmez. Rapora YALNIZ pencerede **görünen** alanlar ve kullanıcının kendi açıklaması girer — `str(exception)`, traceback, mutlak yol, kayıt id'si, teklif no ve müşteri/firma verisi girmez. `mailto:` Qt URL/query API'siyle yüzde-kodlanarak kurulur (CRLF/`&`/`?` enjeksiyonu kapalı). Pano yalnız gerçek tıklamada yazılır; "Vazgeç" yan etki üretmez. `core/feedback_report.py` Qt import etmez ve istisnayı YENİDEN KAYDETMEZ. → `tests/test_feedback_report.py`
 19. **Paketlenmiş (windowed) derlemede çalışma zamanı hatası görünür**; hata penceresi log yolunu gösterir, aynı hata kısa süre tekrar bastırılır. → `tests/test_windowed_error_reporting.py`

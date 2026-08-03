@@ -6,8 +6,8 @@ covers:
   - core/restart.py
   - core/app_paths.py
   - ui/dialogs/backup_manager.py
-last_verified_commit: 7395561
-last_verified_date: 2026-07-31
+last_verified_commit: 46d4d75
+last_verified_date: 2026-08-04
 volatile: false
 ---
 
@@ -22,6 +22,8 @@ volatile: false
 | **C. Installer kanıtı** | Kurulum/upgrade/kaldırma, registry, kısayol, veri koruma | Uygulama mantığı |
 
 Bir sınıfın sonucunu diğerinin yerine yazma.
+
+**A sınıfının içindeki güvenli hata regresyonları.** `test_*_safe_errors.py` dosyaları (reports, settings, backup, import + `test_csv_import_errors.py`) A sınıfına girer: izole test yardımcıları ve mock'larla çalışır; yalnız gerektiği yerlerde `TemporaryDirectory`, geçici dosya veya test veritabanı kullanılır. Gerçek kullanıcı verisine dokunmaz. Bunlar **mesaj/log/aşama sözleşmesini** kanıtlar; gerçek disk-dolu, gerçek dosya kilidi, gerçek SQLite commit hatası ve paketli davranışı **kanıtlamaz**. Özellikle geri yükleme durum makinesi (`preflight_failed` / `rolled_back` / `rollback_failed`) A sınıfında doğrulanmıştır; paketli gerçek **geri yükleme → restart** zinciri hâlâ açıktır ([KNOWN_RISKS.md](KNOWN_RISKS.md) R6).
 
 ## B — İzole frozen smoke
 
@@ -105,3 +107,7 @@ D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater 
 ## Doğrulanmış son sonuçlar
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
+
+**A sınıfı — güncel kaynak (2026-08-04):** `1127 passed, 5 skipped, 343 subtests`. Ölçüm, `46d4d75`'e giren aynı içerikle **commit'ten önce** yapıldı; commit sonrasında tam paket yeniden çalıştırılmadı.
+
+**B ve C sınıfı — güncel kaynak için YOK.** R10a–R10c turlarında yeni build, paketli EXE ve installer üretilmedi. Yayımlanmış **v4.2** artifact'ına ait B/C/D kanıtları geçerliliğini korur ama **güncel kaynağın kanıtı değildir**; kaynak o artifact'tan ileridedir.

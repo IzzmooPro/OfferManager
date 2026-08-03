@@ -2,8 +2,8 @@
 purpose: K1–K6 ve O1–O16 denetim bulgularının kapanış kaydı (tarihçe).
 read_when: Denetim geçmişi, "bu daha önce görüldü mü?", regresyon şüphesi.
 covers: []
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: 46d4d75
+last_verified_date: 2026-08-04
 volatile: false
 ---
 
@@ -52,7 +52,16 @@ Sütunlar: kod · sınıf · kök neden (kısa) · kapanış commit'i · korunan
 
 | **R10b** | KESİN | `dashboard_page._open_file` korumasız `os.startfile`: dosya silinmiş/erişilemez olduğunda istisna UI akışına sızıyor, güvenli mesaj ve log oluşmuyor, çoklu PDF döngüsünde sonraki dosyalar açılamıyordu | `os.startfile` minimum try/except sınırına alındı; sabit `PDF_ACILAMADI_MESAJ` ile `kismi_hata_goster` (PDF üretimi inkâr edilmez), yol ve ham hata mesaja/loga girmez, döngü devam eder | `test_dashboard_safe_errors::DosyaAcmaTests` |
 
+| **R10c-1** REPORTS | KESİN | `reports_page._generate` / `_export` ham istisna metnini kullanıcıya gösteriyor, teknik nedeni güvenli loglamıyordu | Sabit kullanıcı metni + `op_hata.logla` / `hata_diyalogu.hata_goster`; modül içi `logging`/`logger` kaldırıldı. Commit `c2dfca0` | `test_reports_safe_errors` |
+
+| **R10c-2** SETTINGS | KESİN | Ayarlar, SMTP testi ve logo yükleme/kaldırma yolları ham istisna gösteriyordu; `_upload` başarıyı bildirmediği için iptal/kopyalama hatasında logo devre dışı işareti (`logo.disabled`) siliniyor ve eski logo sessizce etkinleşiyordu; marker yazılamadığında önizleme gerçek aktif logoyu göstermiyordu | Güvenli mesaj + tek güvenli log; `_upload` açık `True`/`False` dönüş sözleşmesi (önizleme hatası kaydı geçersiz kılmaz); marker yalnız gerçek kayıtta silinir; marker yazılamazsa önizleme varsayılan logoya döner, yoksa "Logo Yok". Commit `745fd55` | `test_settings_safe_errors` |
+
+| **R10c-3** BACKUP | KESİN | Yedekleme/geri yükleme ham istisna taşıyordu; `restore_backup` üç farklı sonucu ayırmıyor, rollback ilk hatada duruyor, metadata yazımı başarısız olunca tamamlanmış yedek "başarısız" sayılıyor, geçici klasör temizleme hatası sonucu maskeliyor ve başarısız geri yüklemede yeniden başlatma yapılabiliyordu | Durum makinesi `preflight_failed` / `rolled_back` / `rollback_failed` (sabit metinler); `_geri_al` ilk hatada durmaz, başlangıçtaki var/yok durumunu birebir kurar ve DB'yi yeniden doğrular; metadata ayrı aşamadır (18b); `_gecici_temizle` sonucu değiştirmez; restart yalnız tam başarıda ve tam bir kez. Commit `8616862` | `test_backup_safe_errors` |
+
+| **R10c-4** IMPORT | KESİN | Dosya okuma (`_read_file`, `_read_xlsx_sheets`) ham `str(e)` döndürüyor; CSV logları dosya adı ve ham istisna taşıyor; satır hataları `errors` listesine firma adı/ürün kodu/teklif no yazıyor; kategori hatası kategori adıyla loglanıp kullanıcıya hiç bildirilmiyor; doğrulama/yazma/aşama hataları ilerleme penceresini açık bırakıp yanlış başarı döndürebiliyor; workbook hata yolunda kapatılmıyordu | Sabit `DOSYA_OKUMA_HATASI`; güvenli `kayit_id` yalnız satır/grup SIRASI; kategori başarısızlığı önbelleğe alınır (yeniden denenmez), her farklı kategori bir kez loglanır, kullanıcıya tek toplu uyarı; `stage_state` yalnız sayısal (`kategori_yazildi`); aşamalar birbirinin başarısını inkâr etmez ve ilerleme penceresi her yolda kapanır; dönüş değeri gerçek DB değişikliğini gösterir; `_workbook_kapat` başarı ve hata yollarında `finally` içinde. **R8 gizli sayfa davranışı korunmuştur.** Commit `46d4d75` | `test_import_safe_errors`, `test_csv_import_errors` |
+
 ## Not
 
+- **R10c kanıt sınıfı.** Dört alt tur şunlarla ölçüldü: kaynak testleri; mock/izole geçici profil ölçümleri (gerektiği yerde test DB veya `TemporaryDirectory` altında geçici dosya); bazı alt turlarda izole kaynak-modu Windows Qt smoke/probları. **Yeni frozen/paketli EXE, installer, gerçek disk-dolu, gerçek dosya kilidi ve gerçek SQLite commit hatası kanıtı üretilmedi.** Bu yüzden R10c, R6 (paketli restore→restart) ve R8 (gizli sayfa politikası) maddelerini **kapatmaz**. Kapsam da sınırlıdır: iddialar yalnız R10c'de ele alınan ve regresyon testleriyle bağlanan hata yolları içindir.
 - O16, **paketli sürümde manuel testle** bulundu; kaynak testleri `QInputDialog.getItem`'i mock'ladığı için gerçek modal entegrasyonu hiç çalıştırılmamıştı. Bu, mock'lu testlerin sınırını gösteren kalıcı bir derstir ([KNOWN_RISKS.md](KNOWN_RISKS.md)).
 - Tam commit zinciri burada tutulur; diğer belgelerde tekrarlanmaz.

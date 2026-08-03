@@ -2,12 +2,12 @@
 purpose: Doğrulanmış açık riskler ve sonraki adımları — snapshot.
 read_when: Denetim, release kararı, risk analizi.
 covers: []
-last_verified_commit: 7395561
-last_verified_date: 2026-07-31
+last_verified_commit: 46d4d75
+last_verified_date: 2026-08-04
 volatile: true
 ---
 
-# Bilinen riskler (snapshot — 2026-07-31)
+# Bilinen riskler (snapshot — 2026-08-04)
 
 Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içindedir.
 
@@ -28,7 +28,7 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 | R10 | ~~Teklif/kategori/şablon hata yolları~~ → **kapandı 2026-08-02**: kategori (R10-A), dashboard teklif/şablon/PDF/dışa aktarma (R10-B) ve teklif kaydetme/PDF aşama sınırları (R10-C) güvenli mesaj + güvenli loga geçirildi; kısmi başarı mesajları ve "Log Klasörünü Aç" erişimi eklendi; PdfWorker yaşam döngüsü kusuru kapandı | — | Kalan alt maddeler R10a–R10c olarak ayrı izlenir |
 | R10a | ~~`create_offer_page` müşteri kaydetme catch'leri ham `{e}` gösteriyor, loglamıyor ve başarı logunda firma adı geçiyor~~ — **kapandı 2026-08-03**: her iki yolda `hata_diyalogu` güvenli altyapısı, `add` ile kayıt sonrası ekran aşaması ayrı try sınırlarına bölündü, başarı logu `id=%s` oldu, `_open_add_customer` aynı diyalogla yeniden denemeye izin veriyor; kayıt yenilenen listede bulunamazsa sessiz dönüş yerine kısmi başarı gösteriliyor. → `tests/test_create_offer_customer_save_errors.py` | **KAPALI** |
 | R10b | ~~`dashboard_page._open_file` korumasız `os.startfile` — dosya yoksa yakalanmamış istisna~~ — **kapandı 2026-08-03**: `os.startfile` minimum try/except sınırına alındı; PDF'in oluşturulduğu inkâr edilmiyor (`kismi_hata_goster`, sabit metin), yol ve ham hata mesaja/loga girmiyor, çoklu PDF döngüsü sonraki dosyayla devam ediyor. → `tests/test_dashboard_safe_errors.py::DosyaAcmaTests` | **KAPALI** |
-| R10c | **import / settings / backup / reports** ham hata mesajları envanterlenmedi (~19 çağrı yeri) | Düşük | Sonraki envanter turu |
+| R10c | ~~**import / settings / backup / reports** ham hata mesajları envanterlenmedi (~19 çağrı yeri)~~ — **kapandı 2026-08-04**: dört alt tur test-first tamamlandı. R10c-1 REPORTS `c2dfca0`, R10c-2 SETTINGS `745fd55`, R10c-3 BACKUP `8616862`, R10c-4 IMPORT `46d4d75`. **R10c kapsamında ele alınan ve regresyon testleriyle bağlanan hata yollarında**: ham istisna/traceback/SQL/yerel yol/müşteri verisi kullanıcı mesajına, `errors` listesine veya loga girmiyor; her teknik istisna tam bir kez güvenli loglanıyor; aşamalar birbirinin başarısını inkâr etmiyor. Bu, ilgili modüllerin **gelecekteki bütün** hata yolları için mutlak garanti değildir — yeni yol eklenirken [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) 18 / 18-1 / 18b maddeleri uygulanır. **Kanıt sınıfı:** kaynak testleri, mock/izole geçici profil ölçümleri (gerektiği yerde test DB veya geçici dosya) ve bazı alt turlarda izole kaynak-modu Windows Qt smoke/probları. **Yeni frozen/paketli EXE, installer, gerçek disk-dolu, gerçek dosya kilidi ve gerçek SQLite commit hatası kanıtı ÜRETİLMEDİ.** → `tests/test_reports_safe_errors.py`, `tests/test_settings_safe_errors.py`, `tests/test_backup_safe_errors.py`, `tests/test_import_safe_errors.py`, `tests/test_csv_import_errors.py` | **KAPALI** |
 | R11 | **500 kalemli teklifte UI doldurma ~3 sn** (`_add_row`) | Düşük | Gerçek veride maks ~10 kalem; toplu/gecikmeli satır kurulumu ileride |
 | R12 | **Normal kapanış yedeği büyük veritabanında kapanışı uzatır** | Düşük | Ölçüldü ve kabul edildi; gerekirse ilerleme göstergesi |
 

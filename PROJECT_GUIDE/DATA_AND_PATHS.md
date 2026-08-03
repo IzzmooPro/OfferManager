@@ -9,8 +9,8 @@ covers:
   - services/export_service.py
   - ui/dialogs/backup_manager.py
   - tests/conftest.py
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: 46d4d75
+last_verified_date: 2026-08-04
 volatile: false
 ---
 
@@ -64,7 +64,9 @@ Akış: dosya seç → **(XLSX ve birden fazla uygun sayfa varsa) sayfa seç** �
 - Sayfa sorusu ilerleme penceresinden **önce** sorulur (bkz. O16, [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md)).
 - Kullanıcı iptal ederse: DB yazımı yok, hata kutusu yok, yarım aktarım yok.
 - Aynı dosya içindeki mükerrer satırlar hem ürün hem müşteri yolunda atlanır; hata mesajında kaynak sayfa adı gösterilir.
-- "Tümünü İçe Aktar (tek dosya)" ayrı yoldur: `Müşteriler`/`Ürünler`/`Teklifler` adlı sayfaları tanır, sayfa sorusu sormaz.
+- "Tümünü İçe Aktar (tek dosya)" ayrı yoldur: `Müşteriler`/`Ürünler`/`Teklifler` adlı sayfaları tanır, sayfa sorusu sormaz. Bu yol gizli sayfaları da okur ([KNOWN_RISKS.md](KNOWN_RISKS.md) **R8 açık**).
+- **Dosya tanıtıcısı yaşam döngüsü:** okunan çalışma kitabı hem başarı hem hata yolunda `finally` içinde kapatılır — aksi hâlde Windows'ta kaynak dosya kilitli kalırdı. Kapatma hatası ayrı aşamadır; başarılı okumayı geçersiz kılmaz ve asıl okuma hatasını maskelemez.
+- **Kategori yazımı ürün transaction'ından ÖNCE ve ondan bağımsız yapılır.** Transaction geri dönse bile oluşturulmuş kategoriler veritabanında kalır; bu bilgi çağırana yalnız **sayısal** aşama durumu olarak taşınır (kategori adı taşınmaz) ve dönüş değeri gerçek veritabanı değişikliğini yansıtır.
 
 ## Dışa aktarma
 
@@ -74,7 +76,19 @@ Akış: dosya seç → **(XLSX ve birden fazla uygun sayfa varsa) sayfa seç** �
 
 - ZIP içeriği: veritabanı anlık kopyası + `company.cfg` + varsa logo/imzalar + `backup_info.json`.
 - Yedek tetikleyicileri: zamanlayıcı, teklif kaydı, kapanış, manuel.
-- Geri yükleme sonrası uygulama **yeniden başlatılır**; kapanışta ikinci bir kapanış yedeği alınmaz.
+- Yedek **dosyası** ile `backup_meta.json` ayrı aşamalardır: metadata yazılamazsa oluşmuş yedek geçersiz sayılmaz ve yeniden alınmaz.
+- Geri yükleme **üç sonucu ayırır** (`RestoreError.durum`):
+
+| Durum | Hedef verilerin hâli |
+|---|---|
+| `preflight_failed` | Hedef verilere **hiç dokunulmadı** (ZIP doğrulanamadı, geçici çalışma alanı açılamadı veya rollback anlık görüntüsü hazırlanamadı) |
+| `rolled_back` | Yazma başlamıştı; önceki durum geri getirildi |
+| `rollback_failed` | Geri alma **tamamlanamadı**; veri durumu belirsizdir |
+
+- Geri alma ilk hatada durmaz: veritabanı ve tüm optional dosyalar tek tek denenir, geri yükleme öncesindeki **var/yok durumu birebir kurulmaya çalışılır** (baştan bulunmayan dosyalar `-wal`/`-shm` ile birlikte silinir) ve sonunda veritabanı yeniden doğrulanır.
+- Geçici çalışma klasörünün temizlenmesi **ayrı aşamadır** ve işin sonucunu değiştirmez: tamamlanmış bir geri yükleme "başarısız" olmaz, oluşmuş durum `rollback_failed`e dönüşmez.
+- Bu davranış **"verileriniz kesin korundu" güvencesi değildir**: `rollback_failed` durumunda program bunu açıkça söyler ve yeniden başlatma **yapılmaz**. Geri yükleme sonrası yeniden başlatma yalnız **tam başarıda** ve tam bir kez olur; kapanışta ikinci bir kapanış yedeği alınmaz.
+- Yukarıdakiler **kaynak testi** kanıtıdır. Paketli sürümde gerçek geri yükleme → restart zinciri hâlâ denenmemiştir ([KNOWN_RISKS.md](KNOWN_RISKS.md) **R6 açık**).
 
 ## Test izolasyonu
 

@@ -9,8 +9,8 @@ covers:
   - ui/main_window.py
   - ui/dialogs/backup_manager.py
   - ui/utils/updater.py
-last_verified_commit: 9e89370
-last_verified_date: 2026-08-02
+last_verified_commit: 46d4d75
+last_verified_date: 2026-08-04
 volatile: false
 ---
 
@@ -47,7 +47,7 @@ main.py  →  ui/  →  services/  →  database/db_manager.py  →  SQLite
 4. Loglama kurulur; 30 günden eski log dosyaları silinir.
 5. `exception_hook` kurulur — windowed derlemede de görünür hata penceresi + log yolu ([SECURITY_AND_PRIVACY.md](SECURITY_AND_PRIVACY.md)).
 6. `QApplication`, Türkçe locale/çeviri, ikon, font, splash.
-7. Veri yoksa yedekten geri yükleme sorulur; geri yükleme yapıldıysa **ardıl süreç** başlatılır.
+7. Veri yoksa yedekten geri yükleme sorulur; **yalnız tam başarıda** ardıl süreç başlatılır. Geri yükleme üç sonucu ayırır (`preflight_failed` / `rolled_back` / `rollback_failed`) ve başarısız hiçbir durumda yeniden başlatma yapılmaz — ayrıntı [DATA_AND_PATHS.md](DATA_AND_PATHS.md).
 8. `MainWindow` açılır; otomatik yedek zamanlayıcısı ve güncelleme kontrolü başlar.
 
 ## Thread / worker düzeni
@@ -80,4 +80,8 @@ Doğrulama başarısızsa yarım dosya silinir, `os.startfile` / `os._exit` / ta
 
 ## Hata bildirimi
 
-Kaydetme/silme hataları `ui/utils/operation_error.py` üzerinden **güvenli mesaja** ve kişisel veri içermeyen loga çevrilir; diyalog kapanmaz, kullanıcı düzeltip yeniden dener. Ayrıntı: [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md).
+Teknik hatalar `ui/utils/operation_error.py` üzerinden **güvenli mesaja** ve kişisel veri içermeyen loga çevrilir; kullanıcıya gösterim `ui/utils/operation_error_dialog.py` ince sarmalayıcısıyla yapılır. Diyalog kapanmaz, kullanıcı düzeltip yeniden dener.
+
+Bu ortak altyapı yalnız kaydetme/silme yollarında değil; teklif, kategori, dashboard, rapor, ayarlar, yedekleme/geri yükleme ve içe/dışa aktarma yollarında da kullanılır. Değişmeyen iki sınır: **aynı istisna en fazla bir kez** güvenli loglanır (loglama sorumluluğu tek katmandadır) ve **çok aşamalı akışlarda sonraki aşamanın hatası tamamlanmış aşamayı inkâr etmez** — uzun işlem penceresi hata, iptal ve başarı yollarının hepsinde kapanır. Ayrıntı ve koruyan testler: [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) 18 / 18-1 / 18b.
+
+Bu davranışlar **kaynak testi** ile doğrulanmıştır; paketli EXE veya installer kanıtı değildir ([VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) kanıt sınıfları).
