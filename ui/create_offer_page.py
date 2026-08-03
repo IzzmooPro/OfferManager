@@ -29,6 +29,23 @@ logger = logging.getLogger("create_offer")
 
 from ui.utils import operation_error as op_hata
 from ui.utils import operation_error_dialog as hata_diyalogu
+
+# Müşteri kaydedildi ama ekran güncellenemedi — SABİT metin. Kaydı inkâr
+# etmez ve kullanıcıya nereden doğrulayacağını söyler (invariant 18b).
+MUSTERI_KAYIT_SONRASI_MESAJ = (
+    "Müşteri kaydedildi, ancak liste yenilenemedi veya ekranda seçilemedi. "
+    "Kaydı Müşteriler ekranından kontrol edebilirsiniz."
+)
+
+# Kayıt sonrası aşamanın iç teknik hatası. Metni SABİTTİR: kayıt kimliği,
+# firma adı veya başka kullanıcı verisi TAŞIMAZ (yalnız sınıf adı ve sabit
+# metin loglanır).
+_MUSTERI_LISTEDE_YOK = "kaydedilen müşteri yenilenen listede bulunamadı"
+
+
+class _MusteriListedeYok(LookupError):
+    """Kayıt başarılı ama müşteri ekranda seçilemedi — sabit metinli iç hata."""
+
 from core.constants import SYM_MAP, UNIT_LIST, DELIVERY_LIST
 from core.formatting import fmt_money, fmt_number
 
@@ -926,6 +943,7 @@ class CreateOfferPage(QWidget):
         box.setDefaultButton(yes_btn)
         box.exec()
         if box.clickedButton() == yes_btn:
+            # A) DB kaydı — başarısız olursa kayıt YOKTUR, sonraki aşama çalışmaz.
             try:
                 new_id = self.customer_svc.add(Customer(
                     company_name=company,
@@ -934,15 +952,39 @@ class CreateOfferPage(QWidget):
                     phone=self.phone_edit.text().strip(),
                     email=self.email_edit.text().strip(),
                 ))
-                self._load_customers()
-                # Yeni kaydedilen müşteriyi seç
-                for i, c in enumerate(self._customers):
-                    if c.id == new_id:
-                        self.customer_combo.setCurrentIndex(i + 1)
-                        break
-                logger.info("Yeni müşteri kaydedildi: %s", company)
-            except Exception as e:
-                QMessageBox.warning(self, "Hata", f"Müşteri kaydedilemedi:\n{e}")
+            except Exception as exc:                           # noqa: BLE001
+                hata_diyalogu.hata_goster(self, "Hata", exc, "Müşteri", "kaydet")
+                return
+            # Başarı logunda YALNIZ güvenli kayıt kimliği bulunur; firma adı,
+            # iletişim kişisi, adres, telefon ve e-posta LOGLANMAZ.
+            logger.info("Yeni müşteri kaydedildi (id=%s)", new_id)
+            # B) Kayıt sonrası ekran aşaması — ayrı sınır (bkz. invariant 18b).
+            self._yeni_musteriyi_goster(new_id)
+
+    def _yeni_musteriyi_goster(self, new_id):
+        """Kayıt SONRASI aşama: listeyi yenile ve yeni müşteriyi combo'da seç.
+
+        Bu aşamanın hatası kaydı **inkâr etmez**: müşteri veritabanına
+        yazılmıştır, yalnız ekran güncellenememiştir. Bu yüzden burada
+        "kaydedilemedi" DENMEZ; sabit kısmi başarı metni gösterilir ve
+        istisna güvenli biçimde bir kez loglanır (invariant 18/18b).
+        """
+        try:
+            self._load_customers()
+            secildi = False
+            for i, c in enumerate(self._customers):
+                if c.id == new_id:
+                    self.customer_combo.setCurrentIndex(i + 1)  # +1: "-- seçin --"
+                    secildi = True
+                    break
+            if not secildi:
+                # Liste yenilendi ama kayıt görünmüyor. SESSİZCE dönmek kaydı
+                # kullanıcıdan gizlerdi; aynı kısmi başarı sınırına düşürülür.
+                raise _MusteriListedeYok(_MUSTERI_LISTEDE_YOK)
+        except Exception as exc:                               # noqa: BLE001
+            hata_diyalogu.kismi_hata_goster(
+                self, "Müşteri kaydedildi", exc, MUSTERI_KAYIT_SONRASI_MESAJ,
+                "Müşteri listesi yenileme", kayit_id=new_id)
 
     def _go_back(self):
         cur = self.stack.currentIndex()
@@ -967,19 +1009,22 @@ class CreateOfferPage(QWidget):
         prefill.email          = self.email_edit.text().strip()
 
         dlg = CustomerDialog(self, prefill)
-        if dlg.exec() != QDialog.DialogCode.Accepted:
-            return
-        try:
-            svc = CustomerService()
-            new_id = svc.add(dlg.get_customer())
-            self._load_customers()
-            # Yeni müşteriyi combo'da seç
-            for i, c in enumerate(self._customers):
-                if c.id == new_id:
-                    self.customer_combo.setCurrentIndex(i + 1)  # +1: ilk "-- seçin --" öğesi
-                    break
-        except Exception as e:
-            QMessageBox.warning(self, "Hata", f"Müşteri kaydedilemedi:\n{e}")
+        svc = CustomerService()
+        # A) DB kaydı. Hata olursa AYNI diyalog nesnesi korunur; kullanıcı
+        #    girdisini düzeltip yeniden deneyebilir, vazgeçerse işlem biter.
+        while True:
+            if dlg.exec() != QDialog.DialogCode.Accepted:
+                return
+            try:
+                new_id = svc.add(dlg.get_customer())
+            except Exception as exc:                           # noqa: BLE001
+                hata_diyalogu.hata_goster(self, "Hata", exc, "Müşteri", "kaydet")
+                continue
+            break
+        # Buradan sonrası KAYIT SONRASI aşamadır: diyalog yeniden AÇILMAZ ve
+        # `add` TEKRARLANMAZ — aksi hâlde mükerrer müşteri oluşurdu.
+        logger.info("Yeni müşteri kaydedildi (id=%s)", new_id)
+        self._yeni_musteriyi_goster(new_id)
 
     def _validate_step1(self) -> bool:
         company = self.company_edit.currentText().strip()

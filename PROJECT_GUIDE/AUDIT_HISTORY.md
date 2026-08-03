@@ -44,6 +44,12 @@ Sütunlar: kod · sınıf · kök neden (kısa) · kapanış commit'i · korunan
 | O15 | KESİN | Yalnız aktif sayfa okunuyor, diğer sayfalardaki veri sessizce atılıyordu | `66527c2` | Sayfa adayı tespiti + kullanıcı seçimi + tek sayfa aktarımı | `test_xlsx_sheet_selection` |
 | **O16** | KESİN | Sayfa sorusu modal ilerleme penceresinden **sonra** açılıyor, Windows onu devre dışı bırakıyor ve akış kilitleniyordu | `060baf3` | Sayfa seçimi ilerleme penceresinden önce; iptalde temiz çıkış | `test_import_sheet_dialog_modality` |
 
+## R serisi (v4.1 sonrası)
+
+| No | Sınıf | Kusur | Düzeltme | Test |
+|---|---|---|---|---|
+| **R10a** | KESİN | `create_offer_page` içindeki iki müşteri kaydetme yolu (`_check_customer_registration`, `_open_add_customer`) ham `{e}` gösteriyor, istisnayı güvenli loglamıyor; başarı logunda **firma adı** geçiyor; servis kaydı ile ekran yenilemesi tek `try` içinde olduğu için kaydedilmiş müşteri için "Müşteri kaydedilemedi" deniyordu | Güvenli `hata_diyalogu` altyapısı; `add` ile kayıt sonrası ekran aşaması ayrı `try` sınırlarına bölündü (`_yeni_musteriyi_goster`); başarı logu `id=%s`; `_open_add_customer` aynı diyalog nesnesiyle yeniden denemeye izin veriyor, kayıttan sonra diyaloğu yeniden açmıyor | `test_create_offer_customer_save_errors` |
+
 ## Not
 
 - O16, **paketli sürümde manuel testle** bulundu; kaynak testleri `QInputDialog.getItem`'i mock'ladığı için gerçek modal entegrasyonu hiç çalıştırılmamıştı. Bu, mock'lu testlerin sınırını gösteren kalıcı bir derstir ([KNOWN_RISKS.md](KNOWN_RISKS.md)).
