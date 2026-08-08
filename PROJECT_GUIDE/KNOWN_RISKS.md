@@ -2,12 +2,12 @@
 purpose: Doğrulanmış açık riskler ve sonraki adımları — snapshot.
 read_when: Denetim, release kararı, risk analizi.
 covers: []
-last_verified_commit: 46d4d75
-last_verified_date: 2026-08-04
+last_verified_commit: c3f711e
+last_verified_date: 2026-08-08
 volatile: true
 ---
 
-# Bilinen riskler (snapshot — 2026-08-04)
+# Bilinen riskler (snapshot — 2026-08-08)
 
 Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içindedir.
 
@@ -38,6 +38,6 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 |---|---|---|
 | R12a | ~~Frozen modda R11 yollarının kanıtı~~ — **İKİ YOL DA KAPANDI (2026-08-02)**. *Yol A* (Yardım → Sorun veya Öneri Bildir) paketli dist EXE'de; *Yol B* (teknik hata kutusu → 'Hata Raporla') **kurulu v4.2**'de: izole profil + izole DB salt-okunur tetikleyici, gerçek fare tıklamaları, gerçek pano ölçümü, güvenli İşlem/Hata Türü/Konum, yasaklı içerik yok. Navigasyon tamamen dış otomasyonla yapıldı. | **KAPALI** |
 | R12b | ~~`_internal/assets/company.cfg` ve `assets/logo.png` pakete giriyor~~ — **AÇIK BULGU DEĞİL.** Firma adı/adres/telefon/e-posta, teklif öneki, PDF varsayılan metinleri ve logo **bilinçli ürün varsayımlarıdır**; ürün belirli bir firma için hazırlanmıştır. Paket içinde SMTP parolası, credential veya token YOKTUR. | **KAPALI — kabul edilmiş ürün kararı (2026-08-02).** `core/config.py`, `assets/company.cfg`, `assets/logo.png` ve `.spec` asset kapsamı DEĞİŞTİRİLMEZ |
-| R12c | **Build sonrası provenance kuralı hâlâ testle zorlanmıyor**: "build sonrası yalnız manifest/CURRENT_STATUS/KNOWN_RISKS/CHANGELOG değişebilir" kuralı için otomatik kontrol yok. Aşama 1 ve 2A metadata commit'leri `tests/` dosyalarına da dokundu (pakete girmeyen dosyalar; paket denetimiyle doğrulandı). | AÇIK — kural bir sonraki build'den ÖNCE kodlanmalı |
+| R12c | ~~**Build sonrası provenance kuralı testle zorlanmıyor**~~ — **kapandı 2026-08-08** (`c3f711e`). Kök neden: artifact `227656b`'den build edilmişti, sonrasında kaynak/test değişmesine rağmen `--release` exit 0 veriyordu. Yeni `kontrol_build_sonrasi_provenance` kapısı build sonrasında YALNIZ dört **tam** yola izin verir (`PROJECT_GUIDE/project_manifest.json`, `PROJECT_GUIDE/CURRENT_STATUS.md`, `PROJECT_GUIDE/KNOWN_RISKS.md`, `docs/CHANGELOG.md`; klasör/prefix izni yok). Commit edilmiş, staged, unstaged ve untracked/non-ignored yasak yollar birlikte denetlenir (add/modify/delete/rename). Eksik/bozuk `built_from_commit`, Git okunamaması ve build commit'inin HEAD'in atası olmaması **fail-closed**. Kontrol yalnız `--release` modunda zorunludur. **Güven sınırı — silinmemeli:** kapı yalnız Git'in gördüğü provenance'ı kanıtlar; gitignore/local-only `packaging/` ve `assets/` girdilerinin geçmişini kanıtlamaz ve artifact ile commit arasında kriptografik bağ kurmaz — `built_from_commit`'in gerçek build loguyla eşleştiği release incelemesinde **ayrıca** doğrulanmalıdır. → `tests/test_project_guide.py` (24 provenance testi), `tests/test_version_consistency.py` | **KAPALI** |
 | R12d | ~~Paketli U17 → v4.2 gerçek yükseltme~~ — **KANITLANDI (2026-08-02)**: paketli U17'li v4.1 istemci canlı v4.2'yi gördü, tam asset adını seçti, host/size/SHA-256 doğrulamasını yaptı ve kurulumu tamamladı (D2). | **KAPALI** |
 

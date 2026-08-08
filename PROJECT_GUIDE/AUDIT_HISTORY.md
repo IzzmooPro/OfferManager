@@ -2,8 +2,8 @@
 purpose: K1–K6 ve O1–O16 denetim bulgularının kapanış kaydı (tarihçe).
 read_when: Denetim geçmişi, "bu daha önce görüldü mü?", regresyon şüphesi.
 covers: []
-last_verified_commit: 46d4d75
-last_verified_date: 2026-08-04
+last_verified_commit: c3f711e
+last_verified_date: 2026-08-08
 volatile: false
 ---
 
@@ -60,8 +60,11 @@ Sütunlar: kod · sınıf · kök neden (kısa) · kapanış commit'i · korunan
 
 | **R10c-4** IMPORT | KESİN | Dosya okuma (`_read_file`, `_read_xlsx_sheets`) ham `str(e)` döndürüyor; CSV logları dosya adı ve ham istisna taşıyor; satır hataları `errors` listesine firma adı/ürün kodu/teklif no yazıyor; kategori hatası kategori adıyla loglanıp kullanıcıya hiç bildirilmiyor; doğrulama/yazma/aşama hataları ilerleme penceresini açık bırakıp yanlış başarı döndürebiliyor; workbook hata yolunda kapatılmıyordu | Sabit `DOSYA_OKUMA_HATASI`; güvenli `kayit_id` yalnız satır/grup SIRASI; kategori başarısızlığı önbelleğe alınır (yeniden denenmez), her farklı kategori bir kez loglanır, kullanıcıya tek toplu uyarı; `stage_state` yalnız sayısal (`kategori_yazildi`); aşamalar birbirinin başarısını inkâr etmez ve ilerleme penceresi her yolda kapanır; dönüş değeri gerçek DB değişikliğini gösterir; `_workbook_kapat` başarı ve hata yollarında `finally` içinde. **R8 gizli sayfa davranışı korunmuştur.** Commit `46d4d75` | `test_import_safe_errors`, `test_csv_import_errors` |
 
+| **R12c** | KESİN | Artifact `227656b`'den build edilmişti; sonrasında kaynak ve test dosyaları değişmesine rağmen `--release` **exit 0** veriyordu. "Build sonrası yalnız manifest/CURRENT_STATUS/KNOWN_RISKS/CHANGELOG değişebilir" kuralının otomatik karşılığı yoktu — eski artifact yeni kaynağın kanıtı gibi yayına gidebilirdi | Yeni `kontrol_build_sonrasi_provenance` kapısı. İzinli **tam** yollar (exact match, klasör/prefix izni YOK): `PROJECT_GUIDE/project_manifest.json`, `PROJECT_GUIDE/CURRENT_STATUS.md`, `PROJECT_GUIDE/KNOWN_RISKS.md`, `docs/CHANGELOG.md`. `built_from_commit..HEAD` commit'leri + staged + unstaged + untracked/non-ignored birlikte denetlenir; add/modify/delete/rename kapsanır, dosya başına tek hata üretilir, yollar `/` biçimine normalize edilir ve mutlak yol sızmaz. **Fail-closed**: `built_from_commit` eksik/bozuk, Git'te bulunamıyor, HEAD'in atası değil veya Git okunamıyorsa kapı kapanır. Yalnız `--release` modunda zorunlu; normal/`--stale`/`--artifacts` davranışı değişmez. Commit `c3f711e` | `test_project_guide` (24 provenance testi), `test_version_consistency` |
+
 ## Not
 
+- **R12c kanıt sınırı.** Kapı yalnız **Git'in görebildiği** provenance'ı kanıtlar. Gitignore/local-only `packaging/` ve `assets/` girdilerinin içerik geçmişi commit diff'iyle kanıtlanamaz; onlar `kontrol_yerel_girdiler`, artifact hash ve installer doğrulamalarıyla ayrı kanıt sınıfındadır. Ayrıca `snapshot.built_from_commit` kapının **güvendiği** girdidir — artifact ile commit arasında kriptografik bağ kurulmaz ve manifest build sonrası değişebilen yollardan olduğu için yanlış/ileri bir commit kapıyı sessizce gevşetir; gerçek build loguyla eşleşme **release incelemesinde ayrıca** doğrulanmalıdır.
 - **R10c kanıt sınıfı.** Dört alt tur şunlarla ölçüldü: kaynak testleri; mock/izole geçici profil ölçümleri (gerektiği yerde test DB veya `TemporaryDirectory` altında geçici dosya); bazı alt turlarda izole kaynak-modu Windows Qt smoke/probları. **Yeni frozen/paketli EXE, installer, gerçek disk-dolu, gerçek dosya kilidi ve gerçek SQLite commit hatası kanıtı üretilmedi.** Bu yüzden R10c, R6 (paketli restore→restart) ve R8 (gizli sayfa politikası) maddelerini **kapatmaz**. Kapsam da sınırlıdır: iddialar yalnız R10c'de ele alınan ve regresyon testleriyle bağlanan hata yolları içindir.
 - O16, **paketli sürümde manuel testle** bulundu; kaynak testleri `QInputDialog.getItem`'i mock'ladığı için gerçek modal entegrasyonu hiç çalıştırılmamıştı. Bu, mock'lu testlerin sınırını gösteren kalıcı bir derstir ([KNOWN_RISKS.md](KNOWN_RISKS.md)).
 - Tam commit zinciri burada tutulur; diğer belgelerde tekrarlanmaz.

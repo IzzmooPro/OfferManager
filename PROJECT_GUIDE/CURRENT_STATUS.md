@@ -3,27 +3,29 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: 46d4d75
-last_verified_date: 2026-08-04
+last_verified_commit: c3f711e
+last_verified_date: 2026-08-08
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-04 · sürüm: `v4.2` — YAYINLANDI (public, latest).**
-> **Kaynak, yayımlanmış v4.2 artifact'ından ileridedir** (R10a/R10b/R10c güvenli hata turları). Bu turlar için **yeni build, paketli EXE veya installer kanıtı YOKTUR**; v4.2 tag/release/artifact kanıtları değişmemiştir.
+> **Yakalama tarihi: 2026-08-08 · sürüm: `v4.2` — YAYINLANDI (public, latest).**
+> **Kaynak, yayımlanmış v4.2 artifact'ından ileridedir** (R10a/R10b/R10c güvenli hata turları + R12c provenance kapısı). Bu turlar için **yeni build, paketli EXE veya installer kanıtı YOKTUR**; v4.2 tag/release/artifact kanıtları değişmemiştir.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.2** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.2.0.0` / `v4.2`) eşitlendi; installer adı `TeklifYonetim_Setup_v4.2.exe`
-- **Doğrulama durumu:** v4.2 temiz build (`227656b`), frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. `artifact_verification_status = verified`, `release_candidate_ready = true`, `--release` exit 0.
+- **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
+- **Doğrulama durumu — GÜNCEL KAYNAK için (`c3f711e`):** `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`, `--release` **exit 1**. Kaynak build commit'inden ileridedir; yeni temiz build ve paket doğrulaması gereklidir.
 - v4.2 artifact'ları: dist EXE `476015268A26…5353B` (9.476.704 B, 4.2.0.0 / v4.2) · installer `TeklifYonetim_Setup_v4.2.exe` `D61488DFE55D…82B2` (52.548.738 B). İkisi de v4.1 hash'lerinden **farklıdır**.
 - **Makinede kurulu sürüm v4.2** — son hâli **D2 canlı güncellemesiyle** kuruldu: kurulu EXE `476015268A26…5353B`, registry `DisplayVersion v4.2`, AppId ve kurulum dizini korundu. **Gerçek kullanıcı verisi ve yedekleri değişmedi** (30 + 20 dosya: YENİ=0, SİLİNEN=0, DEĞİŞEN=0; `database.db` `AB7B8AE5…`). **v4.2 için kaldırma ve temiz yeniden kurulum yapılmadı** — installer mekanizması v4.1'den beri değişmedi ve o senaryolar v4.1 turunda tam yürütüldü.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- PROJECT_GUIDE, sürüm tutarlılık, R10 ve R11 testleri dâhil son tam suite: **942 passed, 4 skipped, 267 subtests** (2026-08-02, temiz ağaç). Yayın turunda bir test eklendi (tag'in build commit'inden ayrılmasını yakalar); önceki ölçüm 941/4/267 idi.
+- Güncel kaynak tam suite (`c3f711e`): **1152 passed, 4 skipped, 343 subtests**. Ölçüm, commit'e giren aynı kaynak/test içeriğiyle **commit'ten önce** yapıldı; commit sonrasında yeniden çalıştırılmadı. Makine-okunur karşılığı: manifest `guide_integrated_test_result`.
+- v4.2 **build anındaki** kapı sonucu ayrı ve tarihsel bir alandır: manifest `build_gate_test_result` (`227656b`) — aşağıdaki "v4.2 Aşama 1 doğrulaması" bölümünde.
 - `py_compile` tüm proje dosyalarında temiz
 - Upstream durumu **her release öncesi canlı git komutlarıyla** doğrulanır; bu belgede canlı remote hash tutulmaz
 
@@ -133,12 +135,27 @@ v4.1 kaynak hazırlığı · legacy bilgi aktarımı ve temizliği · boş bağl
 
 v4.2 yayın turu **kapandı**. **R10a ve R10b kapandı (2026-08-03)** — teklif ekranındaki iki müşteri kaydetme yolu güvenli hata altyapısına ve iki aşamalı sınıra geçirildi; dashboard'daki PDF açma yolu korumaya alındı. **R10c dört alt turla kapandı (2026-08-04)** — reports, settings, backup ve import hata yolları güvenli altyapıya geçirildi (yukarıdaki tablo).
 
-Açık kalanlar iki ayrı sınıftır:
+**R12c kapandı (2026-08-08, `c3f711e`)** — build sonrası provenance kapısı kodlandı ve testle zorlanıyor (aşağıdaki bölüm).
 
-- **R10 alt serisinden açık kalan küçük madde:** [KNOWN_RISKS.md](KNOWN_RISKS.md) **R12c** (build sonrası provenance kuralının testle zorlanması).
-- **Paketli/ürün davranışı kanıtı gerektiren, ayrıca açık maddeler:** **R6** (paketli gerçek geri yükleme → restart zinciri) ve **R8** ("Tümünü İçe Aktar" gizli sayfa politikası). Bunlar R10c ile kapanmaz; kendi kanıt sınıflarını bekler.
+Açık kalanlar, **paketli/ürün davranışı kanıtı gerektiren** maddelerdir: **R6** (paketli gerçek geri yükleme → restart zinciri) ve **R8** ("Tümünü İçe Aktar" gizli sayfa politikası). Bunlar kaynak/mock kanıtıyla kapanmaz; kendi kanıt sınıflarını bekler.
 
 Diğer maddelerin durumu bu turda değişmedi — güncel liste [KNOWN_RISKS.md](KNOWN_RISKS.md).
+
+## R12c — build sonrası provenance kapısı (2026-08-08) — **KAPANDI**
+
+- Kök neden: artifact `227656b`'den build edilmişti; sonrasında kaynak ve test dosyaları değiştiği hâlde `--release` **exit 0** veriyordu.
+- Yeni `kontrol_build_sonrasi_provenance` kapısı build sonrasında YALNIZ dört **tam** yola izin verir: `PROJECT_GUIDE/project_manifest.json`, `PROJECT_GUIDE/CURRENT_STATUS.md`, `PROJECT_GUIDE/KNOWN_RISKS.md`, `docs/CHANGELOG.md`. Klasör/prefix izni yoktur.
+- Commit edilmiş, staged, unstaged ve untracked/non-ignored yasak yollar birlikte denetlenir (add/modify/delete/rename). Eksik/bozuk `built_from_commit`, Git okunamaması ve build commit'inin HEAD'in atası olmaması **fail-closed**. Kontrol yalnız `--release` modunda zorunludur.
+- Kanıt: kırmızı **23 failed / 1 passed** → provenance testleri **24 geçti**; `test_project_guide` **98 geçti / 7 subtest**; `test_project_guide + test_version_consistency` **148 geçti / 4 atlandı / 9 subtest**; tam paket **1152 passed, 4 skipped, 343 subtests**. Tam paket ölçümü `c3f711e`'ye giren aynı kaynak/test içeriğiyle **commit'ten önce** yapıldı; commit sonrasında yeniden çalıştırılmadı. `py_compile` ve `git diff --check` temiz.
+- Gerçek depo modları: normal **exit 0**, `--stale` **exit 0 / 0 uyarı**, `--artifacts` **exit 0**, `--release` **exit 1** — `release_candidate_ready=false` **ve** build sonrası provenance ihlalleri nedeniyle. (Provenance hata **sayısı** her metadata değişikliğinde değişir; bu snapshot'ta sabitlenmez — güncel değer komutu çalıştırarak ölçülür.) **Yeni build alınana kadar `--release`'in kırmızı kalması doğru davranıştır.**
+
+> **Kanıt sınırı — silinmemeli.** Kapı yalnız **Git'in görebildiği** provenance'ı kanıtlar; gitignore/local-only `packaging/` ve `assets/` girdilerinin geçmişini kanıtlamaz. `built_from_commit` kapının **güvendiği** girdidir ve artifact ile commit arasında kriptografik bağ yoktur — gerçek build loguyla eşleşmesi release incelemesinde **ayrıca** doğrulanmalıdır.
+
+## Bu yakalamadaki artifact durumu
+
+- **Yeni build, frozen smoke, installer veya release YAPILMADI.** Güncel kaynak (`c3f711e`), yayımlanmış **v4.2** artifact'ından **ileridedir**: R10a/R10b/R10c ve R12c değişikliklerini içerir, artifact içermez.
+- Manifest bu gerçeği yansıtır: `source_commit = c3f711e`, `built_from_commit = 227656b` (**değiştirilmedi**), `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`. **Artifact hash/boyut/yol alanları, kurulu sürüm alanları ve yayımlanmış release/tag/updater kanıtları DEĞİŞMEDİ.**
+- v4.2 tag'i, GitHub Release'i ve D1/D2/D2b kanıtları **tarihsel olarak geçerlidir**; bu tur yalnız güncel kaynağın artifact tazeliğini düşürür.
 
 ## Bu yakalamayı yenilerken
 

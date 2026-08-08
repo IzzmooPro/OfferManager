@@ -37,19 +37,19 @@
     "clean_clone_buildable": false
   },
   "snapshot": {
-    "captured_at": "2026-08-02",
+    "captured_at": "2026-08-08",
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "227656b",
-    "source_commit_note": "R11 geri bildirim özelliği + v4.2 sürüm hazırlığı commit'i. Bu commit build ağacıdır; sonraki metadata commit'i YALNIZ kanıt alanlarını yazar.",
+    "source_commit": "c3f711e",
+    "source_commit_note": "Guncel kaynak; R10a/R10b/R10c ve R12c degisikliklerini icerir. Eldeki artifact bu degisiklikleri ICERMEZ (built_from_commit=227656b).",
     "built_from_commit": "227656b",
-    "built_from_commit_note": "v4.2 artifact'ının build edildiği gerçek HEAD; kaynak commit'iyle AYNIDIR. Metadata commit'i paket içeriğini değiştirmez (tests/ ve PROJECT_GUIDE/ pakete girmez — paket denetimiyle doğrulandı).",
+    "built_from_commit_note": "v4.2 artifact'inin build edildigi gercek HEAD. Guncel kaynak bu commit'ten ileridedir: R10a/R10b/R10c ve R12c degisiklikleri artifact'a DAHIL DEGILDIR. Yeni build alinmadan artifact guncel kaynagi temsil etmez.",
     "version": "v4.2",
     "artifact_built_for_version": "v4.2",
-    "artifact_verification_status": "verified",
-    "release_candidate_ready": true,
-    "release_readiness_note": "v4.2 için temiz build, frozen smoke (B) ve installer doğrulaması (C: yerinde upgrade) GEÇTİ; R12a'nın iki frozen yolu da kapandı. release_candidate_ready=true YALNIZ 1-5. adımların geçtiğini söyler — v4.2 HENÜZ YAYIMLANMADI: push, tag, GitHub Release, read-back ve canlı updater (D1/D2) yapılmadı.",
+    "artifact_verification_status": "stale_source_changed",
+    "release_candidate_ready": false,
+    "release_readiness_note": "release_candidate_ready=false: eldeki v4.2 artifact'i yayimlanmistir ve kendi turunda dogrulanmistir, ancak guncel kaynaktan uretilmemistir. Yeni bir yayin icin once temiz build, frozen smoke (B) ve installer (C) dogrulamasi tekrarlanmalidir. `--release` kapisi, build sonrasi provenance kontrolu (R12c) nedeniyle yeni build alinana kadar kirmizi kalir; bu dogru davranistir.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -61,18 +61,18 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
-      "passed": 942,
-      "subtests_passed": 267,
-      "date": "2026-08-02",
+      "passed": 1152,
+      "subtests_passed": 343,
+      "date": "2026-08-08",
       "skipped": 4,
-      "note": "temiz çalışma ağacında alınan gerçek sonuç. Yayın turunda bir test eklendi (yayımlanan tag'in build commit'ini göstermesi); önceki ölçüm 941/4/267 idi. Dört skip beklenen durumdur."
+      "note": "Olcum, c3f711e'ye giren ayni kaynak/test icerigiyle commit'ten ONCE yapildi; commit sonrasinda tam paket yeniden calistirilmadi. Onceki olcum 1127/5/343 idi; R12c provenance testleri eklendi ve bir skip artik atlanmiyor. build_gate_test_result BUILD ANINDAKI (227656b) tarihsel kapi sonucudur ve degistirilmez."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 942,
-      "subtests_passed": 267,
-      "date": "2026-08-02",
-      "note": "guide_integrated_test_result ile aynı; source_test_result 648/29 baseline'ını (060baf3) TARİHSEL alan olarak korur.",
+      "passed": 1152,
+      "subtests_passed": 343,
+      "date": "2026-08-08",
+      "note": "Guncel kaynakta (c3f711e) olculdu; guide_integrated_test_result ile aynidir. source_test_result 648/29 baseline'ini (060baf3) TARIHSEL alan olarak korur.",
       "skipped": 4
     },
     "dist_exe": {
@@ -424,6 +424,7 @@
       "subtests_passed": 267,
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
-    }
+    },
+    "artifact_stale_reason": "Kaynak, artifact'in build commit'inden (227656b) ileridedir: R10a/R10b/R10c guvenli hata turlari ve R12c provenance kapisi eklendi. Eldeki v4.2 dist/installer dosyalari GECERLIDIR ve hash'leri degismemistir, ancak guncel kaynagi temsil etmezler. Yeni temiz build ve paket dogrulamasi (frozen smoke + installer) gereklidir."
   }
 }

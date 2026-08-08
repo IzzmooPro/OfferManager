@@ -2,8 +2,8 @@
 purpose: Değişiklik akışı, riskle orantılı doğrulama matrisi ve dokümantasyon/temizlik kuralları.
 read_when: Her uygulama görevinde ve incelemede.
 covers: []
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: c3f711e
+last_verified_date: 2026-08-08
 volatile: false
 ---
 
@@ -46,7 +46,21 @@ Küçük bir değişiklikte bütün uzun smoke turlarını tekrarlama; tablodaki
 | (normal) | Zorunlu dosyalar, `project_manifest.json` şeması, frontmatter, `covers` yollarının varlığı, Markdown iç bağlantıları, INDEX yönlendirme hedefleri, gizli veri / mutlak kullanıcı yolu taraması, snapshot hash biçimleri |
 | `--stale` | `covers` altındaki kaynakların `last_verified_commit`'ten sonra değişip değişmediği |
 | `--artifacts` | Mevcut artifact'ların SHA256'sı manifest ile uyuşuyor mu (yoksa atlanır) |
-| `--release` | Yukarıdakilerin tamamı **zorunlu**; eksik yerel girdi veya eskimiş belge varsa sıfırdan farklı çıkış |
+| `--release` | Yukarıdakilerin tamamı **zorunlu**; eksik yerel girdi, eskimiş belge **veya build sonrası provenance ihlali** varsa sıfırdan farklı çıkış |
+
+**Build sonrası provenance kapısı (R12c).** `--release` modunda, manifest `snapshot.built_from_commit` değerinden **sonra** Git'in gördüğü değişiklikler denetlenir. Build sonrasında değişmesine izin verilen **tam** yollar yalnız şunlardır (exact match; `docs/` veya `PROJECT_GUIDE/` gibi klasör/prefix izni **yoktur**):
+
+- `PROJECT_GUIDE/project_manifest.json`
+- `PROJECT_GUIDE/CURRENT_STATUS.md`
+- `PROJECT_GUIDE/KNOWN_RISKS.md`
+- `docs/CHANGELOG.md`
+
+Denetim dört kaynağı **birlikte** kapsar: `built_from_commit..HEAD` commit'leri, **staged**, **unstaged** ve **untracked/non-ignored** dosyalar; ekleme, değiştirme, silme ve yeniden adlandırma dâhildir. `built_from_commit` eksik/bozuksa, Git'te bulunamıyorsa, HEAD'in atası değilse veya Git okunamıyorsa kapı **fail-closed** davranır.
+
+- **Kaynak kodu, `tests/` veya izinli listede olmayan başka bir rehber belgesi değiştiyse yeni build gerekir.** Eski artifact yeni kaynağın kanıtı sayılmaz.
+- Kapı yalnız `--release` modundadır: **normal, `--stale` ve `--artifacts` modları provenance nedeniyle kırılmaz.**
+- Gitignore'daki `dist/`, `build/`, `installer_output/` çıktıları sırf var oldukları için ihlal sayılmaz.
+- **Sınır:** kapı yalnız Git'in görebildiği provenance'ı kanıtlar. Gitignore/local-only `packaging/` ve `assets/` girdilerinin içerik geçmişi bu kapıyla **kanıtlanmaz**; onlar yerel girdi, artifact hash ve installer doğrulamalarıyla ayrı kanıt sınıfındadır. Ayrıca `built_from_commit` kapının **güvendiği** girdidir — artifact ile commit arasında kriptografik bağ yoktur ([RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)).
 
 **Stale kuralı:** bir belge, `covers` içindeki kaynak/test/build dosyaları **commit geçmişinde** (`last_verified_commit..HEAD`) **veya çalışma ağacında** (staged / unstaged / untracked) değiştiyse eskimiş sayılır. Belge başına en fazla bir satır üretilir; aynı dosya birden çok kaynakta görünürse tek neden yazılır.
 

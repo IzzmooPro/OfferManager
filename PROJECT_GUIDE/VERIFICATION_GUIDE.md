@@ -6,8 +6,8 @@ covers:
   - core/restart.py
   - core/app_paths.py
   - ui/dialogs/backup_manager.py
-last_verified_commit: 46d4d75
-last_verified_date: 2026-08-04
+last_verified_commit: c3f711e
+last_verified_date: 2026-08-08
 volatile: false
 ---
 
@@ -22,6 +22,17 @@ volatile: false
 | **C. Installer kanıtı** | Kurulum/upgrade/kaldırma, registry, kısayol, veri koruma | Uygulama mantığı |
 
 Bir sınıfın sonucunu diğerinin yerine yazma.
+
+**Build sonrası provenance kapısı (R12c) bir kanıt SINIFI DEĞİLDİR.** A/B/C ile aynı tabloya yazılmaz: ayrı bir **release süreç kapısıdır**. Yalnız şunu söyler — "eldeki artifact, `built_from_commit`'ten sonra izin verilmeyen bir değişiklik olmadan hâlâ bu kaynağı temsil ediyor". Paketin gerçekten çalıştığını **kanıtlamaz**; **B ve C sınıfı kanıtın yerine geçmez** ve onları atlatmak için kullanılamaz.
+
+> **Provenance temiz sayılmanın ön koşulu.** `built_from_commit`, build anında ölçülen gerçek HEAD ile **eşleştiği elle doğrulanmadan** provenance temiz sayılmaz. Kapı bu alanı girdi olarak kabul eder; doğruluğunu kanıtlamaz ve artifact ile commit arasında kriptografik bağ kurmaz ([RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) 3. adım).
+
+**Yeni build sonrası zorunlu sıra:**
+
+1. Build başlamadan önce ölçülen gerçek `git rev-parse HEAD` kaydedilir.
+2. Manifest `built_from_commit` bu kayıtla **eşleştirilir** (elle karşılaştırma).
+3. Build'den sonra **yalnız izinli metadata yolları** değiştirilir: `PROJECT_GUIDE/project_manifest.json`, `PROJECT_GUIDE/CURRENT_STATUS.md`, `PROJECT_GUIDE/KNOWN_RISKS.md`, `docs/CHANGELOG.md`.
+4. `verify_project_guide.py --release` → **exit 0**.
 
 **A sınıfının içindeki güvenli hata regresyonları.** `test_*_safe_errors.py` dosyaları (reports, settings, backup, import + `test_csv_import_errors.py`) A sınıfına girer: izole test yardımcıları ve mock'larla çalışır; yalnız gerektiği yerlerde `TemporaryDirectory`, geçici dosya veya test veritabanı kullanılır. Gerçek kullanıcı verisine dokunmaz. Bunlar **mesaj/log/aşama sözleşmesini** kanıtlar; gerçek disk-dolu, gerçek dosya kilidi, gerçek SQLite commit hatası ve paketli davranışı **kanıtlamaz**. Özellikle geri yükleme durum makinesi (`preflight_failed` / `rolled_back` / `rollback_failed`) A sınıfında doğrulanmıştır; paketli gerçek **geri yükleme → restart** zinciri hâlâ açıktır ([KNOWN_RISKS.md](KNOWN_RISKS.md) R6).
 
@@ -108,6 +119,6 @@ D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater 
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
-**A sınıfı — güncel kaynak (2026-08-04):** `1127 passed, 5 skipped, 343 subtests`. Ölçüm, `46d4d75`'e giren aynı içerikle **commit'ten önce** yapıldı; commit sonrasında tam paket yeniden çalıştırılmadı.
+**A sınıfı — güncel kaynak (2026-08-08):** `1152 passed, 4 skipped, 343 subtests`. Ölçüm, `c3f711e`'ye giren aynı içerikle **commit'ten önce** yapıldı; commit sonrasında tam paket yeniden çalıştırılmadı.
 
-**B ve C sınıfı — güncel kaynak için YOK.** R10a–R10c turlarında yeni build, paketli EXE ve installer üretilmedi. Yayımlanmış **v4.2** artifact'ına ait B/C/D kanıtları geçerliliğini korur ama **güncel kaynağın kanıtı değildir**; kaynak o artifact'tan ileridedir.
+**B ve C sınıfı — güncel kaynak için YOK.** R10a–R10c ve R12c turlarında yeni build, paketli EXE ve installer üretilmedi. Yayımlanmış **v4.2** artifact'ına ait B/C/D kanıtları **tarihseldir**: kendi turunda geçerlidir ama **güncel kaynağın kanıtı değildir**; kaynak o artifact'tan ileridedir. Bu yüzden `--release` provenance kapısı da yeni build alınana kadar kırmızıdır.

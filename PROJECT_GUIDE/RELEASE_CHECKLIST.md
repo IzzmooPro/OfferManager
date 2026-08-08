@@ -7,8 +7,8 @@ covers:
   - packaging/version_info.txt
   - packaging/Kurulum-Yap.bat
   - ui/utils/updater.py
-last_verified_commit: 9e89370
-last_verified_date: 2026-08-02
+last_verified_commit: c3f711e
+last_verified_date: 2026-08-08
 volatile: false
 ---
 
@@ -38,11 +38,25 @@ Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı öl
 
 ## 3. Temiz build
 
+- [ ] **Build BAŞLAMADAN hemen önce** gerçek `git rev-parse HEAD` çalıştırılıp değeri kaydedildi (build logunun yanında tutulur)
 - [ ] `packaging/Kurulum-Yap.bat --no-pause` → exit 0 (testler + PyInstaller + Inno)
 - [ ] Yeni EXE/installer SHA256'ları eskisinden farklı
 - [ ] `dist/TeklifYonetim` içinde `dist` dışı artık dosya yok
 - [ ] Pakette gerçek kullanıcı verisi (DB, log, yedek, PDF), `tests/`, `Import_Test/`, `.git` yok
 - [ ] `project_manifest.json` snapshot alanları güncellendi
+- [ ] **`built_from_commit` alanına, build öncesinde kaydedilen O gerçek HEAD yazıldı** — sonradan hatırlanan veya tahmin edilen bir değer değil
+- [ ] **`built_from_commit`, gerçek build logu/ölçümüyle ELLE karşılaştırıldı.** Manifest alanına körlemesine güvenilmez: `--release` provenance kapısı bu alanı **girdi olarak kabul eder**, doğruluğunu kanıtlamaz
+- [ ] Artifact ile commit arasında **kriptografik bağ olmadığı** kabul edildi; bağ yalnız bu elle karşılaştırmayla kurulur (kod imzası kararından **ayrı** bir konudur — [Açık kararlar](#açık-kararlar))
+
+### Build sonrası provenance kapısı (R12c)
+
+- [ ] Build'den sonra **yalnız** şu **tam** yollar değişti (exact match; klasör/prefix izni yok):
+      `PROJECT_GUIDE/project_manifest.json` · `PROJECT_GUIDE/CURRENT_STATUS.md` · `PROJECT_GUIDE/KNOWN_RISKS.md` · `docs/CHANGELOG.md`
+- [ ] Kaynak kodu, `tests/` veya başka bir rehber belgesi değiştiyse **yeni build alındı** (eski artifact yeni kaynağın kanıtı sayılmaz)
+- [ ] `python PROJECT_GUIDE/scripts/verify_project_guide.py --release` → **exit 0**; provenance açısından da temiz. **Bu geçmeden tag ve release YAPILMAZ.**
+- [ ] Local-only `packaging/` ve `assets/` girdileri **ayrıca** hash/envanter/build incelemesiyle doğrulandı — provenance kapısı bunların geçmişini kanıtlamaz ([CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md))
+
+> **Mevcut kaynakta bu adımın `exit 1` vermesi BEKLENİR.** Güncel kaynak (R10a/R10b/R10c + R12c) yayımlanmış v4.2 artifact'ının build commit'inden ileridedir ve **yeni build alınmamıştır**. Kapının kırmızı kalması doğru davranıştır; yeşile dönmesi için önce 3–5. adımlar yeniden yürütülmelidir.
 
 ## 4. Paketli doğrulama (kanıt sınıfı B)
 

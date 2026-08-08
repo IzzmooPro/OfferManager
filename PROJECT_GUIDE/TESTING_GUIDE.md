@@ -13,8 +13,8 @@ covers:
   - tests/test_restart_flow.py
   - tests/test_credential_store.py
   - tests/test_save_error_handling.py
-last_verified_commit: 7395561
-last_verified_date: 2026-07-31
+last_verified_commit: c3f711e
+last_verified_date: 2026-08-08
 volatile: false
 ---
 
@@ -54,6 +54,15 @@ volatile: false
 | Şablon / kategori / müşteri / ürün servisleri | adı eşleşen `tests/test_*_service.py` |
 | Süresi geçen teklif uyarısı | `tests/test_expired_offer_prompt.py` |
 | Rehber tutarlılığı | `tests/test_project_guide.py` |
+| **Build sonrası provenance / release kapısı (R12c)** | `tests/test_project_guide.py`, `tests/test_version_consistency.py` |
+
+### R12c provenance testleri hakkında
+
+- Testler **geçici, gerçek bir Git deposu** kurar (`git init` + commit) ve yalnız orada çalışır: **gerçek depoya, gerçek artifact'lara ve kullanıcı verisine dokunmaz**.
+- Kapsanan yollar: izinli dört **tam** yolun geçmesi; kaynak/`tests/`/izlenen paketleme girdisi/başka rehber belgesi değişikliğinin kırmızı olması; **commit edilmiş, staged, unstaged ve untracked/non-ignored** değişikliklerin ayrı ayrı yakalanması; **silme ve yeniden adlandırma**; benzer-isim ve klasör-prefix hilelerinin geçmemesi; aynı dosya için tek hata üretilmesi; gitignore'daki build çıktılarının ihlal sayılmaması.
+- **Fail-closed** yolları: `built_from_commit` eksik, bozuk, Git'te bulunamıyor, HEAD'in atası değil veya Git hiç okunamıyor.
+- Mod sınırı: kontrolün yalnız `--release` modunda çalıştığı; normal/`--stale`/`--artifacts` modlarının etkilenmediği.
+- **Kanıtlamadıkları — silinmemeli:** kaynak testi, artifact ile `built_from_commit` arasında gerçek bir **kriptografik bağ** kurmaz ve gitignore/local-only `packaging/`–`assets/` girdilerinin **içerik geçmişini** doğrulamaz. Bu ikisi release incelemesinin elle yürütülen adımlarıdır ([RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)).
 
 ## Yalnız kaynakta test edilenler
 
