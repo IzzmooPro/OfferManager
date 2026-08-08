@@ -420,6 +420,9 @@ class DashboardPage(QWidget):
         # Süresi dolan teklifler için bu OTURUMDA sorulmuş teklif id'leri.
         # Kalıcı bir "sorma" ayarı yazılmaz; yalnız sayfa durumudur.
         self._expiry_asked_ids: set = set()
+        # Açılış turunda (ana pencere henüz görünmeden) gösterilemeyen
+        # bildirimler ertelenir; `acilis_bildirimlerini_goster()` çalıştırır.
+        self._acilis_bildirimi_bekliyor = False
 
         # Debounce — 350 ms sessizlik sonrası _load() çalışır
         self._search_timer = QTimer(self)
@@ -675,9 +678,43 @@ class DashboardPage(QWidget):
         elif empty:
             self._empty_label.setText("Henüz teklif oluşturulmamış.\nSol menüden 'Yeni Teklif' ile başlayın.")
 
+    def _acilis_bildirimleri_acik(self) -> bool:
+        """Bildirim (modal soru + durum uyarısı) gösterilebilir mi?
+
+        Ana pencere OLUŞTURULURKEN `_navigate(0)` bu sayfayı açar; o an
+        pencere henüz `show()` edilmemiştir ve ekranda yalnız splash vardır.
+        Modal kutu o anda açılırsa splash'in üzerinde belirir. Bu yüzden
+        bildirimler ana pencere görünür olana kadar ertelenir.
+        """
+        ana = self.window()
+        return bool(getattr(ana, "acilis_bildirimleri_hazir", True))
+
+    def acilis_bildirimlerini_goster(self) -> bool:
+        """Ertelenmiş açılış bildirimlerini TAM BİR KEZ çalıştırır.
+
+        İdempotenttir: ikinci çağrı ikinci kutu açmaz. `on_enter` bu turda
+        çalıştırılmaz — veriler açılışta zaten yüklendi; yalnız bildirimler
+        gösterilir.
+        """
+        if not self._acilis_bildirimi_bekliyor:
+            return False
+        self._acilis_bildirimi_bekliyor = False
+        if self._prompt_expired_offers():
+            self._load()                   # onay sonrası tablo yenilenir
+            return True
+        self._check_expiring_offers()
+        return True
+
     def on_enter(self):
-        """Sayfaya her geçişte çalışır — istatistik + tablo güncellenir."""
-        cancelled_any = self._prompt_expired_offers()
+        """Sayfaya her geçişte çalışır — istatistik + tablo güncellenir.
+
+        Açılış turunda veri yüklemesi AYNEN yapılır; yalnız bildirimler
+        ertelenir (bkz. `_acilis_bildirimleri_acik`).
+        """
+        bildirim_acik = self._acilis_bildirimleri_acik()
+        if not bildirim_acik:
+            self._acilis_bildirimi_bekliyor = True
+        cancelled_any = self._prompt_expired_offers() if bildirim_acik else False
         scroll_pos = self.table.verticalScrollBar().value()
 
         try:
@@ -703,7 +740,7 @@ class DashboardPage(QWidget):
         self.table.verticalScrollBar().setValue(scroll_pos)
 
         # Otomatik iptal mesajı varsa onu ezme; yoksa yaklaşan süre uyarısı göster
-        if not cancelled_any:
+        if bildirim_acik and not cancelled_any:
             self._check_expiring_offers()
 
     @staticmethod

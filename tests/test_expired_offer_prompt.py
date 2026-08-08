@@ -22,7 +22,8 @@ from services.offer_service import OfferService
 from ui.dashboard_page import DashboardPage
 
 
-class ExpiredOfferPromptTests(unittest.TestCase):
+class _TeklifTemel(unittest.TestCase):
+    """Ortak fikstür: izole DB, sahte onay kutusu ve teklif yardımcıları."""
 
     @classmethod
     def setUpClass(cls):
@@ -93,7 +94,9 @@ class ExpiredOfferPromptTests(unittest.TestCase):
     def _durum(self, oid: int) -> str:
         return self.svc.get_by_id(oid).status
 
-    # ── testler ──────────────────────────────────────────────────────────
+
+class ExpiredOfferPromptTests(_TeklifTemel):
+    """O2 — onaysız iptal yok; toplu onay sözleşmesi."""
 
     def test_entering_dashboard_does_not_change_status_silently(self):
         oid = self._teklif(30, "10 Gün")
@@ -305,6 +308,202 @@ class ExpiredOfferPromptTests(unittest.TestCase):
         self.assertEqual(page._model.rowCount(), 0)
         page._set_filter("Tümü")
         self.assertEqual(page._model.rowCount(), 2)
+
+
+class AcilisSirasiTests(_TeklifTemel):
+    """Açılış bildirimleri SPLASH ÜZERİNDE değil, ana pencere görünürken.
+
+    Kök neden: `MainWindow.__init__ → _load_pages → _navigate(0) →
+    DashboardPage.on_enter → _prompt_expired_offers` zinciri `main.py`
+    içindeki `window.show()` çağrısından ÖNCE çalışıyordu; modal kutu
+    "Arayüz oluşturuluyor…" splash'inin üzerinde açılıyordu.
+
+    Sözleşme: veri yüklemesi açılışta yapılır, **bildirimler ertelenir** ve
+    ana pencere görünür olduktan sonra TAM BİR KEZ gösterilir.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # `MainWindow` gerçek updater ağ thread'i ve otomatik yedek
+        # zamanlayıcısı başlatır. Bu testler AÇILIŞ BİLDİRİM SIRASINI ölçer;
+        # o yan etkiler kapatılmazsa arka planda kalan thread'ler test
+        # oturumunu askıda bırakır (ölçüldü: tam paket ~4 dk yerine kilitlendi).
+        from ui.dialogs import backup_manager as bm
+        import ui.utils.updater as upd
+        for hedef, ad, yeni in (
+                (bm.AutoBackupService, "_apply", lambda s: None),
+                (bm.AutoBackupService, "trigger_now",
+                 lambda s, reason="": None),
+                (upd, "start_startup_check", staticmethod(lambda parent: None))):
+            p = mock.patch.object(hedef, ad, yeni)
+            p.start()
+            self.addCleanup(p.stop)
+
+    def _ana_pencere(self):
+        """Gerçek `MainWindow` — açılış zincirini olduğu gibi çalıştırır.
+
+        Pencere KENDİ testimizin içinde yok edilir. `deleteLater`'ı kuyrukta
+        bırakmak, yok etme işini BAŞKA bir testin `processEvents()` turuna
+        sarkıtır; ölçüldü: tam paket o noktada kilitleniyordu.
+        """
+        from ui.main_window import MainWindow
+        w = MainWindow()
+
+        def _yok_et():
+            from PySide6.QtCore import QCoreApplication, QEvent
+            w.hide()
+            w._acilis_bildirim_zamanlayici.stop()
+            w.deleteLater()
+            # Normal processEvents(), DeferredDelete olayını tek başına
+            # tüketme garantisi vermez. Pencereyi ve sahip olduğu timer'ları
+            # bu testin sınırında kesin olarak yok et; sonraki testin olay
+            # döngüsüne hiçbir UI nesnesi sarkmasın.
+            QCoreApplication.sendPostedEvents(
+                w, QEvent.Type.DeferredDelete)
+            self.app.processEvents()
+
+        self.addCleanup(_yok_et)
+        return w
+
+    # ── 1-2: oluşturma sırasında modal yok, veri yüklemesi var ──────────
+    def test_pencere_olusturulurken_modal_acilmaz(self):
+        self._teklif(60, "30 Gün")
+        self.secim["buton"] = "cancel"
+        w = self._ana_pencere()
+        self.assertEqual(len(self.acilan), 0,
+                         "modal ana pencere görünmeden açıldı (splash üzerinde)")
+
+    def test_pencere_olusturulurken_dashboard_verisi_yuklenir(self):
+        self._teklif(2, "30 Gün")
+        self._teklif(2, "30 Gün")
+        w = self._ana_pencere()
+        self.assertEqual(w.pages[0]._model.rowCount(), 2,
+                         "açılışta Dashboard verisi yüklenmedi")
+
+    # ── 3-4: görünürlük sırası ──────────────────────────────────────────
+    def test_pencere_gorunmeden_bildirim_gosterilmez(self):
+        self._teklif(60, "30 Gün")
+        self.secim["buton"] = "cancel"
+        w = self._ana_pencere()
+        # show() ÇAĞRILMADI → açılış bildirimi çalışsa bile kutu açılmamalı
+        w.acilis_bildirimlerini_goster()
+        self.assertEqual(len(self.acilan), 0,
+                         "pencere görünür değilken modal açıldı")
+
+    def test_pencere_gorununce_bildirim_gosterilir(self):
+        oid = self._teklif(60, "30 Gün")
+        self.secim["buton"] = "cancel"
+        w = self._ana_pencere()
+        w.show()
+        self.assertEqual(len(self.acilan), 0, "show() modalı erken tetikledi")
+        w.acilis_bildirimlerini_goster()
+        self.assertEqual(len(self.acilan), 1,
+                         "ana pencere görünürken açılış bildirimi gelmedi")
+        self.assertEqual(self._durum(oid), "İptal")
+
+    # ── 5: idempotent ───────────────────────────────────────────────────
+    def test_acilis_bildirimi_iki_cagride_tek_kutu(self):
+        self._teklif(60, "30 Gün")
+        self.secim["buton"] = "leave"
+        w = self._ana_pencere()
+        w.show()
+        w.acilis_bildirimlerini_goster()
+        w.acilis_bildirimlerini_goster()
+        self.assertEqual(len(self.acilan), 1,
+                         "açılış bildirimi iki kez kutu açtı")
+
+    # ── 6: kapanıyorsa açma ─────────────────────────────────────────────
+    def test_kapanan_pencerede_bildirim_gosterilmez(self):
+        self._teklif(60, "30 Gün")
+        self.secim["buton"] = "cancel"
+        w = self._ana_pencere()
+        w.show()
+        w._shutdown_prepared = True          # kapanış hazırlığı başladı
+        w.acilis_bildirimlerini_goster()
+        self.assertEqual(len(self.acilan), 0,
+                         "kapanan pencerede modal açıldı")
+
+    # ── 7: süresi dolan yoksa kutu yok ──────────────────────────────────
+    def test_suresi_dolan_yoksa_kutu_acilmaz(self):
+        self._teklif(2, "30 Gün")
+        w = self._ana_pencere()
+        w.show()
+        w.acilis_bildirimlerini_goster()
+        self.assertEqual(len(self.acilan), 0)
+
+    # ── 8: reddetme DB'ye yazmaz ────────────────────────────────────────
+    def test_acilista_dokunma_db_yazmaz(self):
+        oid = self._teklif(60, "30 Gün")
+        for secim in ("leave", "esc"):
+            with self.subTest(secim=secim):
+                self.secim["buton"] = secim
+                w = self._ana_pencere()
+                w.show()
+                w.acilis_bildirimlerini_goster()
+                self.assertEqual(self._durum(oid), "Beklemede",
+                                 f"{secim} sonrası DB değişti")
+
+    # ── 9: onay sonrası tablo/istatistik yenilenir ──────────────────────
+    def test_acilis_onayi_sonrasi_tablo_yenilenir(self):
+        self._teklif(60, "30 Gün")
+        self.secim["buton"] = "cancel"
+        w = self._ana_pencere()
+        w.show()
+        w.acilis_bildirimlerini_goster()
+        sayfa = w.pages[0]
+        durumlar = {sayfa._model.data(sayfa._model.index(r, 6))
+                    for r in range(sayfa._model.rowCount())}
+        self.assertNotIn("Beklemede", durumlar,
+                         "onay sonrası tablo yenilenmedi")
+
+    # ── 10-12: sonraki gezinmeler mevcut davranışı korur ────────────────
+    def test_sonraki_gezinme_normal_davranisi_korur(self):
+        self._teklif(60, "30 Gün")
+        self.secim["buton"] = "leave"
+        w = self._ana_pencere()
+        w.show()
+        w.acilis_bildirimlerini_goster()
+        self.assertEqual(len(self.acilan), 1)
+        # Aynı küme: oturumda tekrar sorulmaz
+        w._navigate(0)
+        self.assertEqual(len(self.acilan), 1,
+                         "aynı teklif kümesi oturumda tekrar soruldu")
+        # Yeni süresi dolmuş teklif: tekrar sorulur
+        self._teklif(90, "30 Gün")
+        w._navigate(0)
+        self.assertEqual(len(self.acilan), 2,
+                         "yeni süresi dolan teklif için tekrar sorulmadı")
+
+    # ── 13: yakında dolacak bildirimi de görünür pencere sonrasında ─────
+    def test_yakinda_dolacak_bildirimi_pencere_sonrasinda(self):
+        self._teklif(28, "30 Gün")           # 2 gün kaldı
+        mesajlar = []
+        w = self._ana_pencere()
+        w.show_status = lambda m, level=None: mesajlar.append(m)
+        self.assertEqual(mesajlar, [],
+                         "yaklaşan süre bildirimi splash arkasında gösterildi")
+        w.show()
+        w.acilis_bildirimlerini_goster()
+        self.assertTrue(any("3 gün içinde dolacak" in m for m in mesajlar),
+                        f"yaklaşan süre bildirimi hiç gösterilmedi: {mesajlar}")
+
+    # ── 14: sabit gecikme/sleep hilesi yok ──────────────────────────────
+    def test_sabit_gecikme_kullanilmiyor(self):
+        import inspect
+        from pathlib import Path
+        from ui.main_window import MainWindow
+        # `main` import edilmez: modül importta global sys.excepthook'u gerçek
+        # modal hata penceresine bağlar ve sonraki Qt testlerini kilitleyebilir.
+        ana_kaynak = (Path(__file__).resolve().parents[1] / "main.py").read_text(
+            encoding="utf-8")
+        pencere_kaynak = inspect.getsource(MainWindow.acilis_bildirimlerini_planla)
+        self.assertIn("fade.finished", ana_kaynak,
+                      "splash kapanışı gerçek `finished` sinyaline bağlı değil")
+        self.assertIn("window.acilis_bildirimlerini_planla", ana_kaynak)
+        self.assertIn(".start(0)", pencere_kaynak.replace(" ", ""),
+                      "bildirim sonraki event-loop turuna bırakılmamış")
+        self.assertNotIn("singleShot", ana_kaynak,
+                         "sahipsiz callback ana olay kuyruğuna bırakılmamalı")
 
 
 if __name__ == "__main__":

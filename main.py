@@ -691,6 +691,7 @@ def main():
     fade.setEndValue(0.0)
     fade.setEasingCurve(QEasingCurve.Type.InQuad)
     fade.finished.connect(splash.close)
+    fade.finished.connect(window.acilis_bildirimlerini_planla)
     fade.start()
 
     logger.info("Ana pencere açıldı.")

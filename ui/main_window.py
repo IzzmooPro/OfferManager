@@ -64,6 +64,16 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        # Açılış bildirimleri (süresi dolan/dolacak teklif) pencere GÖRÜNÜR
+        # olana kadar ertelenir: `__init__` → `_load_pages` → `_navigate(0)`
+        # zinciri `main.py`'deki `window.show()` çağrısından ÖNCE çalışır ve
+        # o an ekranda yalnız splash vardır.
+        self.acilis_bildirimleri_hazir = False
+        self._acilis_bildirimleri_gosterildi = False
+        self._acilis_bildirim_zamanlayici = QTimer(self)
+        self._acilis_bildirim_zamanlayici.setSingleShot(True)
+        self._acilis_bildirim_zamanlayici.timeout.connect(
+            self.acilis_bildirimlerini_goster)
         self.setWindowTitle("Teklif Yönetim Sistemi")
         self.setMinimumSize(1100, 700)
         self.resize(1300, 800)
@@ -501,6 +511,39 @@ class MainWindow(QMainWindow):
             page = self.pages[index]
             if hasattr(page, "on_enter"):
                 page.on_enter()
+
+    def acilis_bildirimlerini_planla(self) -> bool:
+        """Bildirimleri pencereye ait zamanlayıcıyla sonraki tura bırakır.
+
+        Zamanlayıcının sahibi bu penceredir. Pencere olay çalışmadan yok
+        edilirse bekleyen çağrı da onunla birlikte yok olur; başka bir testin
+        veya kapanmış uygulama örneğinin olay döngüsüne sarkmaz.
+        """
+        if (self._acilis_bildirimleri_gosterildi
+                or self._acilis_bildirim_zamanlayici.isActive()
+                or getattr(self, "_shutdown_prepared", False)):
+            return False
+        self._acilis_bildirim_zamanlayici.start(0)
+        return True
+
+    def acilis_bildirimlerini_goster(self) -> bool:
+        """Ana pencere GÖRÜNÜR olduktan sonra açılış bildirimlerini gösterir.
+
+        `main.py` bunu splash kapandıktan sonra bir SONRAKİ event-loop
+        turunda çağırır. İdempotenttir: iki çağrı ikinci kutuyu açmaz.
+        Pencere görünür değilse veya kapanış hazırlığı başladıysa modal
+        AÇILMAZ; bundan sonraki normal gezinmeler yine bildirim gösterir.
+        """
+        if self._acilis_bildirimleri_gosterildi:
+            return False
+        if not self.isVisible() or getattr(self, "_shutdown_prepared", False):
+            return False
+        self._acilis_bildirimleri_gosterildi = True
+        self.acilis_bildirimleri_hazir = True
+        sayfa = self.pages.get(0)
+        if sayfa is not None and hasattr(sayfa, "acilis_bildirimlerini_goster"):
+            return bool(sayfa.acilis_bildirimlerini_goster())
+        return False
 
     def _sync_sidebar_selection(self, active_index):
         """Sol menüde her zaman yalnızca aktif sayfanın seçili kalmasını sağlar."""
