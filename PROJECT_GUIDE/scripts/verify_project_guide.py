@@ -434,6 +434,84 @@ def kontrol_artifacts(kok: Path, zorunlu: bool = False) -> tuple[list[str],
     return hatalar, uyarilar
 
 
+# ── R12c: build sonrası provenance kapısı ────────────────────────────────────
+# Artifact üretildikten SONRA değişmesine izin verilen TAM yollar (exact match;
+# klasör/prefix izni YOKTUR — "docs/" veya "PROJECT_GUIDE/" yetki vermez).
+IZINLI_BUILD_SONRASI = (
+    "PROJECT_GUIDE/project_manifest.json",
+    "PROJECT_GUIDE/CURRENT_STATUS.md",
+    "PROJECT_GUIDE/KNOWN_RISKS.md",
+    "docs/CHANGELOG.md",
+)
+
+
+def kontrol_build_sonrasi_provenance(kok: Path) -> list[str]:
+    """`--release` kapısı: artifact'ın build commit'inden SONRA Git'in gördüğü
+    değişiklikler yalnız `IZINLI_BUILD_SONRASI` yollarında olabilir.
+
+    Commit edilmiş, staged, unstaged ve untracked (gitignore dışı) değişiklikler
+    birlikte denetlenir; add/modify/delete/rename kapsanır. Aynı dosya için tek
+    hata üretilir. Manifest veya Git okunamıyorsa **fail-closed** davranılır.
+
+    **SINIR — gizlenmemeli.** Bu kapı YALNIZ Git'in görebildiği provenance'ı
+    kanıtlar. `packaging/` ve `assets/` gibi gitignore/local-only build
+    girdilerinin içerik geçmişi Git commit diff'iyle kanıtlanamaz; onlar
+    `kontrol_yerel_girdiler`, artifact hash ve installer doğrulamalarıyla
+    AYRI kanıt sınıfında kalır. "Bütün build girdileri kriptografik olarak
+    kanıtlandı" DENEMEZ.
+
+    **GÜVEN SINIRI.** `snapshot.built_from_commit` bu kapının GÜVENDİĞİ
+    girdidir; kapı artifact ile o commit arasında kriptografik bağ kurmaz.
+    Manifest'in kendisi build sonrası değişmesine izin verilen yollardandır,
+    yani yanlış veya ileri bir commit yazmak kapıyı sessizce gevşetir.
+    `built_from_commit`'in gerçek build logu/ölçümüyle eşleştiği **release
+    incelemesinde ayrıca** doğrulanmalıdır.
+    """
+    on = "provenance: "
+    yol = _rehber(kok) / "project_manifest.json"
+    try:
+        veri = json.loads(yol.read_text(encoding="utf-8"))
+    except Exception:                                          # noqa: BLE001
+        return [on + "manifest okunamadı — build sonrası provenance "
+                     "doğrulanamadı"]
+
+    commit = str((veri.get("snapshot") or {}).get("built_from_commit", "")).strip()
+    if not commit:
+        return [on + "manifest built_from_commit boş — build sonrası "
+                     "provenance doğrulanamadı"]
+
+    kod, _c = _git(kok, "rev-parse", "--verify", "--quiet", commit + "^{commit}")
+    if kod != 0:
+        return [on + "built_from_commit Git geçmişinde bulunamadı — build "
+                     "sonrası provenance doğrulanamadı"]
+
+    kod, _c = _git(kok, "merge-base", "--is-ancestor", commit, "HEAD")
+    if kod != 0:
+        return [on + "built_from_commit HEAD'in atası değil — build sonrası "
+                     "provenance doğrulanamadı"]
+
+    # Öncelik sırası: aynı dosya birden çok kaynakta görünse de TEK neden.
+    kaynaklar = (
+        (("diff", "--name-only", "--no-renames", f"{commit}..HEAD"), "commit"),
+        (("diff", "--cached", "--name-only", "--no-renames"), "staged"),
+        (("diff", "--name-only", "--no-renames"), "çalışma ağacı"),
+        (("ls-files", "--others", "--exclude-standard"), "untracked"),
+    )
+    bulunan: dict[str, str] = {}
+    for args, neden in kaynaklar:
+        kod, cikti = _git(kok, "-c", "core.quotepath=false", *args)
+        if kod != 0:
+            return [on + f"Git çıktısı okunamadı ({neden}) — build sonrası "
+                         "provenance doğrulanamadı"]
+        for satir in cikti.splitlines():
+            p = satir.strip().replace("\\", "/")
+            if p and p not in bulunan and p not in IZINLI_BUILD_SONRASI:
+                bulunan[p] = neden
+
+    return [on + f"build sonrası izin verilmeyen değişiklik — {p} ({n})"
+            for p, n in sorted(bulunan.items())]
+
+
 def kontrol_yerel_girdiler(kok: Path) -> list[str]:
     """--release için: yerel paketleme girdileri mevcut olmalı."""
     hatalar = []
@@ -537,6 +615,8 @@ def calistir(kok: Path, artifacts: bool = False, release: bool = False,
     if release:
         hatalar += kontrol_yerel_girdiler(kok)
         hatalar += kontrol_changelog(kok, zorunlu=True)
+        # R12c — yalnız release modunda zorunlu.
+        hatalar += kontrol_build_sonrasi_provenance(kok)
 
     return hatalar, uyarilar
 

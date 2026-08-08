@@ -468,23 +468,43 @@ class ArtifactGercekDosyaTests(unittest.TestCase):
 class ReleaseDogrulamaTests(unittest.TestCase):
     """Artifact hedef sürüm için doğrulandığında --release geçmeli."""
 
-    def test_release_modu_gecer(self):
-        # --release yalnız gerçek yayın kapısıdır: artifact hedef sürüm için
-        # doğrulanmış VE çalışma ağacı temiz olmalıdır. Kaynak değişikliği
-        # sürerken kırmızı olması TASARIM GEREĞİDİR, regresyon değil.
+    def test_release_modu_provenance_ile_tutarli(self):
+        """`--release` sonucu BUILD SONRASI PROVENANCE gerçeğiyle tutarlı olmalı.
+
+        Eski varsayım ("artifact sürümü eşitse --release her zaman geçer")
+        yanlıştı: artifact `built_from_commit`'ten sonra kaynak/test değişmiş
+        olabilir. R12c ile kapı bunu görür. Sözleşme:
+
+          * provenance temizse  → `--release` **geçmeli** (exit 0)
+          * provenance yasak değişiklik buluyorsa → `--release` **başarısız**
+            olmalı ve çıktıda provenance nedeni **görünmeli**
+
+        Kaynak, yayımlanmış artifact'tan ileriyken kırmızı olması TASARIM
+        GEREĞİDİR; yeni build alınmadan kapı yeşile dönmemelidir.
+        """
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
         if s.get("release_candidate_ready") is not True:
             self.skipTest("release adayı değil: artifact yeniden build bekliyor")
-        kirli = subprocess.run(["git", "status", "--porcelain",
-                                "--untracked-files=all"], cwd=str(KOK),
-                               capture_output=True, text=True, timeout=60)
-        if kirli.returncode == 0 and kirli.stdout.strip():
-            self.skipTest("çalışma ağacı temiz değil: commit öncesi stale beklenir")
+
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("vpg_rel", VERIFY)
+        modul = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modul)
+        prov = modul.kontrol_build_sonrasi_provenance(KOK)
+
         sonuc = subprocess.run([sys.executable, str(VERIFY), "--release"],
                                capture_output=True, text=True, timeout=180)
-        self.assertEqual(sonuc.returncode, 0,
-                         f"--release başarısız:\n{sonuc.stdout}")
+        if prov:
+            self.assertNotEqual(
+                sonuc.returncode, 0,
+                "provenance yasak değişiklik bulduğu hâlde --release geçti:\n"
+                + sonuc.stdout)
+            self.assertIn("provenance", sonuc.stdout.lower(),
+                          f"--release provenance nedenini göstermedi:\n{sonuc.stdout}")
+        else:
+            self.assertEqual(sonuc.returncode, 0,
+                             f"provenance temizken --release başarısız:\n{sonuc.stdout}")
 
     def test_artifacts_modu_gecer(self):
         """`--artifacts` her durumda exit 0'dır; uyarı hedef duruma bağlıdır.

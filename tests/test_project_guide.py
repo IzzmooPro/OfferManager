@@ -927,5 +927,289 @@ class GizlilikTests(unittest.TestCase):
                              metin.replace("<USER_DATA_ROOT>", "<>"))
 
 
+class _GeciciProvenanceGitDepo(_GeciciRehber):
+    """R12c — geçici GERÇEK git deposu üzerinde provenance kapısı testleri.
+
+    Depoya dokunulmaz: `_GeciciRehber` zaten geçici bir kopya kurar, burada o
+    kopya `git init` ile depoya çevrilir ve `built_from_commit` manifeste
+    yazılır. Böylece build sonrası değişiklikler gerçek git komutlarıyla
+    ölçülebilir.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self._g("init", "-b", "main")
+        self._g("config", "user.email", "test@example.invalid")
+        self._g("config", "user.name", "Test")
+        self._g("config", "commit.gpgsign", "false")
+        # Yerel-only çıktı klasörleri gitignore'da: mevcut olmaları yasak
+        # değişiklik sayılmamalı.
+        (self.kok / ".gitignore").write_text(
+            "dist/\nbuild/\ninstaller_output/\n__pycache__/\n", encoding="utf-8")
+        self._g("add", "-A")
+        self._g("commit", "-m", "build commit")
+        self.build_commit = self._g("rev-parse", "HEAD").strip()
+        # Manifest'in kendisi izin verilen yollardandır: build commit'ini
+        # işaretleyen bu ikinci commit kapıyı DÜŞÜRMEMELİDİR.
+        self._manifeste_yaz(self.build_commit)
+        self._g("add", "-A")
+        self._g("commit", "-m", "manifest: built_from_commit")
+
+    # ── yardımcılar ─────────────────────────────────────────────────────
+    def _g(self, *args, beklenen: bool = True) -> str:
+        """Fixture git komutu. `beklenen=True` ise başarısızlık testi KIRAR.
+
+        Sessizce yutulan bir `git` hatası, kapıyı değil test kurgusunu bozar
+        ve yanlış yeşil üretir. Hata metninde geçici kök yolu YAZILMAZ; yalnız
+        komut ve kısa stderr özeti gösterilir.
+        """
+        s = subprocess.run(["git", "-C", str(self.kok), *args],
+                           capture_output=True, text=True)
+        if beklenen and s.returncode != 0:
+            ozet = " ".join((s.stderr or "").split())[:200]
+            self.fail(f"fixture git komutu başarısız: git {' '.join(args)} "
+                      f"→ kod={s.returncode} stderr={ozet!r}")
+        return s.stdout
+
+    def _manifeste_yaz(self, commit: str):
+        yol = self.kok / "PROJECT_GUIDE" / "project_manifest.json"
+        veri = json.loads(yol.read_text(encoding="utf-8"))
+        veri["snapshot"]["built_from_commit"] = commit
+        yol.write_text(json.dumps(veri, ensure_ascii=False, indent=2) + "\n",
+                       encoding="utf-8")
+
+    def _yaz(self, göreli: str, icerik: str = "degisiklik\n"):
+        hedef = self.kok / göreli
+        hedef.parent.mkdir(parents=True, exist_ok=True)
+        hedef.write_text(icerik, encoding="utf-8")
+        return hedef
+
+    def _commitle(self, mesaj="degisiklik"):
+        self._g("add", "-A")
+        self._g("commit", "-m", mesaj)
+
+    def _prov(self):
+        return self.modul.kontrol_build_sonrasi_provenance(self.kok)
+
+    def _hata_var(self, nerede=""):
+        h = self._prov()
+        self.assertTrue(h, f"{nerede}: provenance kapısı yasak değişikliği kaçırdı")
+        return h
+
+
+class ProvenanceGecerliTests(_GeciciProvenanceGitDepo):
+    """1–3: izin verilen durumlar kapıyı DÜŞÜRMEZ."""
+
+    def test_degisiklik_yoksa_gecer(self):
+        self.assertEqual(self._prov(), [])
+
+    def test_izinli_dosyalarin_commitli_degisikligi_gecer(self):
+        """Dört izinli yolun HEPSİ gerçekten değişmeli ve kapı yine geçmeli.
+
+        Test yalnız "kapı geçiyor" demez; `git diff` ile dört yolun tek
+        commit'te gerçekten değiştiğini de kanıtlar — aksi hâlde hiçbir şeyi
+        değiştirmeyen bir test de yeşil görünürdü.
+        """
+        izinli = ("PROJECT_GUIDE/project_manifest.json",
+                  "PROJECT_GUIDE/CURRENT_STATUS.md",
+                  "PROJECT_GUIDE/KNOWN_RISKS.md",
+                  "docs/CHANGELOG.md")
+
+        # 1) manifest: GEÇERLİ JSON kalmalı → zararsız test alanı eklenir
+        yol = self.kok / "PROJECT_GUIDE" / "project_manifest.json"
+        veri = json.loads(yol.read_text(encoding="utf-8"))
+        veri["snapshot"]["r12c_test_alani"] = "izinli degisiklik"
+        yol.write_text(json.dumps(veri, ensure_ascii=False, indent=2) + "\n",
+                       encoding="utf-8")
+        json.loads(yol.read_text(encoding="utf-8"))      # geçerliliği doğrula
+
+        # 2-4) diğer üç belge gerçekten değişir
+        for md in ("PROJECT_GUIDE/CURRENT_STATUS.md",
+                   "PROJECT_GUIDE/KNOWN_RISKS.md"):
+            hedef = self.kok / md
+            hedef.write_text(hedef.read_text(encoding="utf-8")
+                             + "\n<!-- r12c izinli degisiklik -->\n",
+                             encoding="utf-8")
+        self._yaz("docs/CHANGELOG.md", "# Changelog\n\n## [v4.2] — 2026-08-02\n")
+
+        self._commitle("docs: izinli guncelleme")
+
+        degisen = set(self._g("diff", "--name-only", "HEAD^..HEAD").split())
+        for beklenen in izinli:
+            self.assertIn(beklenen, degisen,
+                          f"{beklenen} bu commit'te gerçekten değişmedi")
+        self.assertEqual(len(degisen), len(izinli),
+                         f"commit fazladan yol içeriyor: {sorted(degisen)}")
+
+        self.assertEqual(self._prov(), [],
+                         "izin verilen dosya değişikliği kapıyı düşürdü")
+
+    def test_izinli_dosyalarin_staged_ve_unstaged_degisikligi_gecer(self):
+        self._yaz("docs/CHANGELOG.md", "# changelog\nstaged\n")
+        self._g("add", "docs/CHANGELOG.md")
+        self._yaz("PROJECT_GUIDE/KNOWN_RISKS.md",
+                  (self.kok / "PROJECT_GUIDE/KNOWN_RISKS.md")
+                  .read_text(encoding="utf-8") + "\nunstaged\n")
+        self.assertEqual(self._prov(), [],
+                         "izin verilen staged/unstaged değişiklik kapıyı düşürdü")
+
+    def test_gitignore_ciktilari_yasak_sayilmaz(self):
+        for yol in ("dist/TeklifYonetim/app.exe", "build/x.tmp",
+                    "installer_output/Setup.exe"):
+            self._yaz(yol, "ikili")
+        self.assertEqual(self._prov(), [],
+                         "gitignore'daki build çıktıları yasak sayıldı")
+
+
+class ProvenanceYasakTests(_GeciciProvenanceGitDepo):
+    """4–12: yasak değişiklikler kapıyı DÜŞÜRÜR."""
+
+    def test_kaynak_kodu_degisikligi_kirmizi(self):
+        self._yaz("main.py", "# degisti\n")
+        self._commitle()
+        self.assertIn("main.py", " ".join(self._hata_var("kaynak")))
+
+    def test_tests_degisikligi_kirmizi(self):
+        self._yaz("tests/test_yeni.py", "# test\n")
+        self._commitle()
+        self.assertIn("tests/test_yeni.py", " ".join(self._hata_var("tests")))
+
+    def test_izlenen_paketleme_girdisi_kirmizi(self):
+        self._yaz("packaging/TeklifYonetim.spec", "# spec\n")
+        self._g("add", "-f", "packaging/TeklifYonetim.spec")
+        self._g("commit", "-m", "packaging")
+        self.assertIn("packaging/TeklifYonetim.spec",
+                      " ".join(self._hata_var("packaging")))
+
+    def test_baska_rehber_belgesi_kirmizi(self):
+        self._yaz("PROJECT_GUIDE/ARCHITECTURE.md",
+                  (self.kok / "PROJECT_GUIDE/ARCHITECTURE.md")
+                  .read_text(encoding="utf-8") + "\nek\n")
+        self._commitle()
+        self.assertIn("PROJECT_GUIDE/ARCHITECTURE.md",
+                      " ".join(self._hata_var("rehber")))
+
+    def test_staged_yasak_dosya_kirmizi(self):
+        self._yaz("main.py", "# staged\n")
+        self._g("add", "main.py")
+        self.assertIn("main.py", " ".join(self._hata_var("staged")))
+
+    def test_unstaged_yasak_dosya_kirmizi(self):
+        self._yaz("main.py", "# unstaged\n")
+        self.assertIn("main.py", " ".join(self._hata_var("unstaged")))
+
+    def test_untracked_yasak_dosya_kirmizi(self):
+        self._yaz("ui/yeni_modul.py", "# yeni\n")
+        self.assertIn("ui/yeni_modul.py", " ".join(self._hata_var("untracked")))
+
+    def test_silme_kirmizi(self):
+        (self.kok / "main.py").unlink()
+        self._commitle("sil")
+        self.assertIn("main.py", " ".join(self._hata_var("silme")))
+
+    def test_rename_kirmizi(self):
+        self._g("mv", "main.py", "main_yeni.py")
+        self._commitle("rename")
+        birlesik = " ".join(self._hata_var("rename"))
+        self.assertTrue("main.py" in birlesik or "main_yeni.py" in birlesik)
+
+    def test_benzer_isim_hilesi_gecmez(self):
+        self._yaz("PROJECT_GUIDE/CURRENT_STATUS.md.bak", "sahte\n")
+        self._commitle()
+        self.assertIn("PROJECT_GUIDE/CURRENT_STATUS.md.bak",
+                      " ".join(self._hata_var("prefix hilesi")))
+
+    def test_izinli_klasor_prefixi_yetki_vermez(self):
+        self._yaz("docs/BASKA.md", "sahte\n")
+        self._commitle()
+        self.assertIn("docs/BASKA.md", " ".join(self._hata_var("klasör prefix")))
+
+    def test_ayni_dosya_tek_neden_uretir(self):
+        self._yaz("main.py", "# staged\n")
+        self._g("add", "main.py")
+        self._yaz("main.py", "# sonra unstaged\n")
+        hatalar = self._hata_var("tek neden")
+        self.assertEqual(len([h for h in hatalar if "main.py" in h]), 1,
+                         f"aynı dosya için birden çok hata: {hatalar}")
+
+
+class ProvenanceFailClosedTests(_GeciciProvenanceGitDepo):
+    """13–15, 18: eksik/bozuk girdi ve güvenlik."""
+
+    def _bozuk_commit(self, deger):
+        yol = self.kok / "PROJECT_GUIDE" / "project_manifest.json"
+        veri = json.loads(yol.read_text(encoding="utf-8"))
+        if deger is None:
+            veri["snapshot"].pop("built_from_commit", None)
+        else:
+            veri["snapshot"]["built_from_commit"] = deger
+        yol.write_text(json.dumps(veri, ensure_ascii=False, indent=2) + "\n",
+                       encoding="utf-8")
+
+    def test_built_from_commit_eksikse_fail_closed(self):
+        self._bozuk_commit(None)
+        self.assertTrue(self._prov(), "built_from_commit yokken kapı açık kaldı")
+
+    def test_built_from_commit_bozuksa_fail_closed(self):
+        self._bozuk_commit("bu-bir-commit-degil")
+        self.assertTrue(self._prov(), "bozuk built_from_commit'te kapı açık kaldı")
+
+    def test_built_from_commit_ata_degilse_fail_closed(self):
+        # Ayrı bir dal → HEAD'in atası OLMAYAN geçerli commit
+        self._g("checkout", "-b", "yan")
+        self._yaz("baska.txt", "yan dal\n")
+        self._commitle("yan")
+        yabanci = self._g("rev-parse", "HEAD").strip()
+        self._g("checkout", "main")
+        self._bozuk_commit(yabanci)
+        hatalar = self._prov()
+        self.assertTrue(hatalar, "ata olmayan commit'te kapı açık kaldı")
+        self.assertTrue(any("ata" in h.lower() for h in hatalar),
+                        f"neden açık değil: {hatalar}")
+
+    def test_git_okunamazsa_fail_closed(self):
+        # `.git` SİLİNMEZ (Windows'ta git nesneleri salt-okunur; silme
+        # geçici klasör temizliğini bozar) — erişilemez hâle getirmek yeter.
+        (self.kok / ".git").rename(self.kok / ".git_kapali")
+        hatalar = self._prov()
+        self.assertTrue(hatalar, "git geçmişi yokken kapı açık kaldı")
+
+    def test_hata_metni_nedeni_soyluyor(self):
+        self._yaz("main.py", "# degisti\n")
+        self._commitle()
+        birlesik = " ".join(self._prov()).lower()
+        self.assertIn("provenance", birlesik,
+                      "hata mesajı build sonrası provenance nedenini söylemiyor")
+
+    def test_hata_metni_mutlak_yol_tasimaz(self):
+        self._yaz("main.py", "# degisti\n")
+        self._commitle()
+        for h in self._prov():
+            self.assertNotIn(str(self.kok), h, "hata metninde mutlak yol var")
+            self.assertNotRegex(h, r"[A-Za-z]:[\\/]",
+                                f"hata metninde sürücü harfli yol var: {h}")
+            self.assertNotIn("\\", h, f"hata metninde Windows ayracı var: {h}")
+
+
+class ProvenanceModTests(_GeciciProvenanceGitDepo):
+    """16: kontrol YALNIZ --release modunda zorunludur."""
+
+    def test_normal_stale_artifacts_etkilenmez(self):
+        self._yaz("main.py", "# yasak degisiklik\n")
+        self._commitle()
+        for kwargs in ({}, {"stale": True}, {"artifacts": True}):
+            hatalar, _u = self.modul.calistir(self.kok, **kwargs)
+            self.assertFalse(
+                [h for h in hatalar if "provenance" in h.lower()],
+                f"provenance kontrolü {kwargs or 'normal'} modunda çalıştı")
+
+    def test_release_modunda_provenance_hatasi_gorunur(self):
+        self._yaz("main.py", "# yasak degisiklik\n")
+        self._commitle()
+        hatalar, _u = self.modul.calistir(self.kok, release=True)
+        self.assertTrue([h for h in hatalar if "provenance" in h.lower()],
+                        f"--release provenance hatasını göstermedi: {hatalar}")
+
+
 if __name__ == "__main__":
     unittest.main()
