@@ -82,6 +82,7 @@ class MainWindow(QMainWindow):
         # Kapanış onayları + kapanma yedeği yalnız BİR kez çalışsın; kapanış
         # ertelenirse closeEvent yeniden tetiklenir.
         self._shutdown_prepared = False
+        self._shutdown_backup_pending = False
         self._close_deferred = False
         # finished->close bağlantısı kurulmuş worker'lar; tekrarlı kapatma
         # istekleri aynı worker için ikinci bir bağlantı oluşturmamalı.
@@ -126,10 +127,24 @@ class MainWindow(QMainWindow):
 
         Güncelleme kontrolü hâlâ sürüyorsa kapanış ERTELENİR (event.ignore);
         thread gerçekten bitince close() yeniden çağrılır ve bu metot ikinci
-        kez çalışır. Onay soruları ve kapanma yedeği yalnız ilk turda işler.
+        kez çalışır. Onay soruları yalnız ilk turda işler; uzun otomatik yedek
+        varsa kapanma yedeği worker bittikten sonraki tura ertelenebilir.
         """
         if self._shutdown_prepared:
-            # İkinci tur: yalnız arka plan işlerinin bitmesi bekleniyor.
+            # İkinci tur: arka plan işini bekle; ertelenmiş kapanma yedeği
+            # varsa worker bittikten sonra onu tamamla.
+            if getattr(self, "_shutdown_backup_pending", False):
+                if not self._await_running_workers():
+                    event.ignore()
+                    return
+                self._shutdown_backup_pending = not self._take_closing_backup()
+                if self._shutdown_backup_pending:
+                    # Worker wait() ile kontrol arasında yeniden görünür olduysa
+                    # kapanışı yine yerleşik finished() sinyaline bırak.
+                    if self._await_running_workers():
+                        QTimer.singleShot(0, self.close)
+                    event.ignore()
+                    return
             if not self._await_running_workers():
                 event.ignore()
                 return
@@ -168,23 +183,41 @@ class MainWindow(QMainWindow):
         # — kullanıcı eski bir yedeği geri yüklerken tam da onu kaybedebilir.
         # Normal kullanıcı kapanışındaki yedek davranışı DEĞİŞMEDİ.
         from core import restart
+        try:
+            self._backup_svc.begin_shutdown()
+        except Exception as exc:                           # noqa: BLE001
+            op_hata.logla(exc, "Otomatik yedek kapanis hazirligi")
         if restart.restart_requested():
             logger.info("Yeniden başlatma kapanışı: kapanma yedeği atlandı.")
         else:
-            # `trigger_now` yedek hatasını İÇERİDE yakalar; buradan başarı
-            # BİLİNEMEZ, bu yüzden koşulsuz "alındı" logu yazılmaz. Gerçek
-            # başarı logu AutoBackupService._on_backup_done'da atılır.
-            try:
-                self._backup_svc.trigger_now(reason="kapanma")
-            except Exception as exc:                       # noqa: BLE001
-                op_hata.logla(exc, "Kapanma yedegi")
+            self._shutdown_backup_pending = not self._take_closing_backup()
         self._shutdown_prepared = True
+        if getattr(self, "_shutdown_backup_pending", False):
+            # Uzun otomatik yedek 30 sn içinde bitmediyse onunla paralel ikinci
+            # yedek başlatma. Worker bitince closeEvent yeniden çağrılacak ve
+            # kapanma yedeği o turda tam bir kez alınacak.
+            if self._await_running_workers():
+                QTimer.singleShot(0, self.close)
+            event.ignore()
+            return
         # Yedekten SONRA: arka planda iş (güncelleme kontrolü, toplu PDF,
         # SMTP testi) sürüyorsa pencere yok edilmeden önce bitmesini bekle.
         if not self._await_running_workers():
             event.ignore()
             return
         event.accept()
+
+    def _take_closing_backup(self) -> bool:
+        """Kapanma yedeği tamamlandıysa veya güvenle başarısız olduysa True."""
+        # `trigger_now` yedek hatasını İÇERİDE yakalar; buradan başarı
+        # BİLİNEMEZ, bu yüzden koşulsuz "alındı" logu yazılmaz. Gerçek başarı
+        # logu AutoBackupService._on_backup_done'da atılır. Yalnız False,
+        # çalışan worker nedeniyle yedeğin sonraki closeEvent turuna kaldığıdır.
+        try:
+            return self._backup_svc.trigger_now(reason="kapanma") is not False
+        except Exception as exc:                           # noqa: BLE001
+            op_hata.logla(exc, "Kapanma yedegi")
+            return True
 
     def _finish_deferred_close(self):
         """Ertelenmiş kapanışı sonlandırır.

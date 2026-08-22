@@ -431,10 +431,13 @@ class AutoBackupService(QObject):
         self._timer.timeout.connect(self._run)
         self._meta = _load_meta()
         self._worker = None
+        self._shutdown_started = False
         self._apply()
 
     def _apply(self):
         self._timer.stop()
+        if self._shutdown_started:
+            return
         m = self._meta
         if m.get("auto_enabled"):
             d = m.get("auto_backup_dir", str(_DEFAULT_BACKUP_DIR))
@@ -448,18 +451,32 @@ class AutoBackupService(QObject):
         self._meta = _load_meta()
         self._apply()
 
+    def begin_shutdown(self):
+        """Timer'ı sustur ve kapanış boyunca yeni worker başlatılmasını engelle."""
+        self._shutdown_started = True
+        self._timer.stop()
+
     def trigger_now(self, reason: str = ""):
         """Anında yedek al (kapatma, kaydetme veya test için)."""
         if reason == "kapanma":
+            self.begin_shutdown()
             # Uygulama kapanırken yarım kalan thread bırakma; veri güvenliği UI
             # akıcılığından daha önemlidir.
-            if self._worker and self._worker.isRunning():
-                self._worker.wait(30_000)
+            worker = self.active_worker()
+            if worker is not None and not worker.wait(30_000):
+                # Aynı DB için iki yedeği paralel çalıştırma. MainWindow mevcut
+                # worker'ın yerleşik finished() sinyalini bekleyip kapanma
+                # yedeğini ikinci closeEvent turunda tamamlar.
+                return False
             self._run_sync(reason)
+            return True
         else:
             self._run(reason)
+            return True
 
     def _run(self, reason: str = ""):
+        if self._shutdown_started:
+            return
         if self._worker and self._worker.isRunning():
             logger.info("Yedekleme zaten devam ediyor; yeni istek atlandı (%s).", reason)
             return

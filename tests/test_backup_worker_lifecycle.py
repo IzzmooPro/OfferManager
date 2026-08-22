@@ -246,6 +246,40 @@ class SingleBackupPolicyTests(_ServisTemeli):
         self.assertEqual(cagri["n"], 1, "ikinci/üçüncü tetikleme atlanmadı")
 
 
+class ShutdownGateTests(_ServisTemeli):
+    """Kapanış başlarken timer susmalı ve yeni worker üretilememeli."""
+
+    def test_begin_shutdown_stops_timer_and_blocks_queued_timeout(self):
+        cagrilar = []
+        bm.create_backup = lambda d: cagrilar.append(d) or str(Path(d) / "s.zip")
+        self.svc._timer.start(60_000)
+
+        self.svc.begin_shutdown()
+        # Timer.stop() öncesinde kuyruğa girmiş bir timeout'u temsil eder.
+        self.svc._run()
+
+        self.assertFalse(self.svc._timer.isActive())
+        self.assertEqual(cagrilar, [], "kapanış başladıktan sonra yedek başlatıldı")
+        self.assertIsNone(self.svc.active_worker())
+
+    def test_closing_backup_does_not_overlap_long_running_worker(self):
+        cagrilar = []
+        bm.create_backup = lambda d: cagrilar.append(d) or str(Path(d) / "s.zip")
+        worker = mock.Mock()
+        worker.isRunning.return_value = True
+        worker.wait.return_value = False
+        self.svc._worker = worker
+        try:
+            tamamlandi = self.svc.trigger_now(reason="kapanma")
+        finally:
+            self.svc._worker = None
+
+        self.assertIs(tamamlandi, False)
+        worker.wait.assert_called_once_with(30_000)
+        self.assertEqual(cagrilar, [], "çalışan worker ile paralel kapanma yedeği başladı")
+        self.assertFalse(self.svc._timer.isActive())
+
+
 class TimerAfterDeleteTests(_ServisTemeli):
 
     def test_no_worker_started_after_service_deleted(self):
@@ -476,10 +510,29 @@ class CloseBackupCountTests(_ServisTemeli):
         with mock.patch.object(self.svc, "trigger_now") as tetik:
             MainWindow.closeEvent(p, olay)
         tetik.assert_not_called()
+        self.assertTrue(self.svc._shutdown_started)
+        self.assertFalse(self.svc._timer.isActive())
         olay.ignore.assert_called_once()       # çalışan worker BEKLENDİ
         while self.svc._worker and self.svc._worker.isRunning():
             QCoreApplication.processEvents()
         _olay_isle(300)
+
+    def test_long_worker_then_closing_backup_completes_before_accept(self):
+        p = self._pencere()
+        p._await_running_workers = mock.Mock(side_effect=[False, True, True])
+        olay1 = mock.Mock()
+        olay2 = mock.Mock()
+        with mock.patch.object(self.svc, "trigger_now",
+                               side_effect=[False, True]) as tetik:
+            MainWindow.closeEvent(p, olay1)
+            MainWindow.closeEvent(p, olay2)
+
+        self.assertEqual(tetik.call_count, 2)
+        tetik.assert_has_calls([mock.call(reason="kapanma")] * 2)
+        olay1.ignore.assert_called_once()
+        olay1.accept.assert_not_called()
+        olay2.accept.assert_called_once()
+        self.assertFalse(getattr(p, "_shutdown_backup_pending", False))
 
 
 # ── İzole alt süreç: gerçek Windows çıkış kodu ──────────────────────────────
