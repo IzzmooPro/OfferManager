@@ -1,0 +1,419 @@
+{
+  "schema_version": 1,
+  "status": "geometry_baseline_ready",
+  "production_ui_modified": true,
+  "purpose": "Gerçek üretim widget'ları için izole ve entegrasyon öncesi UI preview kapsamı",
+  "infrastructure": {
+    "sandbox": "implemented",
+    "fixture_profiles": ["empty", "populated", "dense"],
+    "launcher": "implemented",
+    "capture": "implemented",
+    "visual_baseline": "implemented",
+    "geometry_checks": "implemented"
+  },
+  "boundaries": {
+    "temporary_profile_required": true,
+    "real_user_data_forbidden": true,
+    "credential_manager_forbidden": true,
+    "network_forbidden": true,
+    "external_process_launch_forbidden": true,
+    "automatic_baseline_update_forbidden": true,
+    "production_entry_point_integration_forbidden": true
+  },
+  "planned_matrix": {
+    "themes": ["light", "dark"],
+    "manual_theme_only": ["system"],
+    "viewport_sizes": ["1100x700", "1300x800", "1600x900", "1920x1080"],
+    "dpi_scales": [100, 125, 150],
+    "daily_profile": {"themes": ["light", "dark"], "viewport": "1300x800", "dpi": 100}
+  },
+  "surfaces": [
+    {
+      "id": "window.main",
+      "kind": "window",
+      "title": "Ana pencere ve navigasyon",
+      "source": {"path": "ui/main_window.py", "symbol": "MainWindow", "qualified_class": "ui.main_window.MainWindow"},
+      "priority": "critical",
+      "states": ["dashboard", "customers", "products", "create_offer", "reports", "settings", "minimum_size", "status_toast"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "page.dashboard",
+      "kind": "page",
+      "title": "Dashboard",
+      "source": {"path": "ui/dashboard_page.py", "symbol": "DashboardPage", "qualified_class": "ui.dashboard_page.DashboardPage"},
+      "priority": "critical",
+      "states": ["empty", "populated", "dense", "filtered", "selected", "long_text"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "page.customers",
+      "kind": "page",
+      "title": "Müşteriler",
+      "source": {"path": "ui/customers_page.py", "symbol": "CustomersPage", "qualified_class": "ui.customers_page.CustomersPage"},
+      "priority": "critical",
+      "states": ["empty", "populated", "dense", "selected", "long_text"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "page.products",
+      "kind": "page",
+      "title": "Ürünler",
+      "source": {"path": "ui/products_page.py", "symbol": "ProductsPage", "qualified_class": "ui.products_page.ProductsPage"},
+      "priority": "critical",
+      "states": ["empty", "populated", "dense", "selected", "long_text"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "page.create_offer",
+      "kind": "page",
+      "title": "Teklif oluşturma",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "CreateOfferPage", "qualified_class": "ui.create_offer_page.CreateOfferPage"},
+      "priority": "critical",
+      "states": ["step_customer_empty", "step_customer_selected", "step_products_empty", "step_products_populated", "step_products_dense", "step_conditions", "long_text", "validation_error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "page.reports",
+      "kind": "page",
+      "title": "Raporlar",
+      "source": {"path": "ui/reports_page.py", "symbol": "ReportsPage", "qualified_class": "ui.reports_page.ReportsPage"},
+      "priority": "critical",
+      "states": ["empty", "populated", "dense", "error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "page.settings",
+      "kind": "page",
+      "title": "Ayarlar",
+      "source": {"path": "ui/settings_page.py", "symbol": "SettingsPage", "qualified_class": "ui.settings_page.SettingsPage"},
+      "priority": "critical",
+      "states": ["empty_assets", "configured", "long_company_data", "smtp_password_hidden", "dirty", "save_error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.customer",
+      "kind": "dialog",
+      "title": "Müşteri ekle/düzenle",
+      "source": {"path": "ui/customers_page.py", "symbol": "CustomerDialog", "qualified_class": "ui.customers_page.CustomerDialog"},
+      "priority": "critical",
+      "states": ["add", "edit", "long_text", "validation_error", "save_error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.product",
+      "kind": "dialog",
+      "title": "Ürün ekle/düzenle",
+      "source": {"path": "ui/products_page.py", "symbol": "ProductDialog", "qualified_class": "ui.products_page.ProductDialog"},
+      "priority": "critical",
+      "states": ["add", "edit", "long_text", "validation_error", "duplicate", "save_error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.product_select",
+      "kind": "dialog",
+      "title": "Ürün seçimi",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "ProductSelectDialog", "qualified_class": "ui.create_offer_page.ProductSelectDialog"},
+      "priority": "critical",
+      "states": ["empty", "populated", "dense", "filtered", "multi_selected", "long_text"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.category_manager",
+      "kind": "dialog",
+      "title": "Kategori yönetimi",
+      "source": {"path": "ui/dialogs/category_dialog.py", "symbol": "CategoryManagerDialog", "qualified_class": "ui.dialogs.category_dialog.CategoryManagerDialog"},
+      "priority": "standard",
+      "states": ["empty", "populated", "selected", "long_text", "error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.customer_history",
+      "kind": "dialog",
+      "title": "Müşteri teklif geçmişi",
+      "source": {"path": "ui/dialogs/customer_history_dialog.py", "symbol": "CustomerHistoryDialog", "qualified_class": "ui.dialogs.customer_history_dialog.CustomerHistoryDialog"},
+      "priority": "standard",
+      "states": ["empty", "populated", "dense", "long_text"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.email",
+      "kind": "dialog",
+      "title": "Teklif gönderme",
+      "source": {"path": "ui/dialogs/email_dialog.py", "symbol": "EmailDialog", "qualified_class": "ui.dialogs.email_dialog.EmailDialog"},
+      "priority": "critical",
+      "states": ["ready", "sending", "success", "validation_error", "send_error", "closing"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.feedback",
+      "kind": "dialog",
+      "title": "Sorun, öneri ve hata raporu",
+      "source": {"path": "ui/dialogs/feedback_dialog.py", "symbol": "FeedbackDialog", "qualified_class": "ui.dialogs.feedback_dialog.FeedbackDialog"},
+      "priority": "critical",
+      "states": ["suggestion", "problem", "technical_error", "long_description", "mailto_unavailable"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.backup",
+      "kind": "dialog",
+      "title": "Veri yedekleme ve geri yükleme",
+      "source": {"path": "ui/dialogs/backup_manager.py", "symbol": "BackupDialog", "qualified_class": "ui.dialogs.backup_manager.BackupDialog"},
+      "priority": "critical",
+      "states": ["ready", "backup_progress", "restore_progress", "success", "preflight_error", "rollback_error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.pdf_preview",
+      "kind": "dialog",
+      "title": "PDF önizleme",
+      "source": {"path": "ui/dialogs/pdf_preview_dialog.py", "symbol": "PdfPreviewDialog", "qualified_class": "ui.dialogs.pdf_preview_dialog.PdfPreviewDialog"},
+      "priority": "critical",
+      "states": ["single_page", "multi_page", "long_offer_number", "load_error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.how_to_use",
+      "kind": "dialog",
+      "title": "Nasıl Kullanılır",
+      "source": {"path": "ui/dialogs/help_dialogs.py", "symbol": "HowToUseDialog", "qualified_class": "ui.dialogs.help_dialogs.HowToUseDialog"},
+      "priority": "standard",
+      "states": ["default", "scrolled", "minimum_size"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.about",
+      "kind": "dialog",
+      "title": "Hakkında",
+      "source": {"path": "ui/dialogs/help_dialogs.py", "symbol": "AboutDialog", "qualified_class": "ui.dialogs.help_dialogs.AboutDialog"},
+      "priority": "standard",
+      "states": ["default", "update_checking", "up_to_date", "update_error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.update",
+      "kind": "dialog",
+      "title": "Güncelleme mevcut",
+      "source": {"path": "ui/utils/updater.py", "symbol": "UpdateDialog", "qualified_class": "ui.utils.updater.UpdateDialog"},
+      "priority": "critical",
+      "states": ["available", "downloading", "verifying", "ready", "download_error", "verification_error", "closing"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.import_progress",
+      "kind": "dialog",
+      "title": "İçe aktarma ilerlemesi",
+      "source": {"path": "ui/utils/excel_import.py", "symbol": "_ImportProgress"},
+      "priority": "critical",
+      "states": ["start", "middle", "complete", "long_label"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "dialog.date_picker",
+      "kind": "dialog",
+      "title": "Teklif tarihi seçimi",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "_pick_date"},
+      "priority": "standard",
+      "states": ["default", "selected_date"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "window.startup_splash",
+      "kind": "window",
+      "title": "Başlangıç splash ekranı",
+      "source": {"path": "ui/startup_splash.py", "symbol": "StartupSplash", "qualified_class": "ui.startup_splash.StartupSplash"},
+      "priority": "critical",
+      "states": ["visible", "fading", "handoff"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.expired_offers",
+      "kind": "runtime_modal",
+      "title": "Süresi dolan teklifler",
+      "source": {"path": "ui/dashboard_page.py", "symbol": "_prompt_expired_offers"},
+      "priority": "critical",
+      "states": ["single", "multiple", "long_customer_name"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.pdf_created",
+      "kind": "runtime_modal",
+      "title": "PDF oluşturma sonucu",
+      "source": {"path": "ui/dashboard_page.py", "symbol": "_on_pdf_finished"},
+      "priority": "standard",
+      "states": ["success", "partial_success", "error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.customer_registration",
+      "kind": "runtime_modal",
+      "title": "Müşteri kaydı uyarısı",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "_check_customer_registration"},
+      "priority": "standard",
+      "states": ["not_registered", "save_error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.existing_offer_items",
+      "kind": "runtime_modal",
+      "title": "Mevcut teklif kalemleri uyarısı",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "_load_from_template"},
+      "priority": "supporting",
+      "states": ["replace_or_append"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.offer_saved",
+      "kind": "runtime_modal",
+      "title": "Teklif kaydedildi sonucu",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "_finish_offer"},
+      "priority": "critical",
+      "states": ["success", "partial_success", "error"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.import_confirmation",
+      "kind": "runtime_modal",
+      "title": "Müşteri veya ürün içe aktarma onayı",
+      "source": {"path": "ui/utils/excel_import.py", "symbol": "run_import_flow"},
+      "priority": "critical",
+      "states": ["customers", "products", "warnings", "long_summary"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.offer_import_confirmation",
+      "kind": "runtime_modal",
+      "title": "Teklif içe aktarma onayı",
+      "source": {"path": "ui/utils/excel_import.py", "symbol": "_run_offer_import_flow"},
+      "priority": "critical",
+      "states": ["normal", "warnings", "long_summary"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.import_all_confirmation",
+      "kind": "runtime_modal",
+      "title": "Tümünü içe aktarma onayı",
+      "source": {"path": "ui/utils/excel_import.py", "symbol": "run_import_all_flow"},
+      "priority": "critical",
+      "states": ["normal", "hidden_sheets", "warnings", "long_summary"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "modal.operation_error",
+      "kind": "runtime_modal",
+      "title": "Güvenli işlem hatası",
+      "source": {"path": "ui/utils/operation_error_dialog.py", "symbol": "_kutu"},
+      "priority": "critical",
+      "states": ["validation", "conflict", "database_busy", "technical_with_actions", "long_safe_message"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.nav_card",
+      "kind": "component",
+      "title": "Navigasyon kartı",
+      "source": {"path": "ui/main_window.py", "symbol": "NavCard", "qualified_class": "ui.main_window.NavCard"},
+      "priority": "supporting",
+      "states": ["normal", "hover", "checked", "disabled", "long_title"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.table_combo",
+      "kind": "component",
+      "title": "Teklif tablosu açılır seçimi",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "_TableComboBox", "qualified_class": "ui.create_offer_page._TableComboBox"},
+      "priority": "supporting",
+      "states": ["empty", "selected", "focused", "long_text"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.table_spin",
+      "kind": "component",
+      "title": "Teklif tablosu sayı alanı",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "_TableSpinBox", "qualified_class": "ui.create_offer_page._TableSpinBox"},
+      "priority": "supporting",
+      "states": ["empty", "value", "focused", "disabled"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.step_indicator",
+      "kind": "component",
+      "title": "Teklif adım göstergesi",
+      "source": {"path": "ui/create_offer_page.py", "symbol": "StepIndicator", "qualified_class": "ui.create_offer_page.StepIndicator"},
+      "priority": "standard",
+      "states": ["first", "middle", "last", "long_titles"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.settings_preview_box",
+      "kind": "component",
+      "title": "Ayar görsel önizleme kutusu",
+      "source": {"path": "ui/settings_page.py", "symbol": "_PreviewBox", "qualified_class": "ui.settings_page._PreviewBox"},
+      "priority": "supporting",
+      "states": ["empty", "image", "disabled"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.animated_card",
+      "kind": "component",
+      "title": "Animasyonlu kart",
+      "source": {"path": "ui/widgets/_animated_card.py", "symbol": "AnimatedCard", "qualified_class": "ui.widgets._animated_card.AnimatedCard"},
+      "priority": "supporting",
+      "states": ["normal", "hover", "pressed", "disabled"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.dashboard_stat_card",
+      "kind": "component",
+      "title": "Dashboard genel istatistik kartı",
+      "source": {"path": "ui/dashboard_page.py", "symbol": "StatCard", "qualified_class": "ui.dashboard_page.StatCard"},
+      "priority": "standard",
+      "states": ["normal", "large_value", "long_title"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.dashboard_offer_stat_card",
+      "kind": "component",
+      "title": "Dashboard teklif durum kartı",
+      "source": {"path": "ui/dashboard_page.py", "symbol": "OfferStatCard", "qualified_class": "ui.dashboard_page.OfferStatCard"},
+      "priority": "standard",
+      "states": ["empty", "normal", "large_counts"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.dashboard_revenue_card",
+      "kind": "component",
+      "title": "Dashboard ciro kartı",
+      "source": {"path": "ui/dashboard_page.py", "symbol": "RevenueCard", "qualified_class": "ui.dashboard_page.RevenueCard"},
+      "priority": "standard",
+      "states": ["empty", "normal", "large_values"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.plus_button",
+      "kind": "component",
+      "title": "Artı düğmesi",
+      "source": {"path": "ui/widgets/_plus_button.py", "symbol": "PlusButton", "qualified_class": "ui.widgets._plus_button.PlusButton"},
+      "priority": "supporting",
+      "states": ["normal", "hover", "pressed", "disabled"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.profit_panel",
+      "kind": "component",
+      "title": "Kâr paneli",
+      "source": {"path": "ui/widgets/_profit_panel.py", "symbol": "ProfitPanel", "qualified_class": "ui.widgets._profit_panel.ProfitPanel"},
+      "priority": "standard",
+      "states": ["hidden", "positive", "negative", "large_values"],
+      "preview_status": "implemented"
+    },
+    {
+      "id": "component.resizable_table",
+      "kind": "component",
+      "title": "Yeniden boyutlanabilir tablo",
+      "source": {"path": "ui/widgets/_resizable_table.py", "symbol": "ResizableTable", "qualified_class": "ui.widgets._resizable_table.ResizableTable"},
+      "priority": "supporting",
+      "states": ["empty", "populated", "dense", "narrow", "wide"],
+      "preview_status": "implemented"
+    }
+  ]
+}

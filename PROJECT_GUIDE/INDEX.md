@@ -2,8 +2,8 @@
 purpose: Görev türüne göre okunacak belgeleri seçer; başka bilgi içermez.
 read_when: Her görevin başında.
 covers: []
-last_verified_commit: 060baf3
-last_verified_date: 2026-07-28
+last_verified_commit: c917bf8
+last_verified_date: 2026-08-22
 volatile: false
 ---
 
@@ -21,6 +21,7 @@ volatile: false
 | Veri, yol, migration, yedek | [DATA_AND_PATHS.md](DATA_AND_PATHS.md) + [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) |
 | Credential / SMTP / gizlilik | [SECURITY_AND_PRIVACY.md](SECURITY_AND_PRIVACY.md) + [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) |
 | Test yazma / test seçme | [TESTING_GUIDE.md](TESTING_GUIDE.md) |
+| UI tasarımı / entegrasyon öncesi önizleme / görsel karşılaştırma | [UI_PREVIEW_GUIDE.md](UI_PREVIEW_GUIDE.md) + [TESTING_GUIDE.md](TESTING_GUIDE.md) |
 | Build | [BUILD_AND_PACKAGING.md](BUILD_AND_PACKAGING.md) + [CURRENT_STATUS.md](CURRENT_STATUS.md) |
 | Release | [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) + [VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) + [project_manifest.json](project_manifest.json) |
 | Frozen EXE / installer doğrulaması | [VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) |
@@ -34,7 +35,7 @@ volatile: false
 
 - **Snapshot (eskir):** [CURRENT_STATUS.md](CURRENT_STATUS.md), [project_manifest.json](project_manifest.json), [KNOWN_RISKS.md](KNOWN_RISKS.md)
 - **Kalıcı:** [ARCHITECTURE.md](ARCHITECTURE.md), [MODULE_MAP.md](MODULE_MAP.md), [DATA_AND_PATHS.md](DATA_AND_PATHS.md), [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md), [SECURITY_AND_PRIVACY.md](SECURITY_AND_PRIVACY.md)
-- **Süreç:** [CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md), [COLLABORATION_WORKFLOW.md](COLLABORATION_WORKFLOW.md), [TESTING_GUIDE.md](TESTING_GUIDE.md), [VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md), [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
+- **Süreç:** [CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md), [COLLABORATION_WORKFLOW.md](COLLABORATION_WORKFLOW.md), [TESTING_GUIDE.md](TESTING_GUIDE.md), [UI_PREVIEW_GUIDE.md](UI_PREVIEW_GUIDE.md), [VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md), [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
 - **Tarihçe:** [AUDIT_HISTORY.md](AUDIT_HISTORY.md), [DECISIONS.md](DECISIONS.md), [decisions/](decisions/README.md)
 
 ## Bakım

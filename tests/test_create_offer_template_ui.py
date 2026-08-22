@@ -128,9 +128,28 @@ class TemplateButtonTests(unittest.TestCase):
             self._template_button().click()
 
         self.assertEqual(len(exec_calls), 1, "dolu tabloda onay sorulmadı")
-        labels = {b.text() for b in exec_calls[0].buttons()}
+        box = exec_calls[0]
+        labels = {b.text() for b in box.buttons()}
         self.assertIn("Listeyi Temizle ve Yükle", labels)
         self.assertIn("Mevcut Listeye Ekle", labels)
+        for button in box.buttons():
+            if button.text() in {"Listeyi Temizle ve Yükle", "Mevcut Listeye Ekle"}:
+                required = button.fontMetrics().horizontalAdvance(button.text()) + 32
+                self.assertGreaterEqual(
+                    button.minimumWidth(), required,
+                    f"Onay düğmesi metni kırpılabilir: {button.text()}",
+                )
+                self.assertEqual(
+                    button.maximumWidth(), button.minimumWidth(),
+                    f"QMessageBox düğme genişliğini yeniden daraltabilir: {button.text()}",
+                )
+        box.show()
+        QApplication.processEvents()
+        for button in box.buttons():
+            if button.text() in {"Listeyi Temizle ve Yükle", "Mevcut Listeye Ekle"}:
+                required = button.fontMetrics().horizontalAdvance(button.text()) + 32
+                self.assertGreaterEqual(button.width(), required)
+        box.close()
         # Onay verilmediği (hiçbir düğmeye basılmadığı) sürece tablo korunur
         self.assertEqual(self.page.prod_table.rowCount(), 1)
         self.assertEqual(self.page.prod_table.item(0, 0).text(), "MEVCUT")

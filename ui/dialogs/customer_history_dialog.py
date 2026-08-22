@@ -11,6 +11,7 @@ from services.customer_service import CustomerService
 from services.offer_service    import OfferService
 from core.constants import SYM_MAP, get_status_config
 from core.date_utils import to_display_date
+from core.formatting import fmt_money
 
 logger = logging.getLogger("customer_history")
 

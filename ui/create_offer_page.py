@@ -483,6 +483,7 @@ class StepIndicator(QWidget):
                 line = QFrame()
                 line.setFrameShape(QFrame.Shape.HLine)
                 line.setFixedHeight(1)
+                line.setMinimumWidth(12)
                 line.setObjectName("step_connector")
                 layout.addWidget(line, 1)
                 self._lines.append(line)
@@ -1440,6 +1441,15 @@ class CreateOfferPage(QWidget):
             btn_add = box.addButton("Mevcut Listeye Ekle", QMessageBox.ButtonRole.AcceptRole)
             btn_replace = box.addButton("Listeyi Temizle ve Yükle", QMessageBox.ButtonRole.DestructiveRole)
             box.addButton("İptal", QMessageBox.ButtonRole.RejectRole)
+            for button in (btn_add, btn_replace):
+                text_width = button.fontMetrics().horizontalAdvance(button.text())
+                safe_width = text_width + 32
+                button.setFixedWidth(safe_width)
+                # QMessageBox Windows'ta show sırasında minimumWidth'ü tekrar
+                # standart 110 px'e çekebilir; widget-yerel QSS bu ezmeyi önler.
+                button.setStyleSheet(
+                    f"min-width: {safe_width}px; max-width: {safe_width}px;"
+                )
             box.exec()
             clicked = box.clickedButton()
             if clicked == btn_replace:

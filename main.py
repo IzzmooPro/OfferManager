@@ -558,96 +558,12 @@ def main():
         os.environ["APP_FONT_FAMILY"] = font_family
 
     # ── Splash Screen ────────────────────────────────────────────────────────
-    from PySide6.QtWidgets import QWidget, QGraphicsOpacityEffect
-    from PySide6.QtGui import (QPixmap, QColor, QPainter, QFont,
-                                QLinearGradient, QPen, QPainterPath)
-    from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRectF
+    from PySide6.QtWidgets import QGraphicsOpacityEffect
+    from PySide6.QtCore import QPropertyAnimation, QEasingCurve
     import time as _time
 
-    SW, SH = 520, 280
-
-    class _Splash(QWidget):
-        def __init__(self):
-            super().__init__()
-            self.setFixedSize(SW, SH)
-            self.setWindowFlags(
-                Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint)
-            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-            self._progress = 0.0
-            self._message = "Başlatılıyor…"
-            self._icon = None
-            ip = ASSET_ROOT / "assets" / "ico.png"
-            if ip.exists():
-                from PySide6.QtGui import QImage
-                img = QImage(str(ip)).convertToFormat(
-                    QImage.Format.Format_ARGB32)
-                if not img.isNull():
-                    img = img.scaled(
-                        64, 64, Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation)
-                    for y in range(img.height()):
-                        sl = img.scanLine(y)
-                        for x in range(img.width()):
-                            off = x * 4
-                            b, g, r, a = sl[off], sl[off+1], sl[off+2], sl[off+3]
-                            luma = r * 0.299 + g * 0.587 + b * 0.114
-                            if luma > 180:
-                                sl[off+3] = 0
-                            elif luma > 120:
-                                sl[off+3] = int(a * (1.0 - (luma - 120) / 60.0))
-                    self._icon = QPixmap.fromImage(img)
-
-        def set_progress(self, value: float, message: str):
-            self._progress = max(0.0, min(1.0, value))
-            self._message = message
-            self.repaint()
-            app.processEvents()
-
-        def paintEvent(self, _event):
-            p = QPainter(self)
-            p.setRenderHint(QPainter.RenderHint.Antialiasing)
-            grad = QLinearGradient(0, 0, SW, SH)
-            grad.setColorAt(0.0, QColor("#0a1628"))
-            grad.setColorAt(1.0, QColor("#162040"))
-            path = QPainterPath()
-            path.addRoundedRect(QRectF(0, 0, SW, SH), 16, 16)
-            p.fillPath(path, grad)
-
-            accent = QColor("#3a7bd5")
-            p.setPen(QPen(accent.lighter(130), 1))
-            p.drawRoundedRect(QRectF(1, 1, SW - 2, SH - 2), 15, 15)
-
-            if self._icon:
-                p.drawPixmap((SW - self._icon.width()) // 2, 40, self._icon)
-
-            p.setPen(QColor("#e8eaf6"))
-            p.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
-            p.drawText(QRectF(0, 115, SW, 36),
-                       Qt.AlignmentFlag.AlignCenter, "Teklif Yönetim Sistemi")
-
-            from core.constants import APP_VERSION as _V
-            p.setPen(QColor("#6a7a9a"))
-            p.setFont(QFont("Segoe UI", 9))
-            p.drawText(QRectF(0, 150, SW, 20),
-                       Qt.AlignmentFlag.AlignCenter, f"Sürüm {_V}")
-
-            bar_y = SH - 65
-            bar_h = 8
-            mx = 50
-            bar_w = SW - 2 * mx
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QColor("#1a2744"))
-            p.drawRoundedRect(QRectF(mx, bar_y, bar_w, bar_h), 4, 4)
-            p.setBrush(accent)
-            p.drawRoundedRect(QRectF(mx, bar_y, bar_w * self._progress, bar_h), 4, 4)
-
-            p.setPen(QColor("#8a9abb"))
-            p.setFont(QFont("Segoe UI", 9))
-            p.drawText(QRectF(0, SH - 49, SW, 22),
-                       Qt.AlignmentFlag.AlignCenter, self._message)
-            p.end()
-
-    splash = _Splash()
+    from ui.startup_splash import StartupSplash
+    splash = StartupSplash()
     splash.show()
     splash.set_progress(0.05, "Başlatılıyor…")
 

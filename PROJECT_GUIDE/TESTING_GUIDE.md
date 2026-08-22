@@ -13,8 +13,8 @@ covers:
   - tests/test_restart_flow.py
   - tests/test_credential_store.py
   - tests/test_save_error_handling.py
-last_verified_commit: 0a1a1ae
-last_verified_date: 2026-08-14
+last_verified_commit: c917bf8
+last_verified_date: 2026-08-22
 volatile: false
 ---
 
@@ -54,6 +54,7 @@ volatile: false
 | Şablon / kategori / müşteri / ürün servisleri | adı eşleşen `tests/test_*_service.py` |
 | Süresi geçen teklif uyarısı | `tests/test_expired_offer_prompt.py` |
 | Açılış bildirimi / splash sonrası modal sırası | `tests/test_expired_offer_prompt.py` |
+| UI preview katalog, sandbox, 186 senaryo, launcher, PNG capture/rapor, geometri, açık onaylı baseline ve güvenlik sınırları | `tests/test_ui_preview_catalog.py`, `tests/test_ui_preview_sandbox.py`, `tests/test_ui_preview_launcher.py`, `tests/test_ui_preview_scenarios.py`, `tests/test_ui_preview_capture.py`, `tests/test_ui_preview_geometry_baseline.py` + [UI_PREVIEW_GUIDE.md](UI_PREVIEW_GUIDE.md) |
 | Rehber tutarlılığı | `tests/test_project_guide.py` |
 | **Build sonrası provenance / release kapısı (R12c)** | `tests/test_project_guide.py`, `tests/test_version_consistency.py` |
 
