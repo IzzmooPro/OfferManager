@@ -27,6 +27,6 @@ Bu dosya yalnız yönlendiricidir. Bilgi tek kanonik yerde: **[PROJECT_GUIDE/IND
 Sonuç raporun ~700 kelimeyi aşmasın; şablon: [PROJECT_GUIDE/templates/CLAUDE_RESULT_REPORT.md](PROJECT_GUIDE/templates/CLAUDE_RESULT_REPORT.md).
 Uzun komut çıktısı veya çalışma günlüğü yapıştırma; karar + kanıt özeti yeter.
 
-## Yerel ek kaynaklar (kanonik değil)
+## Yardımcı agent kaynakları (kanonik değil)
 
-`.claude/` altındaki skill ve kurallar ile `docs/local/SORUN_COZUM_NOTLARI.md` **yereldir ve kanonik değildir**. Çelişki hâlinde PROJECT_GUIDE geçerlidir.
+`.claude/skills`, `.claude/rules` ve `.claude/scripts` paylaşılan yardımcılardır; **kanonik değildir**. `.claude/settings.local.json`, `.claude/worktrees/` ve `docs/local/SORUN_COZUM_NOTLARI.md` makineye özeldir. Çelişki hâlinde PROJECT_GUIDE geçerlidir.

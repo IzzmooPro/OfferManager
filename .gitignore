@@ -43,8 +43,9 @@ docs/YOL_HARITASI_KAR_ANALIZI.md
 GITHUB_IS_AKISI_LOCAL.md
 docs/local/SORUN_COZUM_NOTLARI.md
 
-# Claude Code çalışma verisi (oturum, worktree)
-.claude/
+# Claude Code: skill/rule/script paketi paylaşılır; makineye özel durum paylaşılmaz
+.claude/settings.local.json
+.claude/worktrees/
 
 # Veritabanı ve kullanıcı verisi
 *.db

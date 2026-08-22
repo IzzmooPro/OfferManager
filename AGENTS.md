@@ -28,6 +28,6 @@ Bu dosya yalnız yönlendiricidir. Bilgi tek kanonik yerde: **[PROJECT_GUIDE/IND
 Şablon: [PROJECT_GUIDE/templates/CODEX_REVIEW_REPORT.md](PROJECT_GUIDE/templates/CODEX_REVIEW_REPORT.md).
 Yalnız **karar, doğrulanan kanıt, eksik/şüpheli kanıt, risk, Claude'a verilecek sonraki kapsam** yaz.
 
-## Yerel ek kaynaklar (kanonik değil)
+## Yardımcı agent kaynakları (kanonik değil)
 
-`.claude/` skill ve kuralları ile `docs/local/SORUN_COZUM_NOTLARI.md` yereldir ve **kanonik değildir**. Çelişki hâlinde PROJECT_GUIDE geçerlidir.
+`.claude/skills`, `.claude/rules` ve `.claude/scripts` paylaşılan yardımcılardır; **kanonik değildir**. `.claude/settings.local.json`, `.claude/worktrees/` ve `docs/local/SORUN_COZUM_NOTLARI.md` makineye özeldir. Çelişki hâlinde PROJECT_GUIDE geçerlidir.
