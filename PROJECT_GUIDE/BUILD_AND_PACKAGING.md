@@ -26,7 +26,7 @@ Adımlar: araç kontrolü → **`python -m pytest tests -q`** → eski `build/`,
 ## PyInstaller (`packaging/TeklifYonetim.spec`)
 
 - **onedir** (onefile değil): onefile her açılışta `Temp\_MEI` altına açılıyordu; antivirüs/Temp temizliği bunu bozduğunda "Failed to load Python DLL" hatası çıkıyordu.
-- `console=False` (windowed), `disable_windowed_traceback=False`, ikon `assets/ico.ico`, sürüm kaynağı `packaging/version_info.txt`.
+- `console=False` (windowed), `disable_windowed_traceback=True`; beklenmeyen ana-akış hatası önce uygulamanın güvenli hata penceresine/loguna aktarılır ve `SystemExit(1)` olur, bootloader ham traceback göstermez. İkon `assets/ico.ico`, sürüm kaynağı `packaging/version_info.txt`.
 - `datas`: `assets/` ve `database/schema.sql`.
 - `hiddenimports`: `PySide6.QtPdf`, `PySide6.QtPdfWidgets`, `keyring.backends.Windows`.
 - Yollar `SPECPATH` üzerinden mutlaklaştırılır; hangi dizinden çalışılırsa çalışılsın çözülür.

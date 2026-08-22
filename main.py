@@ -628,5 +628,23 @@ def main():
     sys.exit(exit_code)
 
 
+def _run_entrypoint():
+    """Beklenmeyen ana-akış hatasını PyInstaller'a kaçırmadan bitir.
+
+    ``sys.excepthook`` tek başına yeterli değildir: windowed PyInstaller
+    bootloader, hook döndükten sonra ham istisna ve traceback içeren ikinci
+    bir pencere açar. Burada hata güvenli ortak hook'a tam bir kez aktarılır
+    ve ardından normal, sayısal bir süreç çıkışına dönüştürülür.
+
+    ``SystemExit`` / ``KeyboardInterrupt`` gibi ``BaseException`` türleri
+    bilinçli çıkış davranışlarını korumak için yakalanmaz.
+    """
+    try:
+        main()
+    except Exception:
+        exception_hook(*sys.exc_info())
+        raise SystemExit(1) from None
+
+
 if __name__ == "__main__":
-    main()
+    _run_entrypoint()

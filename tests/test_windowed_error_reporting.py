@@ -258,6 +258,49 @@ sys.excepthook = _hook_oncesi
 b["slot_hook_cagrildi"] = ulasan["n"]
 b["slot_hook_tipi"] = ulasan["tip"]
 
+# ── 18: frozen giriş noktası istisnayı bootloader'a kaçırmasın ──────
+b["entrypoint_var"] = hasattr(main, "_run_entrypoint")
+b["entrypoint_cikis_kodu"] = None
+b["entrypoint_hook_sayisi"] = 0
+b["entrypoint_hook_tipi"] = None
+b["entrypoint_hook_metni"] = None
+b["system_exit_cikis_kodu"] = None
+b["system_exit_hook_sayisi"] = 0
+if b["entrypoint_var"]:
+    _gercek_main = main.main
+    _gercek_hook = main.exception_hook
+    try:
+        _entry_calls = []
+        def _entry_hook(t, v, tb):
+            _entry_calls.append((t.__name__, str(v)))
+        def _entry_patlat():
+            raise RuntimeError("B8-RAW-DATABASE-DETAIL")
+        main.main = _entry_patlat
+        main.exception_hook = _entry_hook
+        try:
+            main._run_entrypoint()
+        except SystemExit as e:
+            b["entrypoint_cikis_kodu"] = e.code
+        b["entrypoint_hook_sayisi"] = len(_entry_calls)
+        if _entry_calls:
+            b["entrypoint_hook_tipi"], b["entrypoint_hook_metni"] = _entry_calls[0]
+
+        _exit_calls = []
+        def _exit_hook(*args):
+            _exit_calls.append(args)
+        def _istenen_cikis():
+            raise SystemExit(7)
+        main.main = _istenen_cikis
+        main.exception_hook = _exit_hook
+        try:
+            main._run_entrypoint()
+        except SystemExit as e:
+            b["system_exit_cikis_kodu"] = e.code
+        b["system_exit_hook_sayisi"] = len(_exit_calls)
+    finally:
+        main.main = _gercek_main
+        main.exception_hook = _gercek_hook
+
 b.setdefault("input_cagrildi", False)
 SONUC.write_text(json.dumps(b, ensure_ascii=False, indent=2), encoding="utf-8")
 '''
@@ -416,6 +459,32 @@ class WindowedHookTests(unittest.TestCase):
     def test_native_fastfail_documented_as_out_of_scope(self):
         self.assertTrue(self.r["native_kapsam_disi_belgeli"],
                         "0xC0000409'un kapsam dışı olduğu belgede yok")
+
+    def test_unexpected_main_error_is_reported_once_then_exits_cleanly(self):
+        self.assertTrue(self.r["entrypoint_var"])
+        self.assertEqual(self.r["entrypoint_cikis_kodu"], 1)
+        self.assertEqual(self.r["entrypoint_hook_sayisi"], 1)
+        self.assertEqual(self.r["entrypoint_hook_tipi"], "RuntimeError")
+        self.assertEqual(self.r["entrypoint_hook_metni"],
+                         "B8-RAW-DATABASE-DETAIL")
+
+    def test_requested_system_exit_is_not_reported_as_an_error(self):
+        self.assertTrue(self.r["entrypoint_var"])
+        self.assertEqual(self.r["system_exit_cikis_kodu"], 7)
+        self.assertEqual(self.r["system_exit_hook_sayisi"], 0)
+
+
+class FrozenBuildContractTests(unittest.TestCase):
+    """PyInstaller bootloader da ham traceback göstermemeli."""
+
+    def test_windowed_build_disables_bootloader_traceback(self):
+        spec = (PROJE_KOKU / "packaging" / "TeklifYonetim.spec").read_text(
+            encoding="utf-8")
+        guide = (PROJE_KOKU / "PROJECT_GUIDE" /
+                 "BUILD_AND_PACKAGING.md").read_text(encoding="utf-8")
+        self.assertIn("disable_windowed_traceback=True", spec)
+        self.assertIn("`disable_windowed_traceback=True`", guide)
+        self.assertNotIn("`disable_windowed_traceback=False`", guide)
 
 
 class ConsoleModeTests(unittest.TestCase):
