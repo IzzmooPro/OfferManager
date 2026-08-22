@@ -21,8 +21,8 @@ covers:
   - core/credential_store.py
   - main.py
   - tests/conftest.py
-last_verified_commit: 46d4d75
-last_verified_date: 2026-08-04
+last_verified_commit: 0a1a1ae
+last_verified_date: 2026-08-14
 volatile: false
 ---
 
@@ -42,6 +42,7 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 5. **Arşiv PDF adı DB'deki teklif numarasıyla aynıdır** (`<teklif_no>.pdf`) ve teklif silinince arşiv PDF'i de kalkar. → `tests/test_offer_archive_naming.py`
 6. **Maliyet/kâr bilgisi PDF, Excel, CSV veya e-postaya sızmaz.** → `tests/test_profit.py`, `tests/test_export_service.py`
 7. **Teklif numarası sayacı geriye alınmaz.** Silinen tekliften doğan numara boşluğu normaldir.
+7b. **Süresi dolan teklif onayı onaysız yazmaz ve splash üzerinde açılmaz.** Veri, ana ekran açılırken **yüklenmeye devam eder**; açılış modalı splash fade **tamamlanmadan** gösterilmez ve gösterim **en fazla bir kez** olur. Pencere gizliyse veya kapanıyorsa hiç gösterilmez. "Şimdilik Dokunma" / Esc / X **hiçbir veritabanı yazması yapmaz**; kullanıcı "İptal Olarak İşaretle" derse yalnız gerçekten süresi dolmuş ve hâlâ *Beklemede* olan teklifler güncellenir ve tablo yenilenir. → `tests/test_expired_offer_prompt.py`
 
 ## Ürün kodu ve içe aktarma
 

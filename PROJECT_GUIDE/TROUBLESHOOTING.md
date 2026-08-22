@@ -9,7 +9,7 @@ volatile: false
 
 # Sorun giderme
 
-Yalnız **doğrulanmış ve güncel** maddeler. Daha eski, tek seferlik veya artık geçerliliği belirsiz notlar yerel `SORUN_COZUM_NOTLARI.md` dosyasındadır; o dosya **kanonik değildir**.
+Yalnız **doğrulanmış ve güncel** maddeler. Daha eski, tek seferlik veya artık geçerliliği belirsiz notlar yerel `docs/local/SORUN_COZUM_NOTLARI.md` dosyasındadır; o dosya **kanonik değildir**.
 
 | Belirti | Kök neden | Çözüm / kontrol |
 |---|---|---|

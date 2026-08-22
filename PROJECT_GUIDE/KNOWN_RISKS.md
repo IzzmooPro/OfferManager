@@ -2,12 +2,12 @@
 purpose: Doğrulanmış açık riskler ve sonraki adımları — snapshot.
 read_when: Denetim, release kararı, risk analizi.
 covers: []
-last_verified_commit: c3f711e
-last_verified_date: 2026-08-08
+last_verified_commit: 0a1a1ae
+last_verified_date: 2026-08-14
 volatile: true
 ---
 
-# Bilinen riskler (snapshot — 2026-08-08)
+# Bilinen riskler (snapshot — 2026-08-14)
 
 Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içindedir.
 
@@ -19,11 +19,11 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 | R3b | ~~Paketli U17 istemcinin gerçek bir sonraki sürüme yükseltmesi hiç sınanmadı~~ — **v4.1 → v4.2 D2 ile KANITLANDI (2026-08-02)**. Sınır: bu, GELECEKTEKİ bir sürümün teslimatını kanıtlamaz. | **KAPALI** |
 | R3d | **Updater CDN host'u zamanla değişebilir** — v4.1 release'i için indirmenin son host'u **canlı olarak `release-assets.githubusercontent.com`** doğrulandı ve allowlist'te yer alıyor (`github.com`, `objects.githubusercontent.com` ile birlikte). GitHub ileride listede olmayan bir CDN host'u kullanırsa updater **fail-closed** olur — güvenli, ama güncelleme çalışmaz; **erişilebilirlik riski sürüyor** | Orta | Her release turunda gerçek redirect host'u yeniden ölçülür; değişirse allowlist güncellenir |
 | R5 | **Ele geçirilmiş GitHub release metadata'sına karşı bağımsız güven kökü yok** — updater'ın kullandığı SHA-256 digest'i de aynı release API'sinden gelir; bozuk/eksik indirmeyi ve yanlış asset seçimini engeller, metadata'yı ele geçiren saldırganı engellemez | Orta | Kod imzası (Authenticode) veya ayrı anahtarla imzalanmış güncelleme manifesti; R1 ile birlikte değerlendirilir |
-| R3c | **Yeniden üretilemeyen iki build artefaktı diskte tutuluyor** (`<ROLLBACK_ROOT>` altında ~118 MB): U17 **öncesi** v4.1 build'i ve **yerel** v4.0 build'i. Yeniden kurulabilir iki kurulum ağacı kopyası 2026-07-31'de silindi (361 MB). Bu iki artefakt yayımlanmadı ve yeniden üretilemez; makinenin geri alınabilirliği bunlara **bağlı değildir** — doğrulanmış v4.1 installer'ı hem yerelde hem GitHub v4.1 release'inde durur | Düşük | Yalnız tarihsel değer; saklamaya devam veya açık onayla silme |
+| R3c | **Yeniden üretilemeyen iki build artefaktı diskte tutuluyor** (`<ROLLBACK_ROOT>` altında ~118 MB): U17 **öncesi** v4.1 build'i ve **yerel** v4.0 build'i. Yeniden kurulabilir iki kurulum ağacı kopyası 2026-07-31'de silindi (361 MB). Bu iki artefakt yayımlanmadı ve yeniden üretilemez; makinenin geri alınabilirliği bunlara **bağlı değildir** — doğrulanmış v4.1 installer'ı GitHub v4.1 release'inde ve **proje kökünün DIŞINDAKİ** doğrulanmış release arşivinde durur (`build/`, `dist/`, `installer_output/` artık proje kökünde bulunmaz; bkz. [CURRENT_STATUS.md](CURRENT_STATUS.md)) | Düşük | Yalnız tarihsel değer; saklamaya devam veya açık onayla silme |
 | R4 | **Paketli modal davranışı yalnız frozen EXE'de kanıtlanabilir** — kaynak/offscreen ölçüm O16 desenini yeniden üretemez (2026-07-31'de pozitif kontrol iki kez kuruldu, kilitlenme üretilemedi). Diğer akışların taraması **2026-07-31'de tamamlandı**: **ikinci riskli modal/progress akışı bulunmadı**. Kaynak envanteri: `WindowModal` yalnız `ui/utils/excel_import.py` içinde; sayfa seçimi **progress penceresinden önce** sorulur; dışa aktarma, yedekleme, e-posta, SMTP ve updater akışlarında modal + ilerleme penceresi birleşimi yok | Düşük | Yalnız **modal/progress/import sırası değişirse**: paketli native smoke — [VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) B sınıfı 9. senaryo (`IsWindowEnabled`) |
 | R6 | **Gerçek geri yükleme → restart zinciri** paketli sürümde uçtan uca denenmedi; yalnız güvenli mutex senaryosu doğrulandı (v4.0 turunda) | Düşük-orta | İzole profilde gerçek yedekten geri yükleme senaryosu |
 | R7 | **Açılışta credential uyarısı ana pencereyi bekletiyor** — güvenli depo okunamazsa kullanıcı onaylayana kadar açılış durur | Düşük-orta | Uyarıyı ana pencere açıldıktan sonra göstermek değerlendirilebilir |
-| R8 | **"Tümünü İçe Aktar" gizli sayfaları da okuyor** — O15 yalnız tek sayfa seçimi yolunu kapsadı | Düşük-orta | Gizli sayfa politikasını iki yolda eşitle |
+| R8 | **"Tümünü İçe Aktar" gizli sayfaları da okuyor** — O15 yalnız tek sayfa seçimi yolunu kapsadı. **AÇIK, ancak ürün sahibinin kararıyla ERTELENDİ (2026-08-14).** Kapatılmış veya çözülmüş DEĞİLDİR; gizli sayfa davranışının mevcut hâli bilinçli olarak korunmaktadır ve sonraki UI/tasarım turunun zorunlu kapsamına **alınmayacaktır** | Düşük-orta | Ertelendi — ele alınırsa gizli sayfa politikasını iki yolda eşitle |
 | R9 | **Müşteri tablosunda UNIQUE kimlik kuralı yok** — mükerrer koruması yalnız içe aktarma katmanında | Düşük-orta | Normalize anahtar + geriye uyumlu migration değerlendirmesi |
 | R10 | ~~Teklif/kategori/şablon hata yolları~~ → **kapandı 2026-08-02**: kategori (R10-A), dashboard teklif/şablon/PDF/dışa aktarma (R10-B) ve teklif kaydetme/PDF aşama sınırları (R10-C) güvenli mesaj + güvenli loga geçirildi; kısmi başarı mesajları ve "Log Klasörünü Aç" erişimi eklendi; PdfWorker yaşam döngüsü kusuru kapandı | — | Kalan alt maddeler R10a–R10c olarak ayrı izlenir |
 | R10a | ~~`create_offer_page` müşteri kaydetme catch'leri ham `{e}` gösteriyor, loglamıyor ve başarı logunda firma adı geçiyor~~ — **kapandı 2026-08-03**: her iki yolda `hata_diyalogu` güvenli altyapısı, `add` ile kayıt sonrası ekran aşaması ayrı try sınırlarına bölündü, başarı logu `id=%s` oldu, `_open_add_customer` aynı diyalogla yeniden denemeye izin veriyor; kayıt yenilenen listede bulunamazsa sessiz dönüş yerine kısmi başarı gösteriliyor. → `tests/test_create_offer_customer_save_errors.py` | **KAPALI** |

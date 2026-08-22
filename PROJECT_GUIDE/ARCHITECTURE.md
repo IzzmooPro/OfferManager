@@ -9,8 +9,8 @@ covers:
   - ui/main_window.py
   - ui/dialogs/backup_manager.py
   - ui/utils/updater.py
-last_verified_commit: 46d4d75
-last_verified_date: 2026-08-04
+last_verified_commit: 0a1a1ae
+last_verified_date: 2026-08-14
 volatile: false
 ---
 
@@ -49,6 +49,7 @@ main.py  →  ui/  →  services/  →  database/db_manager.py  →  SQLite
 6. `QApplication`, Türkçe locale/çeviri, ikon, font, splash.
 7. Veri yoksa yedekten geri yükleme sorulur; **yalnız tam başarıda** ardıl süreç başlatılır. Geri yükleme üç sonucu ayırır (`preflight_failed` / `rolled_back` / `rollback_failed`) ve başarısız hiçbir durumda yeniden başlatma yapılmaz — ayrıntı [DATA_AND_PATHS.md](DATA_AND_PATHS.md).
 8. `MainWindow` açılır; otomatik yedek zamanlayıcısı ve güncelleme kontrolü başlar.
+9. **Açılış bildirimleri splash'ten SONRAYA ertelenir.** `MainWindow` oluşturulurken `_navigate(0)` Dashboard verisini **yükler**, ama süresi dolan/dolacak teklif bildirimleri gösterilmez — o an ekranda yalnız splash vardır. Splash fade'i **gerçekten tamamlanınca** (`finished`) `window.acilis_bildirimlerini_planla()` çağrılır; bu, pencereye ait tek atımlık zamanlayıcıyla bildirimi **bir sonraki event-loop turuna** bırakır. Pencere görünür değilse veya kapanış hazırlığı başladıysa modal **açılmaz**; gösterim en fazla **bir kez** olur. Sabit gecikme kullanılmaz.
 
 ## Thread / worker düzeni
 

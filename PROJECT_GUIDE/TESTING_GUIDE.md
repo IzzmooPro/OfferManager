@@ -13,8 +13,8 @@ covers:
   - tests/test_restart_flow.py
   - tests/test_credential_store.py
   - tests/test_save_error_handling.py
-last_verified_commit: c3f711e
-last_verified_date: 2026-08-08
+last_verified_commit: 0a1a1ae
+last_verified_date: 2026-08-14
 volatile: false
 ---
 
@@ -53,6 +53,7 @@ volatile: false
 | Updater güven zinciri (asset seçimi, URL/host, SHA-256, size) | `tests/test_updater_asset_verification.py` |
 | Şablon / kategori / müşteri / ürün servisleri | adı eşleşen `tests/test_*_service.py` |
 | Süresi geçen teklif uyarısı | `tests/test_expired_offer_prompt.py` |
+| Açılış bildirimi / splash sonrası modal sırası | `tests/test_expired_offer_prompt.py` |
 | Rehber tutarlılığı | `tests/test_project_guide.py` |
 | **Build sonrası provenance / release kapısı (R12c)** | `tests/test_project_guide.py`, `tests/test_version_consistency.py` |
 

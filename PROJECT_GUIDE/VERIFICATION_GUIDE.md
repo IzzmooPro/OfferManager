@@ -6,8 +6,8 @@ covers:
   - core/restart.py
   - core/app_paths.py
   - ui/dialogs/backup_manager.py
-last_verified_commit: c3f711e
-last_verified_date: 2026-08-08
+last_verified_commit: 0a1a1ae
+last_verified_date: 2026-08-14
 volatile: false
 ---
 
@@ -119,6 +119,6 @@ D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater 
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
-**A sınıfı — güncel kaynak (2026-08-08):** `1152 passed, 4 skipped, 343 subtests`. Ölçüm, `c3f711e`'ye giren aynı içerikle **commit'ten önce** yapıldı; commit sonrasında tam paket yeniden çalıştırılmadı.
+**A sınıfı — güncel kaynak (2026-08-14):** `1165 passed, 3 skipped, 345 subtests`. Ölçüm `0a1a1ae` içeriğiyle daha önce alındı; bu metadata turunda tam paket yeniden çalıştırılmadı.
 
-**B ve C sınıfı — güncel kaynak için YOK.** R10a–R10c ve R12c turlarında yeni build, paketli EXE ve installer üretilmedi. Yayımlanmış **v4.2** artifact'ına ait B/C/D kanıtları **tarihseldir**: kendi turunda geçerlidir ama **güncel kaynağın kanıtı değildir**; kaynak o artifact'tan ileridedir. Bu yüzden `--release` provenance kapısı da yeni build alınana kadar kırmızıdır.
+**B ve C sınıfı — güncel kaynak için YOK.** R10a–R10c, R12c ve açılış bildirimi ertelemesi turlarında yeni build, paketli EXE ve installer üretilmedi. Yayımlanmış **v4.2** artifact'ına ait B/C/D kanıtları **tarihseldir**: kendi turunda geçerlidir ama **güncel kaynağın kanıtı değildir**; kaynak o artifact'tan ileridedir. Bu yüzden `--release` provenance kapısı da yeni build alınana kadar kırmızıdır.

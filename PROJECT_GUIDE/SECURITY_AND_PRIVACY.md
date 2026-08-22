@@ -11,8 +11,8 @@ covers:
   - core/app_paths.py
   - ui/dialogs/email_dialog.py
   - main.py
-last_verified_commit: 9e89370
-last_verified_date: 2026-08-02
+last_verified_commit: 0a1a1ae
+last_verified_date: 2026-08-14
 volatile: false
 ---
 

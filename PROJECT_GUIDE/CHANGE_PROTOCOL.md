@@ -83,7 +83,7 @@ Denetim dört kaynağı **birlikte** kapsar: `built_from_commit..HEAD` commit'le
 - **Generated ve yeniden üretilebilir:** `__pycache__/`, `.pytest_cache/`, `build/` — istenirse silinebilir; `dist/` ve `installer_output/` **geçerli release adayıysa silinmez**.
 - **Local-only build girdisi:** `packaging/`, `assets/`, `.bat` başlatıcılar — **silinmez**.
 - **Gerçek kullanıcı verisi:** `Import_Test/` ve `<USER_DATA_ROOT>` / `<BACKUP_ROOT>` — yalnız açık izinle ve yedekle.
-- **Legacy belge:** `SORUN_COZUM_NOTLARI.md` (yaşayan yerel tarihçe, kanonik değil) — **karşılaştırmalı onay** turu olmadan silinmez/taşınmaz. Aynı kural ileride ortaya çıkacak yerel notlar için de geçerlidir: önce benzersiz bilgi PROJECT_GUIDE'a taşınır, sonra kaldırma değerlendirilir.
+- **Legacy belge:** `docs/local/SORUN_COZUM_NOTLARI.md` (yaşayan yerel tarihçe, kanonik değil) — **karşılaştırmalı onay** turu olmadan silinmez/taşınmaz. Aynı kural ileride ortaya çıkacak yerel notlar için de geçerlidir: önce benzersiz bilgi PROJECT_GUIDE'a taşınır, sonra kaldırma değerlendirilir.
 - **Bilinmeyen** → dokunulmaz. **Git tarafından izlenen** → yalnız normal değişiklik akışıyla.
 - Silmeden önce kapsam listelenir, sonrasında doğrulanır; geniş glob veya çözülmemiş değişkenle recursive silme yapılmaz.
 

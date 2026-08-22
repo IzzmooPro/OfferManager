@@ -197,6 +197,13 @@ class KaynakSurumTests(unittest.TestCase):
         self.assertIs(s.get("release_candidate_ready"), False)
         gerekce = str(s.get("artifact_stale_reason", "")).strip()
         self.assertTrue(gerekce, "artifact_stale_reason boş")
+        eksik = [anahtar for anahtar in ("dist_exe", "installer")
+                 if not (KOK / str(s[anahtar]["path"])).is_file()]
+        if eksik:
+            self.assertRegex(gerekce.lower(),
+                             r"proje k[oö]k[uü]nde.*(?:yok|bulunmaz)",
+                             "artifact girdileri yerelde yokken gerekçe "
+                             "dosyalar mevcutmuş gibi konuşuyor")
         if durum == "stale_for_target_version":
             # Hedef sürüm yükseltildi, build eski: v4.1 değerleri korunmalı
             self.assertEqual(s["dist_exe"]["size"], 9437741)
@@ -217,6 +224,16 @@ class KaynakSurumTests(unittest.TestCase):
         self.assertRegex(not_metni, r"(?i)i[çc]ermez|dahil de[ğg]il|eskidir",
                          "not, artifact'ın güncel kaynağı içermediğini "
                          f"söylemiyor: {not_metni!r}")
+        # Snapshot'ın üç provenance açıklaması aynı kaynak/artifact
+        # farkını anlatmalı; yeni kaynak konusu yalnız bir alana eklenip
+        # diğerlerinde unutulursa release devri eksik kalır.
+        for belirtec in ("r10a", "r12c", "acilis"):
+            for alan in ("source_commit_note", "built_from_commit_note",
+                         "artifact_stale_reason"):
+                metin = str(s.get(alan, "")).lower()
+                self.assertIn(belirtec, metin,
+                              f"{alan} güncel kaynak farkını eksik "
+                              f"anlatıyor: {belirtec}")
 
     def test_manifest_installer_yolu_artifact_surumunu_gosterir(self):
         """Installer yolu ARTIFACT sürümünü gösterir — sahte etiket yok."""
@@ -507,26 +524,44 @@ class ReleaseDogrulamaTests(unittest.TestCase):
                              f"provenance temizken --release başarısız:\n{sonuc.stdout}")
 
     def test_artifacts_modu_gecer(self):
-        """`--artifacts` her durumda exit 0'dır; uyarı hedef duruma bağlıdır.
+        """`--artifacts` her durumda exit 0'dır; uyarı GERÇEK duruma bağlıdır.
 
-        ARA DURUMDA (hedef sürüm yükseltildi, build eski) uyarı **beklenir** ve
-        eldeki derlemenin sürümünü söylemek zorundadır — sessizce geçmesi
-        gerçeği gizlerdi (RELEASE_CHECKLIST, "Sürüm yükseltmesinin üç durumu").
+        Üç durum ayrılır — "dosya yok" ile "artifact bozuk" AYNI ŞEY DEĞİLDİR:
+
+        1. Artifact dosyası yerelde **yok** (ör. `dist/`, `installer_output/`
+           proje kökünden kaldırılmış): çıkış yine 0'dır, ama uyarı **beklenir**
+           ve eksik artifact adını söylemek zorundadır — sessizce geçmesi
+           "yerel doğrulama yapıldı" izlenimi verirdi.
+        2. Dosyalar var ve **ara durum** (hedef sürüm yükseltildi, build eski):
+           uyarı beklenir ve eldeki derlemenin sürümünü söylemek zorundadır
+           (RELEASE_CHECKLIST, "Sürüm yükseltmesinin üç durumu").
+        3. Dosyalar var ve sürümler eşit: uyarı beklenmez.
         """
         s = json.loads(
             (REHBER / "project_manifest.json").read_text(encoding="utf-8"))["snapshot"]
+        eksik = [ad for ad in ("dist_exe", "installer")
+                 if not (KOK / str(s[ad]["path"])).is_file()]
         sonuc = subprocess.run([sys.executable, str(VERIFY), "--artifacts"],
                                capture_output=True, text=True, timeout=180)
         self.assertEqual(sonuc.returncode, 0,
                          f"--artifacts exit 0 olmalıydı:\n{sonuc.stdout}")
-        if s["artifact_built_for_version"] != s["version"]:
-            self.assertIn("uyari", sonuc.stdout.lower(),
+        cikti = sonuc.stdout.lower()
+        if eksik:
+            self.assertIn("uyari", cikti,
+                          "artifact yerelde yokken uyarı verilmedi:\n"
+                          + sonuc.stdout)
+            for ad in eksik:
+                self.assertIn(ad, cikti,
+                              f"{ad} yerelde yok ama uyarıda adı geçmiyor:\n"
+                              + sonuc.stdout)
+        elif s["artifact_built_for_version"] != s["version"]:
+            self.assertIn("uyari", cikti,
                           "ara durumda eski artifact uyarısı verilmedi:\n"
                           + sonuc.stdout)
             self.assertIn(s["artifact_built_for_version"], sonuc.stdout,
                           "uyarı eldeki derlemenin sürümünü söylemiyor")
         else:
-            self.assertNotIn("uyari", sonuc.stdout.lower(),
+            self.assertNotIn("uyari", cikti,
                              f"beklenmeyen uyarı:\n{sonuc.stdout}")
 
 

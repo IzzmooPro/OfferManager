@@ -518,6 +518,19 @@ class SnapshotDiliTests(unittest.TestCase):
         self.assertIn(str(rehber), self.metin,
                       "rehber dahil test sayısı CURRENT_STATUS ile uyuşmuyor")
 
+    def test_guncel_kaynak_satirlari_manifest_commitini_gosteriyor(self):
+        """Tarihsel bölüm eski bir commit'i 'güncel kaynak' diye sunamaz."""
+        source = self._manifest_snapshot()["source_commit"]
+        for satir_no, satir in enumerate(self.metin.splitlines(), 1):
+            if "güncel kaynak" not in satir.lower():
+                continue
+            hashler = re.findall(r"\b[0-9a-f]{7,40}\b", satir)
+            if hashler:
+                self.assertTrue(any(source.startswith(h) or h.startswith(source)
+                                    for h in hashler),
+                                f"CURRENT_STATUS:{satir_no} eski commit'i "
+                                f"güncel kaynak diye sunuyor: {hashler}")
+
     # ── Güncel tam suite sayıları tek kaynaktan okunur ───────────────────
     #
     # Sayılar teste SABİTLENMEZ: manifest ve CURRENT_STATUS'ten okunup
@@ -552,6 +565,22 @@ class SnapshotDiliTests(unittest.TestCase):
         for alan in ("passed", "skipped", "subtests_passed"):
             self.assertEqual(rehber.get(alan), genel.get(alan),
                              f"test_result.{alan} guide_integrated ile eşit değil")
+
+    def test_verification_guide_guncel_a_sinifi_manifestle_ayni(self):
+        """Kanıt rehberi eski kaynak sonucunu 'güncel' diye sunamaz."""
+        metin = (REHBER / "VERIFICATION_GUIDE.md").read_text(encoding="utf-8")
+        satir = next((s for s in metin.splitlines()
+                      if "A sınıfı — güncel kaynak" in s), "")
+        self.assertTrue(satir, "VERIFICATION_GUIDE güncel A sınıfı yok")
+        snapshot = self._manifest_snapshot()
+        sonuc = snapshot["guide_integrated_test_result"]
+        for deger in (snapshot["source_commit"], sonuc["passed"],
+                      sonuc["skipped"], sonuc["subtests_passed"]):
+            self.assertIn(str(deger), satir,
+                          f"VERIFICATION_GUIDE A sınıfı eski: {deger}")
+        if "acilis bildirimi" in snapshot["source_commit_note"].lower():
+            self.assertIn("açılış bildirimi", metin.lower(),
+                          "B/C boşluğu son kaynak değişikliğini anmıyor")
 
     def test_kaynak_baseline_ayri_kalir(self):
         """Tarihsel baseline (648/29 · 060baf3) tam suite ile karışmaz."""

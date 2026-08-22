@@ -29,4 +29,4 @@ Uzun komut çıktısı veya çalışma günlüğü yapıştırma; karar + kanıt
 
 ## Yerel ek kaynaklar (kanonik değil)
 
-`.claude/` altındaki skill ve kurallar ile `SORUN_COZUM_NOTLARI.md` **yereldir ve kanonik değildir**. Çelişki hâlinde PROJECT_GUIDE geçerlidir.
+`.claude/` altındaki skill ve kurallar ile `docs/local/SORUN_COZUM_NOTLARI.md` **yereldir ve kanonik değildir**. Çelişki hâlinde PROJECT_GUIDE geçerlidir.

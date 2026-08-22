@@ -37,14 +37,14 @@
     "clean_clone_buildable": false
   },
   "snapshot": {
-    "captured_at": "2026-08-08",
+    "captured_at": "2026-08-14",
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "c3f711e",
-    "source_commit_note": "Guncel kaynak; R10a/R10b/R10c ve R12c degisikliklerini icerir. Eldeki artifact bu degisiklikleri ICERMEZ (built_from_commit=227656b).",
+    "source_commit": "0a1a1ae",
+    "source_commit_note": "Guncel kaynak; R10a/R10b/R10c guvenli hata turlari, R12c build sonrasi provenance kapisi ve acilis bildirimi ertelemesi (0a1a1ae) dahildir. Eldeki artifact bu degisiklikleri ICERMEZ (built_from_commit=227656b).",
     "built_from_commit": "227656b",
-    "built_from_commit_note": "v4.2 artifact'inin build edildigi gercek HEAD. Guncel kaynak bu commit'ten ileridedir: R10a/R10b/R10c ve R12c degisiklikleri artifact'a DAHIL DEGILDIR. Yeni build alinmadan artifact guncel kaynagi temsil etmez.",
+    "built_from_commit_note": "v4.2 artifact'inin build edildigi gercek HEAD. Guncel kaynak bu commit'ten ileridedir: R10a/R10b/R10c, R12c ve acilis bildirimi ertelemesi artifact'a DAHIL DEGILDIR. Yeni build alinmadan artifact guncel kaynagi temsil etmez.",
     "version": "v4.2",
     "artifact_built_for_version": "v4.2",
     "artifact_verification_status": "stale_source_changed",
@@ -61,19 +61,19 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
-      "passed": 1152,
-      "subtests_passed": 343,
-      "date": "2026-08-08",
-      "skipped": 4,
-      "note": "Olcum, c3f711e'ye giren ayni kaynak/test icerigiyle commit'ten ONCE yapildi; commit sonrasinda tam paket yeniden calistirilmadi. Onceki olcum 1127/5/343 idi; R12c provenance testleri eklendi ve bir skip artik atlanmiyor. build_gate_test_result BUILD ANINDAKI (227656b) tarihsel kapi sonucudur ve degistirilmez."
+      "passed": 1165,
+      "subtests_passed": 345,
+      "date": "2026-08-14",
+      "skipped": 3,
+      "note": "0a1a1ae icerigiyle daha once alinan dogrulama; BU METADATA TURUNDA TAM PAKET YENIDEN CALISTIRILMADI. Onceki olcum 1152/4/343 (c3f711e) idi. build_gate_test_result BUILD ANINDAKI (227656b) tarihsel kapi sonucudur ve degistirilmez."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 1152,
-      "subtests_passed": 343,
-      "date": "2026-08-08",
-      "note": "Guncel kaynakta (c3f711e) olculdu; guide_integrated_test_result ile aynidir. source_test_result 648/29 baseline'ini (060baf3) TARIHSEL alan olarak korur.",
-      "skipped": 4
+      "passed": 1165,
+      "subtests_passed": 345,
+      "date": "2026-08-14",
+      "note": "Guncel kaynakta (0a1a1ae) dogrulandi; guide_integrated_test_result ile aynidir. BU METADATA TURUNDA YENIDEN CALISTIRILMADI. source_test_result 648/29 baseline'ini (060baf3) TARIHSEL alan olarak korur.",
+      "skipped": 3
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
@@ -386,6 +386,14 @@
       "installer_sha256": "DE590641717E33B94748D2B8658A23DA2079EE6CFCCF05BCE9CE45A5C98AC98B",
       "note": "packaging/Kurulum-Yap.bat build başında dist/, build/ ve installer_output/ klasörlerini SİLER; yayımlanmış v4.1 artifact'ı bu yüzden build öncesinde proje kökünün dışına kopyalandı."
     },
+    "v42_artifact_archive": {
+      "path": "<RELEASE_ARCHIVE>/v4.2-published-before-ui-redesign",
+      "files": 299,
+      "bytes": 229266985,
+      "dist_exe_sha256": "476015268A2620F60C0617E52D5E518CAF32559D17E618BB1022971AA8D5353B",
+      "installer_sha256": "D61488DFE55D5F0D7A6D4245B97176498CDD22B9BD442A2056EB87DDA5BF82B2",
+      "note": "Yayimlanmis v4.2 TARIHSEL artifact kopyasidir; guncel kaynagin artifact'i DEGILDIR. Proje kokundeki build/, dist/ ve installer_output/ klasorleri kaldirilmistir."
+    },
     "package_audit": {
       "date": "2026-08-02",
       "files": 297,
@@ -425,6 +433,6 @@
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
     },
-    "artifact_stale_reason": "Kaynak, artifact'in build commit'inden (227656b) ileridedir: R10a/R10b/R10c guvenli hata turlari ve R12c provenance kapisi eklendi. Eldeki v4.2 dist/installer dosyalari GECERLIDIR ve hash'leri degismemistir, ancak guncel kaynagi temsil etmezler. Yeni temiz build ve paket dogrulamasi (frozen smoke + installer) gereklidir."
+    "artifact_stale_reason": "Kaynak, artifact'in build commit'inden (227656b) ileridedir: R10a/R10b/R10c guvenli hata turlari, R12c provenance kapisi ve acilis bildirimi ertelemesi eklendi. Yayimlanmis/tarihsel v4.2 artifact kayitlari ve proje disindaki arsiv hash'leri degismemistir; ancak dist/installer girdileri proje kokunde yoktur ve bu artifact'lar guncel kaynagi temsil etmez. Yeni temiz build ve paket dogrulamasi (frozen smoke + installer) gereklidir."
   }
 }

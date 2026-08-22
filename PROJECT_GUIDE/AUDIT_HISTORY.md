@@ -2,8 +2,8 @@
 purpose: K1–K6 ve O1–O16 denetim bulgularının kapanış kaydı (tarihçe).
 read_when: Denetim geçmişi, "bu daha önce görüldü mü?", regresyon şüphesi.
 covers: []
-last_verified_commit: c3f711e
-last_verified_date: 2026-08-08
+last_verified_commit: 0a1a1ae
+last_verified_date: 2026-08-14
 volatile: false
 ---
 
@@ -61,6 +61,8 @@ Sütunlar: kod · sınıf · kök neden (kısa) · kapanış commit'i · korunan
 | **R10c-4** IMPORT | KESİN | Dosya okuma (`_read_file`, `_read_xlsx_sheets`) ham `str(e)` döndürüyor; CSV logları dosya adı ve ham istisna taşıyor; satır hataları `errors` listesine firma adı/ürün kodu/teklif no yazıyor; kategori hatası kategori adıyla loglanıp kullanıcıya hiç bildirilmiyor; doğrulama/yazma/aşama hataları ilerleme penceresini açık bırakıp yanlış başarı döndürebiliyor; workbook hata yolunda kapatılmıyordu | Sabit `DOSYA_OKUMA_HATASI`; güvenli `kayit_id` yalnız satır/grup SIRASI; kategori başarısızlığı önbelleğe alınır (yeniden denenmez), her farklı kategori bir kez loglanır, kullanıcıya tek toplu uyarı; `stage_state` yalnız sayısal (`kategori_yazildi`); aşamalar birbirinin başarısını inkâr etmez ve ilerleme penceresi her yolda kapanır; dönüş değeri gerçek DB değişikliğini gösterir; `_workbook_kapat` başarı ve hata yollarında `finally` içinde. **R8 gizli sayfa davranışı korunmuştur.** Commit `46d4d75` | `test_import_safe_errors`, `test_csv_import_errors` |
 
 | **R12c** | KESİN | Artifact `227656b`'den build edilmişti; sonrasında kaynak ve test dosyaları değişmesine rağmen `--release` **exit 0** veriyordu. "Build sonrası yalnız manifest/CURRENT_STATUS/KNOWN_RISKS/CHANGELOG değişebilir" kuralının otomatik karşılığı yoktu — eski artifact yeni kaynağın kanıtı gibi yayına gidebilirdi | Yeni `kontrol_build_sonrasi_provenance` kapısı. İzinli **tam** yollar (exact match, klasör/prefix izni YOK): `PROJECT_GUIDE/project_manifest.json`, `PROJECT_GUIDE/CURRENT_STATUS.md`, `PROJECT_GUIDE/KNOWN_RISKS.md`, `docs/CHANGELOG.md`. `built_from_commit..HEAD` commit'leri + staged + unstaged + untracked/non-ignored birlikte denetlenir; add/modify/delete/rename kapsanır, dosya başına tek hata üretilir, yollar `/` biçimine normalize edilir ve mutlak yol sızmaz. **Fail-closed**: `built_from_commit` eksik/bozuk, Git'te bulunamıyor, HEAD'in atası değil veya Git okunamıyorsa kapı kapanır. Yalnız `--release` modunda zorunlu; normal/`--stale`/`--artifacts` davranışı değişmez. Commit `c3f711e` | `test_project_guide` (24 provenance testi), `test_version_consistency` |
+
+| **R7-UI** açılış bildirimi | KESİN | Süresi dolan teklif modalı `MainWindow` oluşturulurken (`_navigate(0)` → `on_enter`) açılıyordu; bu zincir `main.py`'deki `window.show()` çağrısından ÖNCE çalıştığı için kutu **splash ekranının üzerinde** beliriyordu | Dashboard verisi açılışta yüklenmeye devam eder; bildirimler ertelenir. Splash fade'in gerçek `finished` sinyali → `acilis_bildirimlerini_planla()` → **pencereye ait** tek atımlık `QTimer` → bir sonraki event-loop turunda **idempotent** gösterim. Sabit gecikme yok; pencere görünür değilse veya kapanıyorsa modal açılmaz. Commit `0a1a1ae`. Tam paket **1165 passed, 3 skipped, 345 subtests**. **Kanıt sınıfı: kaynak testi + kaynak-modu Windows Qt smoke — yeni frozen build DEĞİLDİR.** | `test_expired_offer_prompt` |
 
 ## Not
 

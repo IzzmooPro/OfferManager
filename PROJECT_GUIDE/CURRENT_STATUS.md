@@ -3,28 +3,30 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: c3f711e
-last_verified_date: 2026-08-08
+last_verified_commit: 0a1a1ae
+last_verified_date: 2026-08-14
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-08 · sürüm: `v4.2` — YAYINLANDI (public, latest).**
-> **Kaynak, yayımlanmış v4.2 artifact'ından ileridedir** (R10a/R10b/R10c güvenli hata turları + R12c provenance kapısı). Bu turlar için **yeni build, paketli EXE veya installer kanıtı YOKTUR**; v4.2 tag/release/artifact kanıtları değişmemiştir.
+> **Yakalama tarihi: 2026-08-14 · sürüm: `v4.2` — YAYINLANDI (public, latest).**
+> **Kaynak, yayımlanmış v4.2 artifact'ından ileridedir** (R10a/R10b/R10c güvenli hata turları, R12c provenance kapısı ve açılış bildirimi ertelemesi). Bu turlar için **yeni build, paketli EXE veya installer kanıtı YOKTUR**; v4.2 tag/release/artifact kanıtları değişmemiştir.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.2** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.2.0.0` / `v4.2`) eşitlendi; installer adı `TeklifYonetim_Setup_v4.2.exe`
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
-- **Doğrulama durumu — GÜNCEL KAYNAK için (`c3f711e`):** `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`, `--release` **exit 1**. Kaynak build commit'inden ileridedir; yeni temiz build ve paket doğrulaması gereklidir.
+- **Doğrulama durumu — GÜNCEL KAYNAK için (`0a1a1ae`):** `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`, `--release` **exit 1**. Kaynak build commit'inden ileridedir; yeni temiz build ve paket doğrulaması gereklidir.
 - v4.2 artifact'ları: dist EXE `476015268A26…5353B` (9.476.704 B, 4.2.0.0 / v4.2) · installer `TeklifYonetim_Setup_v4.2.exe` `D61488DFE55D…82B2` (52.548.738 B). İkisi de v4.1 hash'lerinden **farklıdır**.
 - **Makinede kurulu sürüm v4.2** — son hâli **D2 canlı güncellemesiyle** kuruldu: kurulu EXE `476015268A26…5353B`, registry `DisplayVersion v4.2`, AppId ve kurulum dizini korundu. **Gerçek kullanıcı verisi ve yedekleri değişmedi** (30 + 20 dosya: YENİ=0, SİLİNEN=0, DEĞİŞEN=0; `database.db` `AB7B8AE5…`). **v4.2 için kaldırma ve temiz yeniden kurulum yapılmadı** — installer mekanizması v4.1'den beri değişmedi ve o senaryolar v4.1 turunda tam yürütüldü.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- Güncel kaynak tam suite (`c3f711e`): **1152 passed, 4 skipped, 343 subtests**. Ölçüm, commit'e giren aynı kaynak/test içeriğiyle **commit'ten önce** yapıldı; commit sonrasında yeniden çalıştırılmadı. Makine-okunur karşılığı: manifest `guide_integrated_test_result`.
+- **Güncel işlevsel kaynak commit: `0a1a1ae67cfe44d0ead545560f7a71871c8e6231`.**
+- Güncel kaynak tam suite (`0a1a1ae`): **1165 passed, 3 skipped, 345 subtests**. **Bu metadata turunda tam paket YENİDEN ÇALIŞTIRILMADI**; sayı, `0a1a1ae` içeriğiyle daha önce alınmış doğrulamadan gelir. Makine-okunur karşılığı: manifest `guide_integrated_test_result`.
+- Tarihsel bağlam: `c3f711e` turunda ölçülen tam paket **1152 passed, 4 skipped, 343 subtests** idi; güncel sonuç değildir.
 - v4.2 **build anındaki** kapı sonucu ayrı ve tarihsel bir alandır: manifest `build_gate_test_result` (`227656b`) — aşağıdaki "v4.2 Aşama 1 doğrulaması" bölümünde.
 - `py_compile` tüm proje dosyalarında temiz
 - Upstream durumu **her release öncesi canlı git komutlarıyla** doğrulanır; bu belgede canlı remote hash tutulmaz
@@ -66,7 +68,7 @@ K1–K6 ve O1–O16 **kapalı** ([AUDIT_HISTORY.md](AUDIT_HISTORY.md)). O4 yanl�
 
 ## v4.1 doğrulama durumu · TARİHSEL
 
-Aşağıdaki üç kanıt sınıfı **yayımlanan v4.1 artifact'ı** için geçerlidir (kaynak `7395561`, build HEAD `d359137`). **Güncel kaynak `25518fb` için tekrarlanmadı.**
+Aşağıdaki üç kanıt sınıfı **yayımlanan v4.1 artifact'ı** için geçerlidir (kaynak `7395561`, build HEAD `d359137`). **Bu tarihsel kanıtlar sonraki kaynak commit'leri için tekrarlanmadı.**
 
 - **Temiz build: GEÇTİ** — `packaging/Kurulum-Yap.bat --no-pause` exit 0; PyInstaller onedir + Inno Setup; log'da `[HATA]`/traceback yok
 - **Frozen smoke (kanıt sınıfı B): GEÇTİ** — izole ortamda U17'li dist EXE ile: null keyring'de **gözetimsiz açılış, modal yok**; fail keyring'de **"Güvenli Depo" modalı gerçekten açılıyor** (ana pencere arkasında disabled, mesaj kısa ve güvenli, `Tamam` otomasyonla basıldı); manuel güncelleme ağ-hata yolu **"Güncelleme kontrol edilemedi."** — URL/proxy/traceback sızıntısı ve yanlış "uygulama güncel" mesajı yok; indirme/tarayıcı/installer başlatılmadı; tek örnek kilidi; normal kapanış exit 0, tek izole yedek, thread/native crash izi yok
@@ -125,7 +127,7 @@ Hepsi test-first yürütüldü: önce kırmızı regresyon testi, sonra en küç
 
 `packaging/`, `assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` depo dışıdır → **temiz clone'dan build tekrarlanabilir değildir** ([BUILD_AND_PACKAGING.md](BUILD_AND_PACKAGING.md)).
 
-`<ROLLBACK_ROOT>` temizliği **2026-07-31'de açık onayla yapıldı**: yeniden kurulabilir iki kurulum ağacı kopyası silindi (361 MB). Yeniden üretilemeyen iki build artefaktı (**U17 öncesi v4.1** ve **yerel v4.0**, ~118 MB) bilinçli olarak **korundu** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3c). Geri kurulum bunlara bağlı değildir: doğrulanmış v4.1 installer'ı `installer_output/` altında ve GitHub v4.1 release'inde durur.
+`<ROLLBACK_ROOT>` temizliği **2026-07-31'de açık onayla yapıldı**: yeniden kurulabilir iki kurulum ağacı kopyası silindi (361 MB). Yeniden üretilemeyen iki build artefaktı (**U17 öncesi v4.1** ve **yerel v4.0**, ~118 MB) bilinçli olarak **korundu** ([KNOWN_RISKS.md](KNOWN_RISKS.md) R3c). Geri kurulum bunlara bağlı değildir: doğrulanmış v4.1 installer'ı GitHub v4.1 release'inde ve proje kökünün **dışındaki** doğrulanmış release arşivinde durur (`installer_output/` artık proje kökünde bulunmaz).
 
 ## Tamamlananlar (bu yakalama itibarıyla)
 
@@ -137,7 +139,10 @@ v4.2 yayın turu **kapandı**. **R10a ve R10b kapandı (2026-08-03)** — teklif
 
 **R12c kapandı (2026-08-08, `c3f711e`)** — build sonrası provenance kapısı kodlandı ve testle zorlanıyor (aşağıdaki bölüm).
 
-Açık kalanlar, **paketli/ürün davranışı kanıtı gerektiren** maddelerdir: **R6** (paketli gerçek geri yükleme → restart zinciri) ve **R8** ("Tümünü İçe Aktar" gizli sayfa politikası). Bunlar kaynak/mock kanıtıyla kapanmaz; kendi kanıt sınıflarını bekler.
+Açık kalanlar, **paketli/ürün davranışı kanıtı gerektiren** maddelerdir:
+
+- **R6 — AÇIK:** paketli gerçek geri yükleme → restart zinciri. Kaynak/mock kanıtıyla kapanmaz; kendi kanıt sınıfını bekler.
+- **R8 — AÇIK, ürün sahibinin kararıyla ERTELENDİ (2026-08-14):** "Tümünü İçe Aktar" gizli sayfa politikası. Kapatılmış veya çözülmüş değildir; mevcut davranış bilinçli olarak korunur ve sonraki UI/tasarım turunun zorunlu kapsamına alınmaz.
 
 Diğer maddelerin durumu bu turda değişmedi — güncel liste [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
@@ -151,10 +156,22 @@ Diğer maddelerin durumu bu turda değişmedi — güncel liste [KNOWN_RISKS.md]
 
 > **Kanıt sınırı — silinmemeli.** Kapı yalnız **Git'in görebildiği** provenance'ı kanıtlar; gitignore/local-only `packaging/` ve `assets/` girdilerinin geçmişini kanıtlamaz. `built_from_commit` kapının **güvendiği** girdidir ve artifact ile commit arasında kriptografik bağ yoktur — gerçek build loguyla eşleşmesi release incelemesinde **ayrıca** doğrulanmalıdır.
 
+## Açılış bildirimi ertelemesi (2026-08-14, `0a1a1ae`)
+
+Süresi dolan teklif modalı, `MainWindow` oluşturulurken (`_navigate(0)` → `on_enter`) açıldığı için **splash ekranının üzerinde** beliriyordu.
+
+- Dashboard verisi açılışta **yüklenmeye devam eder**; yalnız bildirimler ertelenir.
+- Splash fade'in gerçek `finished` sinyali → `acilis_bildirimlerini_planla()` → pencereye ait tek atımlık zamanlayıcı → bir sonraki event-loop turunda gösterim. **Sabit gecikme yok.**
+- Gösterim **idempotenttir**; pencere görünür değilse veya kapanış hazırlığı başladıysa modal açılmaz.
+- Onay/ret sözleşmesi değişmedi: "Şimdilik Dokunma" / Esc / X hiçbir yazma yapmaz.
+- Kanıt sınıfı: **kaynak testi + kaynak-modu Windows Qt smoke**. → `tests/test_expired_offer_prompt.py`, [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) 7b
+
 ## Bu yakalamadaki artifact durumu
 
-- **Yeni build, frozen smoke, installer veya release YAPILMADI.** Güncel kaynak (`c3f711e`), yayımlanmış **v4.2** artifact'ından **ileridedir**: R10a/R10b/R10c ve R12c değişikliklerini içerir, artifact içermez.
-- Manifest bu gerçeği yansıtır: `source_commit = c3f711e`, `built_from_commit = 227656b` (**değiştirilmedi**), `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`. **Artifact hash/boyut/yol alanları, kurulu sürüm alanları ve yayımlanmış release/tag/updater kanıtları DEĞİŞMEDİ.**
+- **Yeni build, frozen smoke, installer veya release YAPILMADI.** Güncel kaynak (`0a1a1ae`), yayımlanmış **v4.2** artifact'ından **ileridedir**: R10a/R10b/R10c, R12c ve açılış bildirimi ertelemesini içerir; artifact bunları içermez.
+- Manifest bu gerçeği yansıtır: `source_commit = 0a1a1ae`, `built_from_commit = 227656b` (**değiştirilmedi**), `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`. **Artifact hash/boyut/yol alanları, kurulu sürüm alanları ve yayımlanmış release/tag/updater kanıtları DEĞİŞMEDİ.**
+- **`build/`, `dist/` ve `installer_output/` artık proje kökünde YOKTUR.** Bu yüzden `--artifacts` "yerel doğrulama atlandı" uyarısı verir — bu **artifact bozuk demek değildir**; yalnız yerelde karşılaştırılacak dosya bulunmadığı anlamına gelir.
+- **Yayımlanmış v4.2 artifact'ı tarihsel olarak geçerlidir** ve proje kökünün dışındaki doğrulanmış arşivde korunur: `<RELEASE_ARCHIVE>/v4.2-published-before-ui-redesign` — **299 dosya, 229.266.985 bayt**; dist EXE `476015268A26…5353B`, installer `D61488DFE55D…82B2`. Bu kopya **tarihsel** bir kayıttır; güncel kaynağın artifact'ı **değildir**.
 - v4.2 tag'i, GitHub Release'i ve D1/D2/D2b kanıtları **tarihsel olarak geçerlidir**; bu tur yalnız güncel kaynağın artifact tazeliğini düşürür.
 
 ## Bu yakalamayı yenilerken
