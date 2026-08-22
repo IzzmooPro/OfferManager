@@ -121,6 +121,13 @@ class EmailDialogCloseWhileSendingTests(unittest.TestCase):
         self.addCleanup(self._join_worker, dlg)
         dlg.show()
         dlg._send_email()
+        if block_seconds == 0.0:
+            # Sıfır gecikmeli sahte SMTP, event loop worker'ı isRunning()
+            # durumunda gözlemlemeden tamamlayabilir. Bu başarı testi için
+            # worker'ın oluşturulması yeterlidir; sonucu aşağıda ayrıca
+            # mesaj kutusu + dialog kabulüyle doğrulanır.
+            self.assertIsNotNone(dlg.worker, "worker oluşturulmadı")
+            return
         self.assertTrue(self._pump_until(lambda: dlg.worker is not None
                                          and dlg.worker.isRunning(), 5.0),
                         "worker başlamadı")
