@@ -25,7 +25,7 @@ Yeni bir karar alındığında bu tabloya bir satır eklenir; uzun gerekçe gere
 | D10 | XLSX'te sayfalar **birleştirilmez**, kullanıcı seçer | Otomatik birleştirme sessiz veri karışımı üretiyordu | Kalıcı |
 | D11 | Sayfa sorusu **ilerleme penceresinden önce** | Modal ilerleme penceresi sonradan açılan soruyu Windows'ta devre dışı bırakıyor (O16) | Kalıcı |
 | D12 | Restart **`os.execl` ile değil**, ardıl süreç + `--restarted-from` ile | `os.execl` Windows'ta yerinde değiştirme yapmaz; kilit ve kapanış sırası bozuluyordu | Kalıcı |
-| D13 | `packaging/`, `assets/`, `Import_Test/` ve build çıktıları **depo dışında** | Gerçek müşteri verisi ve yerel paketleme girdileri GitHub'a gitmemeli; bedeli temiz clone build'in tekrarlanamaması | Kalıcı, bilinçli |
+| D13 | `assets/`, `Import_Test/`, build çıktıları ve D21 dışındaki yerel paketleme girdileri **depo dışında** | Gerçek müşteri verisi ve yerel paketleme girdileri GitHub'a gitmemeli; bedeli temiz clone build'in tekrarlanamaması | Kalıcı, D21 istisnasıyla |
 | D14 | Testler **yalnız pytest** ile | `unittest discover` conftest izolasyonunu atlıyor ve gerçek veriyi siliyordu | Kalıcı |
 | D15 | Teklif numarası sayacı **geriye alınmaz** | Silinen tekliften doğan boşluk, numara tekrar kullanımından daha güvenli | Kalıcı |
 | D16 | Kanonik bilgi **PROJECT_GUIDE**'da; `.claude/`, `docs/` ve yerel notlar kanonik değil | Tek doğruluk kaynağı ve düşük token maliyeti | Kalıcı |
@@ -33,6 +33,7 @@ Yeni bir karar alındığında bu tabloya bir satır eklenir; uzun gerekçe gere
 | D18 | Yabancı anahtarlarda **`ON DELETE CASCADE`** (teklif → kalem) ve **`ON DELETE SET NULL`** (kategori, müşteri, ürün referansları) | Teklif silinince kalemleri de gitsin; kategori/müşteri/ürün silinince teklif kaydı yetim kalmasın, yalnız bağ kopsun | Kalıcı |
 | D19 | **F1 yardım penceresi toggle** çalışır (açıksa kapatır) ve uygulama genelinde tetiklenir | Kullanıcı aynı tuşla açıp kapatmayı bekliyor; diyalog açıkken de çalışmalı | Kalıcı |
 | D20 | Yedek dosya adı **`backup_%Y_%m_%d_%H%M%S_%f.zip`** | Sıralanabilir, çakışmasız (mikrosaniye) ve rotasyon için ayrıştırılabilir | Kalıcı |
+| D21 | Hassas veri içermeyen `packaging/TeklifYonetim.iss` **Git'te izlenir**; diğer paketleme girdileri yerel kalır | Upgrade, AppId ve dar eski-dosya temizliği ürün davranışıdır; yalnız yerel makinede kalırsa çalışan installer düzeltmesi kaybolur. Şirket görselleri, gerçek veri ve tam build girdileri bu istisnaya girmez | Kalıcı |
 
 ## Ertelenmiş fikirler — **taahhüt değildir**
 

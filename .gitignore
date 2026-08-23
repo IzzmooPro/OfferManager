@@ -16,8 +16,10 @@ installer_output/
 # İçe aktarma test verisi — GERÇEK müşteri/ürün verisi içerir, GitHub'a ASLA gitmez
 Import_Test/
 
-# Paketleme araçları — YEREL kalır, GitHub'a gitmez (spec, iss, build bat'ları, version_info)
-packaging/
+# Paketleme girdilerinin çoğu YEREL kalır. Yalnız hassas veri içermeyen Inno
+# reçetesi, upgrade davranışının kaybolmaması için D21 kararıyla izlenir.
+packaging/*
+!packaging/TeklifYonetim.iss
 
 # .bat başlatıcılar — YEREL kalır (Baslat.bat vb.); GitHub yalnızca kaynak kod tutar
 *.bat

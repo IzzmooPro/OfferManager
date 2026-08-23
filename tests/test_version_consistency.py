@@ -418,6 +418,31 @@ class PaketlemeSurumTests(unittest.TestCase):
         self.assertEqual(m.group(1), APP_VERSION,
                          "Inno sürümü core/constants.py ile uyuşmuyor")
 
+class InstallerUpgradeTemizlikTests(unittest.TestCase):
+    """İzlenen Inno reçetesinin upgrade temizliği her clone'da sınanır."""
+
+    def test_yalniz_bilinen_eski_dllleri_siler(self):
+        """Upgrade temizliği kullanıcı dosyalarına uzanan joker içeremez."""
+        self.assertTrue(ISS.is_file(), "izlenen Inno reçetesi bulunamadı")
+        metin = ISS.read_text(encoding="utf-8")
+        bolum = re.search(
+            r"(?ms)^\[InstallDelete\]\s*(.*?)(?=^\[[^]]+\]|\Z)", metin)
+        self.assertIsNotNone(bolum, "[InstallDelete] bölümü bulunamadı")
+
+        satirlar = [
+            satir.strip() for satir in bolum.group(1).splitlines()
+            if satir.strip() and not satir.lstrip().startswith(";")
+        ]
+        self.assertEqual(satirlar, [
+            'Type: files; Name: "{app}\\_internal\\libcrypto-3-x64.dll"',
+            'Type: files; Name: "{app}\\_internal\\libssl-3-x64.dll"',
+        ])
+        for satir in satirlar:
+            self.assertNotRegex(satir, r"[*?]",
+                                "upgrade temizliği joker içeremez")
+            self.assertNotIn("filesandordirs", satir.lower())
+            self.assertNotIn("recursesubdirs", satir.lower())
+
 
 class UpdaterKarsilastirmaTests(unittest.TestCase):
     """Sürüm karşılaştırması 'v' ön ekinden etkilenmemeli."""

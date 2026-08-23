@@ -36,6 +36,9 @@ Adımlar: araç kontrolü → **`python -m pytest tests -q`** → eski `build/`,
 - Sabit `AppId` (upgrade aynı kaydı günceller), `DefaultDirName={autopf}\Teklif Yönetim`, `PrivilegesRequired=admin`, `ArchitecturesInstallIn64BitMode=x64compatible`.
 - `UsePreviousAppDir=yes`, `UsePreviousTasks=yes`.
 - `[Files]`: yalnız `dist\TeklifYonetim\*` → `{app}` (`ignoreversion recursesubdirs createallsubdirs`).
+- `[InstallDelete]`: yalnız yeni pakette artık bulunmayan iki eski OpenSSL adı
+  (`_internal\libcrypto-3-x64.dll`, `_internal\libssl-3-x64.dll`) yerinde
+  yükseltmede silinir. Joker, klasör veya kullanıcı verisi temizliği yoktur.
 - `[Icons]`: grup kısayolu, kaldırma kısayolu, isteğe bağlı masaüstü kısayolu (varsayılan işaretli).
 - `[Run]`: kurulum sonrası uygulamayı açar — `skipifsilent` olduğu için sessiz kurulumda açılmaz.
 - `[Code]`: `InitializeUninstall` (Inno 7 kaldırıcı hatasını atlatmak için **silinmez**) ve `PrepareToInstall` içinde `taskkill /F /IM TeklifYonetim.exe`.
@@ -48,11 +51,16 @@ Adımlar: araç kontrolü → **`python -m pytest tests -q`** → eski `build/`,
 
 ## Local-only gerçeği
 
-`packaging/`, `assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` ve `.bat` başlatıcılar **`.gitignore` ile depo dışındadır**. Bu bilinçli bir karardır ([DECISIONS.md](DECISIONS.md)), ancak sonucu şudur:
+`packaging/TeklifYonetim.iss` D21 kararıyla izlenir; güvenli upgrade reçetesi ve
+dar eski-dosya temizliği böylece Git geçmişinde kalır. `packaging/` altındaki
+diğer girdiler (`.spec`, `version_info`, build BAT'ları ve kaynak görseller),
+`assets/`, `dist/`, `installer_output/`, `build/`, `Import_Test/` ve diğer `.bat`
+başlatıcılar **`.gitignore` ile depo dışındadır**. Bu bilinçli sınırın sonucu:
 
 > **Temiz bir clone'dan build almak şu an tekrarlanabilir değildir.** Paketleme yalnız bu yerel makinede yapılabilir.
 
-Depoda kalanlar: kaynak kod, `tests/`, `README.md`, `docs/CHANGELOG.md`, `requirements.txt`, `.gitignore`, `CLAUDE.md`, `AGENTS.md`, `PROJECT_GUIDE/`.
+Depoda kalan paketleme istisnası yalnız `packaging/TeklifYonetim.iss` dosyasıdır;
+bu istisna tek başına temiz clone build'ini mümkün kılmaz.
 
 ## Bilinen zararsız uyarılar
 
