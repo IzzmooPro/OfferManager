@@ -2,6 +2,15 @@
 
 ---
 
+## Yayınlanmamış kaynak değişiklikleri — 2026-08-23
+
+### Açılış ve güvenli depo uyarısı
+- Güvenli depodaki SMTP parolası okunamadığında uyarı artık splash ekranı
+  sırasında açılışı kesmiyor; ana pencere görünür olduktan sonra yalnız bir kez
+  gösteriliyor.
+- Bu değişiklik `1458e7e` kaynağındadır. Mevcut public v4.3 paketi `446fc78`
+  kaynaklı olduğundan yeni build ve frozen UI doğrulaması bekleniyor.
+
 ## [v4.3] — 2026-08-23
 
 Bu sürüm, v4.2 sonrasında tamamlanan güvenilirlik, arayüz önizleme ve kurulum

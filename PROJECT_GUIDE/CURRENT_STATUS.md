@@ -3,14 +3,14 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: 446fc78
+last_verified_commit: 1458e7e
 last_verified_date: 2026-08-23
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-23 · hedef sürüm: `v4.3` — PUBLIC/LATEST YAYIN VE UPDATER D1+D2 TAMAMLANDI.**
+> **Yakalama tarihi: 2026-08-23 · hedef sürüm: `v4.3` — PUBLIC/LATEST YAYIN GEÇERLİ, GÜNCEL KAYNAK İÇİN ARTIFACT ESKİ.**
 > Public/latest sürüm **v4.3**'tür. Temiz build, değişiklik-etkili frozen/kurulu smoke, tam installer C, exact build commit'indeki anotasyonlu tag, tek installer asset'li public GitHub Release, kaynak düzeyi canlı updater D1 ve exact paketli v4.2 istemciden gerçek v4.3 teslimatı D2 doğrulandı. Yayın zinciri kapandı.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
@@ -18,14 +18,14 @@ volatile: true
 
 - Hedef sürüm: **v4.3** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.3.0.0` / `v4.3`) eşitlendi; hedef installer adı `TeklifYonetim_Setup_v4.3.exe`
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
-- **v4.3 artifact/yayın durumu:** `artifact_verification_status = verified`, `release_candidate_ready = true`; `tag_created = github_release_created = updater_end_to_end_verified = true`. `v4.3` tag'i exact build commit'i `446fc78` üzerinde. Release ID `375288316`, `draft=false`, `prerelease=false`, `latest=true`; public asset bağımsız indirmede yerel installer ile byte-eşit. D1 ve D2 geçti.
+- **v4.3 artifact/yayın durumu:** Mevcut public artifact ve yayın kanıtları build commit'i `446fc78` için tarihsel olarak geçerlidir; ancak güncel kaynak `1458e7e` R7 açılış bildirimi düzeltmesini içerdiği için `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false`. `v4.3` tag'i ve public/latest release değiştirilmedi.
 - v4.3 dist EXE: `C037CB3AEF6F…F0ED9AD` (9.722.873 B, FileVersion `4.3.0.0`, ProductVersion `v4.3`) · installer: `TeklifYonetim_Setup_v4.3.exe` `7D7516BC2746…94B8EE` (51.289.869 B). Public v4.2 artifact kimlikleri tarihsel kayıtlarda korunur.
 - **Makinede kurulu sürüm v4.3** — yeni exact installer ile tam C zincirinin temiz yeniden kurulum sonu. Kurulu EXE dist ile byte-birebir aynı; registry `DisplayVersion v4.3`, aynı AppId ve kurulum yolu doğrulandı. Başlangıçtaki gerçek kullanıcı verisi **32/32**, yedekler **13/13** bütün zincirde değişmedi; DB `integrity_check=ok`, `foreign_key_check` temiz.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- **v4.3 kaynak ve build girdisi: `446fc780131dd77a8a4dcf630f8baa8287b367dd`.** Manifestte `source_commit` ve `built_from_commit` bu kesin commit'e eşittir; sonraki değişiklikler yalnız build-sonrası exact-match izinli kanıt dosyalarıdır.
-- v4.3 build kapısı: **1222 passed, 6 skipped, 345 subtests**.
+- **Güncel kaynak: `1458e7e572363564bc02bdd54e8b25026fd5b89e`; mevcut v4.3 artifact build girdisi: `446fc780131dd77a8a4dcf630f8baa8287b367dd`.** R7 düzeltmesi mevcut pakette yoktur.
+- Güncel kaynak kapısı: **1225 passed, 4 skipped, 345 subtests**. Yeni build veya frozen smoke henüz yapılmadı.
 - Tarihsel bağlam: `c3f711e` turunda ölçülen tam paket **1152 passed, 4 skipped, 343 subtests** idi; güncel sonuç değildir.
 - v4.2 **build anındaki** kapı sonucu ayrı ve tarihsel bir alandır: manifest `build_gate_test_result` (`227656b`) — aşağıdaki "v4.2 Aşama 1 doğrulaması" bölümünde.
 - `py_compile` tüm proje dosyalarında temiz
@@ -199,9 +199,9 @@ Süresi dolan teklif modalı, `MainWindow` oluşturulurken (`_navigate(0)` → `
 
 ## Bu yakalamadaki artifact durumu
 
-- `source_commit = built_from_commit = 446fc780131dd77a8a4dcf630f8baa8287b367dd`; v4.3 artifact bu kesin temiz HEAD'den üretildi. Sonraki değişiklikler yalnız build-sonrası exact-match izinli kanıt dosyalarıdır.
+- `source_commit = 1458e7e572363564bc02bdd54e8b25026fd5b89e`; `built_from_commit = 446fc780131dd77a8a4dcf630f8baa8287b367dd`. Mevcut v4.3 artifact, R7 açılış bildirimi düzeltmesini içermez; eski artifact hashleri tarihsel kanıt olarak korunur.
 - Proje kökündeki `build/`, `dist/` ve `installer_output/` v4.3 setine aittir. Birincil `dist_exe` ve `installer` alanları v4.3 yerel artifact kimliklerini taşır; `--artifacts` bunları hash/boyutla doğrulamalıdır.
-- Artifact build, exact-hash hedefli B, tam C, public/latest v4.3 release, exact build commit'indeki tag, kaynak düzeyi canlı updater D1 ve paketli v4.2→v4.3 D2 doğrulandı. `release_candidate_ready=true`; tam yayın zinciri kapandı.
+- `446fc78` artifact'ı için exact-hash hedefli B, tam C, public/latest v4.3 release, tag, D1 ve D2 doğrulaması geçerlidir. Güncel `1458e7e` kaynak için `release_candidate_ready=false`; yeni temiz build ve R7 frozen UI smoke beklenir.
 - **Yayımlanmış v4.2 artifact'ı tarihsel olarak geçerlidir** ve proje kökünün dışındaki doğrulanmış arşivde korunur: `<RELEASE_ARCHIVE>/v4.2-published-before-ui-redesign` — **299 dosya, 229.266.985 bayt**; dist EXE `476015268A26…5353B`, installer `D61488DFE55D…82B2`. Bu kopya **tarihsel** bir kayıttır; güncel kaynağın artifact'ı **değildir**.
 - v4.2 tag'i, GitHub Release'i ve D1/D2/D2b kanıtları **tarihsel olarak geçerlidir**; v4.3 için yeni tag/release veya updater kanıtı değildir.
 
