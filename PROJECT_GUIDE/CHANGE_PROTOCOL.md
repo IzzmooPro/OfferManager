@@ -53,6 +53,7 @@ Küçük bir değişiklikte bütün uzun smoke turlarını tekrarlama; tablodaki
 - `PROJECT_GUIDE/project_manifest.json`
 - `PROJECT_GUIDE/CURRENT_STATUS.md`
 - `PROJECT_GUIDE/KNOWN_RISKS.md`
+- `PROJECT_GUIDE/VERIFICATION_GUIDE.md` — yalnız gerçekleşen A/B/C kanıtını ve kapsam sınırını build commit'iyle eşlemek için
 - `docs/CHANGELOG.md`
 
 Denetim dört kaynağı **birlikte** kapsar: `built_from_commit..HEAD` commit'leri, **staged**, **unstaged** ve **untracked/non-ignored** dosyalar; ekleme, değiştirme, silme ve yeniden adlandırma dâhildir. `built_from_commit` eksik/bozuksa, Git'te bulunamıyorsa, HEAD'in atası değilse veya Git okunamıyorsa kapı **fail-closed** davranır.

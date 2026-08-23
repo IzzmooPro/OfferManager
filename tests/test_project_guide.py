@@ -1033,15 +1033,16 @@ class ProvenanceGecerliTests(_GeciciProvenanceGitDepo):
         self.assertEqual(self._prov(), [])
 
     def test_izinli_dosyalarin_commitli_degisikligi_gecer(self):
-        """Dört izinli yolun HEPSİ gerçekten değişmeli ve kapı yine geçmeli.
+        """Beş izinli yolun HEPSİ gerçekten değişmeli ve kapı yine geçmeli.
 
-        Test yalnız "kapı geçiyor" demez; `git diff` ile dört yolun tek
+        Test yalnız "kapı geçiyor" demez; `git diff` ile beş yolun tek
         commit'te gerçekten değiştiğini de kanıtlar — aksi hâlde hiçbir şeyi
         değiştirmeyen bir test de yeşil görünürdü.
         """
         izinli = ("PROJECT_GUIDE/project_manifest.json",
                   "PROJECT_GUIDE/CURRENT_STATUS.md",
                   "PROJECT_GUIDE/KNOWN_RISKS.md",
+                  "PROJECT_GUIDE/VERIFICATION_GUIDE.md",
                   "docs/CHANGELOG.md")
 
         # 1) manifest: GEÇERLİ JSON kalmalı → zararsız test alanı eklenir
@@ -1052,9 +1053,10 @@ class ProvenanceGecerliTests(_GeciciProvenanceGitDepo):
                        encoding="utf-8")
         json.loads(yol.read_text(encoding="utf-8"))      # geçerliliği doğrula
 
-        # 2-4) diğer üç belge gerçekten değişir
+        # 2-5) diğer dört belge gerçekten değişir
         for md in ("PROJECT_GUIDE/CURRENT_STATUS.md",
-                   "PROJECT_GUIDE/KNOWN_RISKS.md"):
+                   "PROJECT_GUIDE/KNOWN_RISKS.md",
+                   "PROJECT_GUIDE/VERIFICATION_GUIDE.md"):
             hedef = self.kok / md
             hedef.write_text(hedef.read_text(encoding="utf-8")
                              + "\n<!-- r12c izinli degisiklik -->\n",

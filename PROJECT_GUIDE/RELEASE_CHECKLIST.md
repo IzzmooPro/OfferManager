@@ -51,7 +51,7 @@ Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı öl
 ### Build sonrası provenance kapısı (R12c)
 
 - [ ] Build'den sonra **yalnız** şu **tam** yollar değişti (exact match; klasör/prefix izni yok):
-      `PROJECT_GUIDE/project_manifest.json` · `PROJECT_GUIDE/CURRENT_STATUS.md` · `PROJECT_GUIDE/KNOWN_RISKS.md` · `docs/CHANGELOG.md`
+      `PROJECT_GUIDE/project_manifest.json` · `PROJECT_GUIDE/CURRENT_STATUS.md` · `PROJECT_GUIDE/KNOWN_RISKS.md` · `PROJECT_GUIDE/VERIFICATION_GUIDE.md` · `docs/CHANGELOG.md`
 - [ ] Kaynak kodu, `tests/` veya başka bir rehber belgesi değiştiyse **yeni build alındı** (eski artifact yeni kaynağın kanıtı sayılmaz)
 - [ ] `python PROJECT_GUIDE/scripts/verify_project_guide.py --release` → **exit 0**; provenance açısından da temiz. **Bu geçmeden tag ve release YAPILMAZ.**
 - [ ] Local-only `packaging/` ve `assets/` girdileri **ayrıca** hash/envanter/build incelemesiyle doğrulandı — provenance kapısı bunların geçmişini kanıtlamaz ([CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md))

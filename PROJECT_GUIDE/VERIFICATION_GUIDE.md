@@ -32,7 +32,7 @@ Bir sınıfın sonucunu diğerinin yerine yazma.
 
 1. Build başlamadan önce ölçülen gerçek `git rev-parse HEAD` kaydedilir.
 2. Manifest `built_from_commit` bu kayıtla **eşleştirilir** (elle karşılaştırma).
-3. Build'den sonra **yalnız izinli metadata yolları** değiştirilir: `PROJECT_GUIDE/project_manifest.json`, `PROJECT_GUIDE/CURRENT_STATUS.md`, `PROJECT_GUIDE/KNOWN_RISKS.md`, `docs/CHANGELOG.md`.
+3. Build'den sonra **yalnız izinli metadata/kanıt yolları** değiştirilir: `PROJECT_GUIDE/project_manifest.json`, `PROJECT_GUIDE/CURRENT_STATUS.md`, `PROJECT_GUIDE/KNOWN_RISKS.md`, `PROJECT_GUIDE/VERIFICATION_GUIDE.md`, `docs/CHANGELOG.md`. `VERIFICATION_GUIDE.md` izni yalnız gerçekleşen A/B/C sonucu ile kapsam sınırını build commit'ine bağlamak içindir; kaynak, test veya paketleme değişikliğine yetki vermez.
 4. `verify_project_guide.py --release` → **exit 0**.
 
 **A sınıfının içindeki güvenli hata regresyonları.** `test_*_safe_errors.py` dosyaları (reports, settings, backup, import + `test_csv_import_errors.py`) A sınıfına girer: izole test yardımcıları ve mock'larla çalışır; yalnız gerektiği yerlerde `TemporaryDirectory`, geçici dosya veya test veritabanı kullanılır. Gerçek kullanıcı verisine dokunmaz. Bunlar **mesaj/log/aşama sözleşmesini** kanıtlar; gerçek disk-dolu, gerçek dosya kilidi, gerçek SQLite commit hatası ve paketli davranışı **kanıtlamaz**. Özellikle geri yükleme durum makinesi (`preflight_failed` / `rolled_back` / `rollback_failed`) A sınıfında doğrulanmıştır; paketli gerçek **geri yükleme → restart** zinciri hâlâ açıktır ([KNOWN_RISKS.md](KNOWN_RISKS.md) R6).
