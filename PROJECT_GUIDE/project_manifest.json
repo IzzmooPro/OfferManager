@@ -311,8 +311,8 @@
       "existing_remote_tag": "v4.3",
       "existing_remote_tag_note": "anotasyonlu v4.3 tag'i uzakta mevcut ve peeled hedefi exact build commit 446fc780131dd77a8a4dcf630f8baa8287b367dd; tamamlanma bayraklari public release + D1/D2 bitene kadar birlikte false kalir",
       "upstream_sync_must_be_verified_live": true,
-      "status": "public_release_verified_updater_pending",
-      "note": "v4.3 exact build+B+C gecti; anotasyonlu tag exact build commit'ine push edildi. GitHub Release public/latest olarak ve tek installer asset'i bagimsiz indirmede byte-esit dogrulandi. tag_created/github_release_created/updater_end_to_end_verified bu semada tamamlanan public yayin + D1/D2 setinin birlikte bayraklaridir; D1/D2 bitene kadar false kalir.",
+      "status": "public_release_and_d1_verified_d2_pending",
+      "note": "v4.3 exact build+B+C gecti; anotasyonlu tag exact build commit'ine push edildi. GitHub Release public/latest olarak ve tek installer asset'i bagimsiz indirmede byte-esit dogrulandi. D1 kaynak duzeyi canli guven zinciri gecti; D2 bekliyor. tag_created/github_release_created/updater_end_to_end_verified bu semada tamamlanan public yayin + D1/D2 setinin birlikte bayraklaridir; D2 bitene kadar false kalir.",
       "tag_commit": "446fc780131dd77a8a4dcf630f8baa8287b367dd",
       "tag_commit_note": "uzak v4.3 annotated tag peeled hedefi read-back ile exact build commit'ine esit; metadata commit'ine tasinmadi",
       "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.3",
@@ -356,7 +356,31 @@
           "url": "https://github.com/IzzmooPro/OfferManager/releases/download/v4.3/TeklifYonetim_Setup_v4.3.exe",
           "byte_equal_after_download": true
         },
-        "note": "public /releases/latest read-back v4.3'e dondu; tek asset bagimsiz yeniden indirmede yerel installer ile byte-esit. D1 ve D2 henuz yapilmadi."
+        "note": "public /releases/latest read-back v4.3'e dondu; tek asset bagimsiz yeniden indirmede yerel installer ile byte-esit. Bu read-back aninda D1 ve D2 henuz yapilmamisti."
+      },
+      "live_updater_verification": {
+        "D1_source_trust_chain": {
+          "result": "GECTI",
+          "date": "2026-08-23",
+          "scope": "guncel v4.3 kaynagi ile gercek releases/latest + gercek asset indirmesi; installer CALISTIRILMADI",
+          "release_id": 375288316,
+          "evidence": [
+            "gercek releases/latest: HTTP 200, tag v4.3, draft=false, prerelease=false, tek asset",
+            "tam asset adi secildi: TeklifYonetim_Setup_v4.3.exe",
+            "baslangic host github.com ve redirect son host release-assets.githubusercontent.com allowlist icinde",
+            "API size = Content-Length = yazilan bayt = 51289869",
+            "API digest = indirilen SHA-256 = yerel installer SHA-256 = 7D7516BC27467E8AD64FC591AD6F78281C456D098C599E597F8BF7277F94B8EE",
+            "download_finished = 1, failed = 0",
+            "fail-closed dogrulandi: digest yok / asset adi yanlis / size=0 / ayni ad iki kez -> dordunde de asset SECILMEDI",
+            "os.startfile / os._exit / webbrowser cagri sayisi = 0"
+          ],
+          "installer_executed": false,
+          "temporary_download_removed_after_measurement": true
+        },
+        "D2_real_delivery_e2e": {
+          "result": "BEKLIYOR",
+          "scope": "paketli eski istemciden canli v4.3 teslimati; ayri acik onay ve UAC kullanici mudahalesi gerektirir"
+        }
       },
       "previous_v42_asset_readback": {
         "name": "TeklifYonetim_Setup_v4.2.exe",
