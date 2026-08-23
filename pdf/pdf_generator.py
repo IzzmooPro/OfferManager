@@ -213,7 +213,7 @@ def generate_pdf(offer_data: Offer, output_path: str) -> str:
     currency = offer_data.currency or "EUR"
     sym      = SYM_MAP.get(currency, currency)
 
-    logger.info("PDF oluşturuluyor: %s → %s", offer_data.offer_no or "?", output_path)
+    logger.info("PDF oluşturuluyor: %s -> %s", offer_data.offer_no or "?", output_path)
 
     # Yerleşim stratejisi — öngörülebilir doğal akış:
     #   1. Normal yerleşim tek sayfaya sığıyorsa onu kullan.
