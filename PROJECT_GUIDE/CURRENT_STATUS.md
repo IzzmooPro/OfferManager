@@ -10,15 +10,15 @@ volatile: true
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-23 · hedef sürüm: `v4.3` — RELEASE ADAYI DOĞRULANDI.**
-> Public/latest sürüm hâlâ **v4.2**'dir. v4.3 temiz build, değişiklik-etkili frozen/kurulu smoke ve tam installer C tamamlandı; anotasyonlu tag exact build commit'ine push edildi ve taslak GitHub Release tek installer asset'iyle byte-eşit doğrulandı. Taslak henüz public değildir; D1/D2 yapılmadı.
+> **Yakalama tarihi: 2026-08-23 · hedef sürüm: `v4.3` — PUBLIC/LATEST YAYIN DOĞRULANDI, UPDATER D1/D2 BEKLİYOR.**
+> Public/latest sürüm **v4.3**'tür. Temiz build, değişiklik-etkili frozen/kurulu smoke, tam installer C, exact build commit'indeki anotasyonlu tag ve tek installer asset'li public GitHub Release doğrulandı. D1/D2 henüz yapılmadığı için yayın zinciri tamamen kapanmadı.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.3** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.3.0.0` / `v4.3`) eşitlendi; hedef installer adı `TeklifYonetim_Setup_v4.3.exe`
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
-- **v4.3 artifact durumu:** `artifact_verification_status = verified`, `release_candidate_ready = true`. Main push eşit; `v4.3` tag'i exact build commit'i `446fc78` üzerinde; taslak Release ID `375288316`, `draft=true`, `prerelease=false`. Public yayın ve D1/D2 yapılmadı.
+- **v4.3 artifact/yayın durumu:** `artifact_verification_status = verified`, `release_candidate_ready = true`. Main push eşit; `v4.3` tag'i exact build commit'i `446fc78` üzerinde. Release ID `375288316`, `draft=false`, `prerelease=false`, `latest=true`; public asset bağımsız indirmede yerel installer ile byte-eşit. D1/D2 yapılmadı.
 - v4.3 dist EXE: `C037CB3AEF6F…F0ED9AD` (9.722.873 B, FileVersion `4.3.0.0`, ProductVersion `v4.3`) · installer: `TeklifYonetim_Setup_v4.3.exe` `7D7516BC2746…94B8EE` (51.289.869 B). Public v4.2 artifact kimlikleri tarihsel kayıtlarda korunur.
 - **Makinede kurulu sürüm v4.3** — yeni exact installer ile tam C zincirinin temiz yeniden kurulum sonu. Kurulu EXE dist ile byte-birebir aynı; registry `DisplayVersion v4.3`, aynı AppId ve kurulum yolu doğrulandı. Başlangıçtaki gerçek kullanıcı verisi **32/32**, yedekler **13/13** bütün zincirde değişmedi; DB `integrity_check=ok`, `foreign_key_check` temiz.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
@@ -36,7 +36,8 @@ volatile: true
 - Build girdisi: `446fc78`; `packaging/Kurulum-Yap.bat --no-pause` exit 0. Tam test kapısı **1222 passed, 6 skipped, 345 subtests**; temiz PyInstaller onedir + Inno Setup 7.1.0 tamamlandı.
 - v4.3 EXE: `9.722.873 B / C037CB3AEF6F…F0ED9AD / FileVersion 4.3.0.0 / ProductVersion v4.3`; dist ağacı `296 dosya / 170.329.053 B`.
 - v4.3 installer: `51.289.869 B / 7D7516BC2746…94B8EE`; izlenen `.iss` `ABD6CB536816…41422`, `version_info.txt` `70C01FB7F7A…8044`. Build ve paket içerik denetimleri temiz.
-- Taslak GitHub Release read-back: tek asset `TeklifYonetim_Setup_v4.3.exe`, `51.289.869 B`, `state=uploaded`, GitHub digest `sha256:7d7516bc…94b8ee`; bağımsız yeniden indirme yerel installer ile byte-eşit. `--clobber` kullanılmadı.
+- GitHub Release önce taslakta, ardından public/latest durumda read-back edildi: <https://github.com/IzzmooPro/OfferManager/releases/tag/v4.3> · Release ID `375288316` · yayın `2026-08-23T18:30:40Z` · `draft=false`, `prerelease=false`, `latest=true`. Tek asset `TeklifYonetim_Setup_v4.3.exe`, `51.289.869 B`, `state=uploaded`, GitHub digest `sha256:7d7516bc…94b8ee`; public URL'den bağımsız yeniden indirme yerel installer ile byte-eşit. `--clobber` kullanılmadı.
+- Manifestteki `tag_created`, `github_release_created`, `updater_end_to_end_verified` alanları bu sürümde tamamlanan **public yayın + D1 + D2 setini** birlikte temsil eder; D1/D2 bitene kadar üçü de `false` kalır. Public/tag gerçeği ayrı read-back alanlarında kayıtlıdır.
 - **Frozen/kurulu smoke: GEÇTİ, kapsam sınırı kayıtlı.** Exact dist EXE izole profil + null keyring + loopback proxy ile görünür `v4.3` arayüzünü açtı; log `Version: v4.3`, DB `integrity_check=ok/fk=0`. Dist, upgrade-kurulu ve temiz-kurulu EXE olmak üzere üç smoke da Alt+F4, kapanış yedeği, DB close ve exit 0 ile normal kapandı. Tam B-1..B-9 matrisi yeniden koşulmadı.
 - **Installer C: TAM GEÇTİ.** Önceki v4.3 (`BDEE8AA1…`) → yeni exact v4.3 (`C037CB3A…`) yerinde upgrade, ilk kurulu smoke, uninstall, temiz reinstall ve ikinci kurulu smoke tamamlandı. Her installer/uninstaller exit 0 ve restart yok; kurulum ağacı dist ile birebir (eksik 0, fazla 0, değişen 0; `unins000.*` hariç), eski hedefli DLL'ler yok. Ayrı önceki turda v4.2→v4.3 upgrade de geçmişti; iki kanıt birbirine karıştırılmaz.
 - Uninstall sonrasında Program Files dizini, uninstall registry kaydı ve installer-yönetimli kısayollar kalktı. Kullanıcının özel `AIO\Teklif Yönetim.lnk` kısayoluna dokunulmadı. Temiz reinstall sonunda registry v4.3, AppId, kurulum yolu ve üç installer kısayolu geri geldi.
@@ -195,7 +196,7 @@ Süresi dolan teklif modalı, `MainWindow` oluşturulurken (`_navigate(0)` → `
 
 - `source_commit = built_from_commit = 446fc780131dd77a8a4dcf630f8baa8287b367dd`; v4.3 artifact bu kesin temiz HEAD'den üretildi. Sonraki değişiklikler yalnız build-sonrası exact-match izinli kanıt dosyalarıdır.
 - Proje kökündeki `build/`, `dist/` ve `installer_output/` v4.3 setine aittir. Birincil `dist_exe` ve `installer` alanları v4.3 yerel artifact kimliklerini taşır; `--artifacts` bunları hash/boyutla doğrulamalıdır.
-- Artifact build, exact-hash hedefli B ve tam C kanıtı geçti. `release_candidate_ready=true`; bu yayın yapıldığı anlamına gelmez. Tag/release/D1/D2 yapılmadı.
+- Artifact build, exact-hash hedefli B ve tam C kanıtı geçti. `release_candidate_ready=true`; public/latest v4.3 release ve exact build commit'indeki tag read-back ile doğrulandı. D1/D2 yapılmadı; bu nedenle tam yayın zinciri henüz kapanmadı.
 - **Yayımlanmış v4.2 artifact'ı tarihsel olarak geçerlidir** ve proje kökünün dışındaki doğrulanmış arşivde korunur: `<RELEASE_ARCHIVE>/v4.2-published-before-ui-redesign` — **299 dosya, 229.266.985 bayt**; dist EXE `476015268A26…5353B`, installer `D61488DFE55D…82B2`. Bu kopya **tarihsel** bir kayıttır; güncel kaynağın artifact'ı **değildir**.
 - v4.2 tag'i, GitHub Release'i ve D1/D2/D2b kanıtları **tarihsel olarak geçerlidir**; v4.3 için yeni tag/release veya updater kanıtı değildir.
 

@@ -311,15 +311,15 @@
       "existing_remote_tag": "v4.3",
       "existing_remote_tag_note": "anotasyonlu v4.3 tag'i uzakta mevcut ve peeled hedefi exact build commit 446fc780131dd77a8a4dcf630f8baa8287b367dd; tamamlanma bayraklari public release + D1/D2 bitene kadar birlikte false kalir",
       "upstream_sync_must_be_verified_live": true,
-      "status": "draft_verified",
-      "note": "v4.3 exact build+B+C gecti; anotasyonlu tag exact build commit'ine push edildi ve GitHub taslagi tek installer asset'iyle byte-esit read-back edildi. tag_created/github_release_created/updater_end_to_end_verified bu semada tamamlanan public yayin setinin birlikte bayraklaridir; public release ve D1/D2 bitene kadar false kalir.",
+      "status": "public_release_verified_updater_pending",
+      "note": "v4.3 exact build+B+C gecti; anotasyonlu tag exact build commit'ine push edildi. GitHub Release public/latest olarak ve tek installer asset'i bagimsiz indirmede byte-esit dogrulandi. tag_created/github_release_created/updater_end_to_end_verified bu semada tamamlanan public yayin + D1/D2 setinin birlikte bayraklaridir; D1/D2 bitene kadar false kalir.",
       "tag_commit": "446fc780131dd77a8a4dcf630f8baa8287b367dd",
       "tag_commit_note": "uzak v4.3 annotated tag peeled hedefi read-back ile exact build commit'ine esit; metadata commit'ine tasinmadi",
-      "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/untagged-7da5496773803dd575bb",
-      "published_at": "",
-      "draft": true,
+      "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.3",
+      "published_at": "2026-08-23T18:30:40Z",
+      "draft": false,
       "prerelease": false,
-      "latest": false,
+      "latest": true,
       "draft_release_readback": {
         "release_id": 375288316,
         "tag": "v4.3",
@@ -337,6 +337,26 @@
           "byte_equal_after_download": true
         },
         "note": "--clobber kullanilmadi; tek exe asset API read-back ve bagimsiz yeniden indirme ile yerel installer'a byte-esit"
+      },
+      "public_release_readback": {
+        "release_id": 375288316,
+        "tag": "v4.3",
+        "name": "Teklif Yönetim Sistemi v4.3",
+        "url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.3",
+        "draft": false,
+        "prerelease": false,
+        "published_at": "2026-08-23T18:30:40Z",
+        "latest": true,
+        "asset_count": 1,
+        "asset": {
+          "name": "TeklifYonetim_Setup_v4.3.exe",
+          "size": 51289869,
+          "digest": "sha256:7d7516bc27467e8ad64fc591ad6f78281c456d098c599e597f8bf7277f94b8ee",
+          "state": "uploaded",
+          "url": "https://github.com/IzzmooPro/OfferManager/releases/download/v4.3/TeklifYonetim_Setup_v4.3.exe",
+          "byte_equal_after_download": true
+        },
+        "note": "public /releases/latest read-back v4.3'e dondu; tek asset bagimsiz yeniden indirmede yerel installer ile byte-esit. D1 ve D2 henuz yapilmadi."
       },
       "previous_v42_asset_readback": {
         "name": "TeklifYonetim_Setup_v4.2.exe",
