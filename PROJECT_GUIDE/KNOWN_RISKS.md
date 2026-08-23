@@ -2,8 +2,8 @@
 purpose: Doğrulanmış açık riskler ve sonraki adımları — snapshot.
 read_when: Denetim, release kararı, risk analizi.
 covers: []
-last_verified_commit: 0a1a1ae
-last_verified_date: 2026-08-14
+last_verified_commit: 7df3885
+last_verified_date: 2026-08-23
 volatile: true
 ---
 
@@ -21,7 +21,7 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 | R5 | **Ele geçirilmiş GitHub release metadata'sına karşı bağımsız güven kökü yok** — updater'ın kullandığı SHA-256 digest'i de aynı release API'sinden gelir; bozuk/eksik indirmeyi ve yanlış asset seçimini engeller, metadata'yı ele geçiren saldırganı engellemez | Orta | Kod imzası (Authenticode) veya ayrı anahtarla imzalanmış güncelleme manifesti; R1 ile birlikte değerlendirilir |
 | R3c | **Yeniden üretilemeyen iki build artefaktı diskte tutuluyor** (`<ROLLBACK_ROOT>` altında ~118 MB): U17 **öncesi** v4.1 build'i ve **yerel** v4.0 build'i. Yeniden kurulabilir iki kurulum ağacı kopyası 2026-07-31'de silindi (361 MB). Bu iki artefakt yayımlanmadı ve yeniden üretilemez; makinenin geri alınabilirliği bunlara **bağlı değildir** — doğrulanmış v4.1 installer'ı GitHub v4.1 release'inde ve **proje kökünün DIŞINDAKİ** doğrulanmış release arşivinde durur (`build/`, `dist/`, `installer_output/` artık proje kökünde bulunmaz; bkz. [CURRENT_STATUS.md](CURRENT_STATUS.md)) | Düşük | Yalnız tarihsel değer; saklamaya devam veya açık onayla silme |
 | R4 | **Paketli modal davranışı yalnız frozen EXE'de kanıtlanabilir** — kaynak/offscreen ölçüm O16 desenini yeniden üretemez (2026-07-31'de pozitif kontrol iki kez kuruldu, kilitlenme üretilemedi). Diğer akışların taraması **2026-07-31'de tamamlandı**: **ikinci riskli modal/progress akışı bulunmadı**. Kaynak envanteri: `WindowModal` yalnız `ui/utils/excel_import.py` içinde; sayfa seçimi **progress penceresinden önce** sorulur; dışa aktarma, yedekleme, e-posta, SMTP ve updater akışlarında modal + ilerleme penceresi birleşimi yok | Düşük | Yalnız **modal/progress/import sırası değişirse**: paketli native smoke — [VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) B sınıfı 9. senaryo (`IsWindowEnabled`) |
-| R6 | **Gerçek geri yükleme → restart zinciri** paketli sürümde uçtan uca denenmedi; yalnız güvenli mutex senaryosu doğrulandı (v4.0 turunda) | Düşük-orta | İzole profilde gerçek yedekten geri yükleme senaryosu |
+| R6 | ~~**Gerçek geri yükleme → restart zinciri paketli sürümde uçtan uca denenmedi**~~ — **KAPANDI (2026-08-23).** Exact v4.3 dist EXE (`C037CB3A…F0ED9AD`) sekiz profil/temp değişkeni, fail keyring ve loopback proxy ile izole edildi. Paketli UI’dan sentetik yedek gerçekten geri yüklendi; eski sentetik kayıt kayboldu ve yedek hedefi geldi; `integrity_check=ok`, FK satırı 0. İlk süreç restart kapanışında yeni kapanış yedeğini atladı, DB close + exit 0 verdi; ardıl süreç tek `--restarted-from <pid>` ile otomatik açıldı. Ardıl normal kapanış DB close + exit 0; süreç sızıntısı 0. Gerçek profil 46 dosyada eklenen/silinen/değişen `0/0/0`. | **KAPALI** |
 | R7 | **Açılışta credential uyarısı ana pencereyi bekletiyor** — güvenli depo okunamazsa kullanıcı onaylayana kadar açılış durur | Düşük-orta | Uyarıyı ana pencere açıldıktan sonra göstermek değerlendirilebilir |
 | R8 | **"Tümünü İçe Aktar" gizli sayfaları da okuyor** — O15 yalnız tek sayfa seçimi yolunu kapsadı. **AÇIK, ancak ürün sahibinin kararıyla ERTELENDİ (2026-08-14).** Kapatılmış veya çözülmüş DEĞİLDİR; gizli sayfa davranışının mevcut hâli bilinçli olarak korunmaktadır ve sonraki UI/tasarım turunun zorunlu kapsamına **alınmayacaktır** | Düşük-orta | Ertelendi — ele alınırsa gizli sayfa politikasını iki yolda eşitle |
 | R9 | **Müşteri tablosunda UNIQUE kimlik kuralı yok** — mükerrer koruması yalnız içe aktarma katmanında | Düşük-orta | Normalize anahtar + geriye uyumlu migration değerlendirmesi |

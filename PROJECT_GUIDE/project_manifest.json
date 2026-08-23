@@ -208,8 +208,23 @@
       "v43_scope": [
         "exact C037CB3A dist EXE null keyring ve loopback proxy ile gorunen v4.3 arayuzunu acti; log Version: v4.3, DB integrity_check=ok/fk=0",
         "dist ve byte-esit kurulu EXE upgrade/temiz reinstall sonrasinda toplam uc smoke'ta Alt+F4, kapanis yedegi, DB close ve exit 0 ile normal kapandi",
-        "gercek veri ana dosyalari ve yedekler degismedi; tam B-1..B-9 matrisi yeniden kosulmadi"
+        "gercek veri ana dosyalari ve yedekler degismedi; tam B-1..B-9 matrisi yeniden kosulmadi",
+        "R6 exact dist EXE'de izole sentetik yedekten paketli UI ile gercek restore -> tek --restarted-from ardili -> normal kapanis zinciriyle kapandi"
       ],
+      "r6_restore_restart": {
+        "result": "GECTI",
+        "date": "2026-08-23",
+        "artifact_sha256": "C037CB3AEF6FCD45D965311BC2AE66A52AF74B7197CBACE50915CC521F0ED9AD",
+        "evidence": [
+          "canli izole DB baslangicta yalniz R6_PRE_RESTORE_CURRENT, secilen sentetik yedek yalniz R6_BACKUP_TARGET iceriyordu; restore sonrasi hedef kayit geldi ve eski kayit yok oldu",
+          "restore sonrasi ve final kapanis sonrasi integrity_check=ok, foreign_key_check satiri 0",
+          "ilk PID 28084 restart kapanisinda kapanma yedegini atladi, DB'yi kapatti ve exit 0 verdi; ardin PID 47344 komut satirinda tam bir --restarted-from 28084 ile otomatik acildi",
+          "ardil normal kapanista tek kapanis yedegi, DB close ve exit 0; iki PID de bitti ve TeklifYonetim surec sayisi 0",
+          "gercek profil dosya envanteri 46 -> 46; eklenen 0, silinen 0, degisen 0"
+        ],
+        "isolation": "LOCALAPPDATA/APPDATA/USERPROFILE/HOME/HOMEDRIVE/HOMEPATH/TMP/TEMP izole kok; fail.Keyring; HTTP/HTTPS/ALL proxy 127.0.0.1:9; NO_PROXY bos; sentetik DB ve yedek",
+        "scope_limit": "Gercek kullanici yedegi ve Credential Manager kullanilmadi; tam B-1..B-9 matrisi yeniden kosulmadi. Bu kayit R6 restore -> restart zincirine ozgudur."
+      },
       "historical_v42_scope": [
         "izole profilde açılış: ana pencere açıldı, kenar çubuğu sürümü v4.2, log 'Version: v4.2'",
         "veri/log/yedek klasörleri yalnız izole kökte oluştu; gerçek profile yazım yok",
