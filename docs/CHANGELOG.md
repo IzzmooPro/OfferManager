@@ -2,6 +2,30 @@
 
 ---
 
+## [v4.3] — 2026-08-23
+
+Bu sürüm, v4.2 sonrasında tamamlanan güvenilirlik, arayüz önizleme ve kurulum
+iyileştirmelerini bir araya getirir.
+
+### Daha güvenli hata ve kapanış akışları
+- Müşteri, teklif, PDF, rapor, ayar, yedekleme ve içe aktarma hatalarında ham
+  teknik ayrıntıların kullanıcıya gösterilmesi engellendi.
+- Arka plan işleri uygulama kapanırken güvenli biçimde durduruluyor; aynı
+  hatanın paketli uygulamada iki ayrı pencerede görünmesi engellendi.
+- PDF üretim logları Türkçe Windows konsol kodlamasında güvenli hâle getirildi.
+
+### Arayüz önizleme sistemi
+- Sayfa ve diyalogları gerçek kullanıcı verisine dokunmadan açan izole önizleme
+  senaryoları eklendi.
+- Önizleme kataloğu, ekran yakalama, geometri ve sandbox sözleşmeleri otomatik
+  testlerle korunuyor.
+
+### Kurulum ve yükseltme
+- Installer reçetesi kaynak kontrolüne alındı.
+- Yerinde yükseltmede eski sürümden kalabilen iki OpenSSL DLL'i yalnız kesin
+  dosya adlarıyla temizleniyor; kullanıcı klasörlerine veya diğer paket
+  dosyalarına uzanan toplu silme yapılmıyor.
+
 ## [v4.2] — 2026-08-02
 
 Bu sürüm, bir sorunla karşılaştığınızda size **kolay bir bildirim yolu** ekler.

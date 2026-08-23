@@ -45,11 +45,11 @@
     "source_commit_note": "Son tam A-suite ile butunlesik kaynak snapshot'i; R10a/R10b/R10c guvenli hata turlari, R12c build sonrasi provenance kapisi ve acilis bildirimi ertelemesi dahildir. Canli yerel build girdisi e479b5b'dir; shutdown worker quiesce, duplicate frozen error dialog, PDF konsol log duzeltmesi ve izlenen Inno upgrade temizligi icin tam build + yerel artifact/installer kaniti ayri current_source_validation_build alaninda kayitlidir. Yayimlanmis artifact bu kaynak farklarini ICERMEZ (built_from_commit=227656b).",
     "built_from_commit": "227656b",
     "built_from_commit_note": "Yayimlanmis v4.2 installer/artifact setinin build edildigi gercek HEAD. Guncel kaynak bu commit'ten ileridedir: R10a/R10b/R10c, R12c, acilis bildirimi ertelemesi, shutdown worker quiesce, duplicate frozen error dialog, PDF konsol log duzeltmesi ve izlenen Inno upgrade temizligi bu yayin setine DAHIL DEGILDIR. e479b5b icin yerel EXE/installer yeniden uretildi ve installer C gecti; release yapilmadigi icin yayim setinin built_from_commit degeri degistirilmedi.",
-    "version": "v4.2",
+    "version": "v4.3",
     "artifact_built_for_version": "v4.2",
-    "artifact_verification_status": "stale_source_changed",
+    "artifact_verification_status": "stale_for_target_version",
     "release_candidate_ready": false,
-    "release_readiness_note": "release_candidate_ready=false: yayimlanmis v4.2 artifact seti 227656b'ye aittir. e479b5b icin temiz yerel EXE/Inno installer uretildi; dar upgrade temizligi, installer C ve kurulu uygulama acilis/kapanis smoke'u gecti. Tam B-1..B-9 turu ve yeni release bu kayitta iddia edilmez; yerel dogrulama build'i mevcut public v4.2 asset'inin yerine gecmez.",
+    "release_readiness_note": "release_candidate_ready=false: hedef v4.3'e yukseltildi; eldeki artifact setleri v4.2'ye aittir. v4.3 icin temiz build, frozen smoke, tam installer C ve release kaniti henuz yoktur. Public v4.2 kaniti tarihsel olarak korunur.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -291,23 +291,23 @@
       "manual_user_intervention": "TEK UAC onayı kullanıcı tarafından güvenli masaüstünde elle verildi; UAC otomatikleştirilmedi. Başka manuel adım YOK — R12a Yol B dâhil tüm UI navigasyonu dış otomasyonla yapıldı."
     },
     "release": {
-      "target_version": "v4.2",
-      "tag_created": true,
-      "github_release_created": true,
-      "updater_end_to_end_verified": true,
+      "target_version": "v4.3",
+      "tag_created": false,
+      "github_release_created": false,
+      "updater_end_to_end_verified": false,
       "existing_remote_tag": "v4.2",
-      "existing_remote_tag_note": "uzakta en son tag; v4.1 tag'i (a1bfd88) DEĞİŞMEDİ",
+      "existing_remote_tag_note": "uzakta en son tag v4.2; v4.3 tag'i henuz yok",
       "upstream_sync_must_be_verified_live": true,
-      "status": "published",
-      "note": "v4.2 yayımlandı (public, latest, non-prerelease). Tag hedefi, release ve tek .exe asset'i read-back ile doğrulandı; canlı updater D1 ve D2 kanıtları geçti. v4.1 tag/release'ine dokunulmadı. Upstream durumu burada tutulmaz; canlı git ile ölçülür.",
-      "tag_commit": "227656b9566200e18a5acdf64da4eac0d93be83d",
-      "tag_commit_note": "v4.2 tag'i BUILD commit'ini gösterir; metadata commit'lerine taşınmadı.",
-      "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.2",
-      "published_at": "2026-08-02T21:09:58Z",
+      "status": "preparing",
+      "note": "v4.3 surum alanlari hazirlaniyor; build, tag, GitHub Release ve canli updater kaniti henuz yoktur. Public v4.2 release kaniti asagidaki previous_v42 alanlarinda ve CURRENT_STATUS'ta tarihsel olarak korunur.",
+      "tag_commit": "",
+      "tag_commit_note": "v4.3 tag'i ancak dogrulanmis build commit'ine olusturulacak; metadata commit'ine tasinmayacak.",
+      "release_url": "",
+      "published_at": "",
       "draft": false,
       "prerelease": false,
-      "latest": true,
-      "asset_readback": {
+      "latest": false,
+      "previous_v42_asset_readback": {
         "name": "TeklifYonetim_Setup_v4.2.exe",
         "size": 52548738,
         "digest": "sha256:d61488dfe55d5f0d7a6d4245b97176498cdd22b9bd442a2056eb87dda5bf82b2",
@@ -316,8 +316,8 @@
         "exe_asset_count": 1,
         "note": "draft aşamasında ve public yayından SONRA ayrı ayrı indirildi; her ikisi de yerel installer ile BYTE-EŞİT. --clobber kullanılmadı, başka .exe yüklenmedi."
       },
-      "evidence_scope_limit": "D1 ve D2 AYRI kanıtlardır. D2'de teslimatı yapan istemci PAKETLİ U17'li v4.1'dir — bu, R3b/R12d'nin ilk gerçek kanıtıdır: U17 doğrulamalarını (tam asset adı, host allowlist, size, SHA-256) yapan bir istemci gerçek bir sonraki sürüme yükseltildi. Yine de bu, GELECEKTEKİ bir sürümün teslimatını kanıtlamaz.",
-      "live_updater_verification": {
+      "previous_v42_evidence_scope_limit": "D1 ve D2 AYRI kanıtlardır. D2'de teslimatı yapan istemci PAKETLİ U17'li v4.1'dir — bu, R3b/R12d'nin ilk gerçek kanıtıdır: U17 doğrulamalarını (tam asset adı, host allowlist, size, SHA-256) yapan bir istemci gerçek bir sonraki sürüme yükseltildi. Yine de bu, v4.3 teslimatını kanıtlamaz.",
+      "previous_v42_live_updater_verification": {
         "D1_source_trust_chain": {
           "result": "GECTI",
           "date": "2026-08-02",
@@ -384,8 +384,8 @@
         }
       }
     },
-    "version_prepare_commit": "227656b",
-    "version_prepare_commit_note": "v4.2 sürüm alanlarının (APP_VERSION, .iss, version_info.txt, CHANGELOG) hazırlandığı commit — R11 ile aynı commit'tedir.",
+    "version_prepare_commit": "a70879b",
+    "version_prepare_commit_note": "v4.3 surum alanlari a70879b temiz tabani uzerinde hazirlaniyor; kesin version_prepare_commit degeri commit sonrasi metadata turunda guncellenecek.",
     "published_releases": {
       "v4.1": {
         "target_version": "v4.1",
@@ -521,6 +521,6 @@
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
     },
-    "artifact_stale_reason": "Kaynak, yayimlanmis artifact setinin build commit'inden (227656b) ileridedir: R10a/R10b/R10c guvenli hata turlari, R12c provenance kapisi, acilis bildirimi ertelemesi, shutdown worker quiesce, duplicate frozen error dialog, PDF konsol log duzeltmesi ve izlenen Inno upgrade temizligi eklendi. Yayimlanmis/tarihsel v4.2 dist EXE ve installer proje kokunde bulunmaz; arsiv kimlikleri degismemistir. Proje kokundeki e479b5b yerel EXE/installer farkli kimliklerdir; installer C gecmistir ancak tam B turu ve yeni release yapilmamistir. Bu nedenle public v4.2 artifact seti guncel kaynagi temsil etmez ve release_candidate_ready=false kalir."
+    "artifact_stale_reason": "Hedef surum v4.3'tur; R10a/R10b/R10c guvenli hata turlari, R12c provenance kapisi, acilis bildirimi ertelemesi, shutdown worker quiesce, duplicate frozen error dialog, PDF konsol log duzeltmesi ve izlenen Inno upgrade temizligini iceren guncel kaynak icin v4.3 artifact'i henuz uretilmedi. Elde edilen yayimlanmis artifact seti v4.2'ye aittir ve tarihsel dist EXE/installer proje kokunde bulunmaz; proje kokundeki e479b5b yerel EXE/installer da v4.2 kimligini tasir. v4.3 build edilip frozen ve installer kanitlari tamamlanmadan eski hashler yeni surum gibi etiketlenmez; release_candidate_ready=false kalir."
   }
 }

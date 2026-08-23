@@ -1,5 +1,5 @@
 #define MyAppName "Teklif Yönetim"
-#define MyAppVersion "v4.2"
+#define MyAppVersion "v4.3"
 #define MyAppPublisher "IzzmooPro"
 #define MyAppExeName "TeklifYonetim.exe"
 
@@ -35,11 +35,11 @@ UsePreviousAppDir=yes
 UsePreviousTasks=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-VersionInfoVersion=4.2.0.0
+VersionInfoVersion=4.3.0.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Kurulumu
 VersionInfoProductName={#MyAppName}
-VersionInfoProductVersion=4.2.0.0
+VersionInfoProductVersion=4.3.0.0
 
 [Languages]
 Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"

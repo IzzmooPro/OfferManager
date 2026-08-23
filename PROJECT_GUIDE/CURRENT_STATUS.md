@@ -3,22 +3,22 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: e479b5b
+last_verified_commit: a70879b
 last_verified_date: 2026-08-23
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-23 · sürüm: `v4.2` — YAYINLANDI (public, latest).**
-> **Kaynak, yayımlanmış v4.2 artifact'ından ileridedir.** `e479b5b` için temiz yerel EXE + izlenen Inno installer üretildi; dar eski-DLL upgrade temizliği, installer C ve kurulu açılış/kapanış smoke'u geçti. Tam B turu ve yeni release yapılmadı; bu yerel build public v4.2 asset'inin yerine geçmez.
+> **Yakalama tarihi: 2026-08-23 · hedef sürüm: `v4.3` — HAZIRLIK AŞAMASINDA.**
+> Public/latest sürüm hâlâ **v4.2**'dir. v4.3 sürüm alanları hazırlandı; v4.3 build, frozen smoke, tam installer C, tag ve release henüz yapılmadı. Eldeki v4.2 artifact'ları yeni hedefmiş gibi yeniden etiketlenmez.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
-- Hedef sürüm: **v4.2** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.2.0.0` / `v4.2`) eşitlendi; installer adı `TeklifYonetim_Setup_v4.2.exe`
+- Hedef sürüm: **v4.3** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.3.0.0` / `v4.3`) eşitlendi; hedef installer adı `TeklifYonetim_Setup_v4.3.exe`
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
-- **Yerel doğrulama build durumu (`e479b5b`):** tam test kapısı + temiz EXE/Inno build + installer C geçti. İzlenen `[InstallDelete]` yalnız iki eski OpenSSL DLL'ini hedefliyor; upgrade sonrası paket ağacı `dist` ile birebir. Önceki `841ab4c` B-4 ve `17117b0` B-8/B-9 kanıtları tarihsel hedefli kayıt olarak korunur. Tam B turu yapılmadığı ve yerel set yayımlanmadığı için `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false` kalır.
+- **v4.3 ara durum:** sürüm alanları yükseltildi; henüz v4.3 artifact'ı yoktur. `artifact_verification_status = stale_for_target_version`, `release_candidate_ready = false`. `e479b5b` ile doğrulanan yerel v4.2 build/installer kanıtı tarihsel olarak korunur ve v4.3 kanıtı sayılmaz.
 - Yayımlanmış v4.2 artifact'ları: dist EXE `476015268A26…5353B` (9.476.704 B, 4.2.0.0 / v4.2) · installer `TeklifYonetim_Setup_v4.2.exe` `D61488DFE55D…82B2` (52.548.738 B). Yerel güncel-kaynak doğrulama seti ayrıdır: EXE `D06ECFDECB5C…85A534` (9.722.873 B) · installer `F1B6316A4CC1…0A2F4E` (51.293.458 B).
 - **Makinede kurulu sürüm v4.2** — `e479b5b` yerel installer'ı ile kontrollü yerinde upgrade yapıldı: kurulu EXE `D06ECFDECB5C…85A534`, registry `DisplayVersion v4.2`, AppId ve kurulum dizini korundu. Gerçek kullanıcı verisi **34/34**, yedekler **12/12** byte/hash değişmedi; DB `integrity_check=ok`. Kaldırma ve temiz yeniden kurulum bu turda yapılmadı.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.

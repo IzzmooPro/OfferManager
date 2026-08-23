@@ -30,9 +30,9 @@ VERSION_INFO = PACKAGING / "version_info.txt"
 VERIFY = REHBER / "scripts" / "verify_project_guide.py"
 
 # Hedef sürüm sözleşmesi
-HEDEF = "v4.2"
-HEDEF_SAYISAL = "4.2.0.0"
-HEDEF_INSTALLER = "TeklifYonetim_Setup_v4.2.exe"
+HEDEF = "v4.3"
+HEDEF_SAYISAL = "4.3.0.0"
+HEDEF_INSTALLER = "TeklifYonetim_Setup_v4.3.exe"
 # Upgrade testinin başlangıç noktası (yalnız tarihsel bilgi)
 UPGRADE_TEMEL = "v4.0"
 # Yayımlanmış (tarihsel) sürüm — kanıtı korunur, hedef sürümle karıştırılmaz
@@ -205,11 +205,12 @@ class KaynakSurumTests(unittest.TestCase):
                              "artifact girdileri yerelde yokken gerekçe "
                              "dosyalar mevcutmuş gibi konuşuyor")
         if durum == "stale_for_target_version":
-            # Hedef sürüm yükseltildi, build eski: v4.1 değerleri korunmalı
-            self.assertEqual(s["dist_exe"]["size"], 9437741)
-            self.assertTrue(s["dist_exe"]["sha256"].startswith("872DF3C1"))
-            self.assertEqual(s["installer"]["size"], 52501243)
-            self.assertTrue(s["installer"]["sha256"].startswith("DE590641"))
+            # Hedef sürüm yükseltildi, build eski: son yayımlanan sürümün
+            # değerleri yeni hedefmiş gibi yeniden etiketlenmeden korunmalı.
+            self.assertEqual(s["dist_exe"]["size"], 9476704)
+            self.assertTrue(s["dist_exe"]["sha256"].startswith("47601526"))
+            self.assertEqual(s["installer"]["size"], 52548738)
+            self.assertTrue(s["installer"]["sha256"].startswith("D61488DF"))
             self.assertIn(s["artifact_built_for_version"], gerekce,
                           "gerekçe, eldeki derlemenin hangi sürüm olduğunu "
                           "söylemiyor")
