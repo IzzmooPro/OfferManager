@@ -49,7 +49,7 @@
     "artifact_built_for_version": "v4.3",
     "artifact_verification_status": "verified",
     "release_candidate_ready": true,
-    "release_readiness_note": "v4.3 temiz build, exact-hash hedefli B smoke ve tam installer C gecti. Bu yalniz release adayligini ifade eder; push, tag, GitHub Release ve canli updater D1/D2 yapilmadi.",
+    "release_readiness_note": "v4.3 temiz build, exact-hash hedefli B smoke ve tam installer C gecti. Public/latest yayin ile canli updater D1 ve paketli v4.2 -> v4.3 D2 teslimati da dogrulandi; release zinciri tamamlandi.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -305,14 +305,14 @@
     },
     "release": {
       "target_version": "v4.3",
-      "tag_created": false,
-      "github_release_created": false,
-      "updater_end_to_end_verified": false,
+      "tag_created": true,
+      "github_release_created": true,
+      "updater_end_to_end_verified": true,
       "existing_remote_tag": "v4.3",
-      "existing_remote_tag_note": "anotasyonlu v4.3 tag'i uzakta mevcut ve peeled hedefi exact build commit 446fc780131dd77a8a4dcf630f8baa8287b367dd; tamamlanma bayraklari public release + D1/D2 bitene kadar birlikte false kalir",
+      "existing_remote_tag_note": "anotasyonlu v4.3 tag'i uzakta mevcut ve peeled hedefi exact build commit 446fc780131dd77a8a4dcf630f8baa8287b367dd; public/latest release ile D1/D2 tamamlandi",
       "upstream_sync_must_be_verified_live": true,
-      "status": "public_release_and_d1_verified_d2_pending",
-      "note": "v4.3 exact build+B+C gecti; anotasyonlu tag exact build commit'ine push edildi. GitHub Release public/latest olarak ve tek installer asset'i bagimsiz indirmede byte-esit dogrulandi. D1 kaynak duzeyi canli guven zinciri gecti; D2 bekliyor. tag_created/github_release_created/updater_end_to_end_verified bu semada tamamlanan public yayin + D1/D2 setinin birlikte bayraklaridir; D2 bitene kadar false kalir.",
+      "status": "published_and_live_updater_verified",
+      "note": "v4.3 exact build+B+C, anotasyonlu tag, public/latest GitHub Release, kaynak duzeyi canli D1 ve exact paketli v4.2 istemciden gercek v4.3 teslimati D2 gecti. tag_created/github_release_created/updater_end_to_end_verified tamamlanan public yayin + D1/D2 seti olarak birlikte true.",
       "tag_commit": "446fc780131dd77a8a4dcf630f8baa8287b367dd",
       "tag_commit_note": "uzak v4.3 annotated tag peeled hedefi read-back ile exact build commit'ine esit; metadata commit'ine tasinmadi",
       "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.3",
@@ -320,6 +320,15 @@
       "draft": false,
       "prerelease": false,
       "latest": true,
+      "asset_readback": {
+        "name": "TeklifYonetim_Setup_v4.3.exe",
+        "size": 51289869,
+        "digest": "sha256:7d7516bc27467e8ad64fc591ad6f78281c456d098c599e597f8bf7277f94b8ee",
+        "state": "uploaded",
+        "url": "https://github.com/IzzmooPro/OfferManager/releases/download/v4.3/TeklifYonetim_Setup_v4.3.exe",
+        "exe_asset_count": 1,
+        "note": "public read-back ve bagimsiz indirme yerel installer ile byte-esit"
+      },
       "draft_release_readback": {
         "release_id": 375288316,
         "tag": "v4.3",
@@ -378,8 +387,35 @@
           "temporary_download_removed_after_measurement": true
         },
         "D2_real_delivery_e2e": {
-          "result": "BEKLIYOR",
-          "scope": "paketli eski istemciden canli v4.3 teslimati; ayri acik onay ve UAC kullanici mudahalesi gerektirir"
+          "result": "GECTI",
+          "date": "2026-08-23",
+          "scope": "exact paketli public v4.2 istemciden canli public/latest v4.3 teslimati; gercek kullanici profilinde acik izinle",
+          "rollback_root": "<ROLLBACK_ROOT>/OMS-v43-D2-Rollback-20260823-07742d3",
+          "input_client": {
+            "version": "v4.2",
+            "size": 9476704,
+            "sha256": "476015268A2620F60C0617E52D5E518CAF32559D17E618BB1022971AA8D5353B",
+            "registry_version": "v4.2",
+            "installed_tree_files": 297,
+            "installed_tree_diff_vs_verified_archive": 0,
+            "source_installer_size": 52548738,
+            "source_installer_sha256": "D61488DFE55D5F0D7A6D4245B97176498CDD22B9BD442A2056EB87DDA5BF82B2"
+          },
+          "evidence": [
+            "paketli v4.2 logu canli releases/latest uzerinden 'Guncelleme mevcut: v4.3' yazdi",
+            "gorunur modal Mevcut surum v4.2 / Yeni surum v4.3 gosterdi; Guncelle dis Windows otomasyonuyla tiklandi",
+            "paketli updater indirirken ilerleme gorundu ve butonlar devre disi kaldi",
+            "indirilen installer bagimsiz olculdu: 51289869 bayt / 7D7516BC27467E8AD64FC591AD6F78281C456D098C599E597F8BF7277F94B8EE; public ve yerel artifact ile esit",
+            "updater logu Yeni surum indirildi ve Kurulum baslatildi satirlarini kaydetti",
+            "final kurulu EXE 9722873 bayt / C037CB3AEF6FCD45D965311BC2AE66A52AF74B7197CBACE50915CC521F0ED9AD / v4.3; registry v4.3; kurulum agaci dist ile fark 0",
+            "final gorunur smoke kenar cubugunda v4.3; normal Alt+F4, kapanis yedegi, DB close ve exit 0",
+            "database.db 1921024 bayt / 312C189CC66B0CCC3B5F3E3326C4D90D10CEB5E78855708BBD449D4553C9D0CE olarak degismedi; integrity_check=ok, foreign_key_check 0",
+            "normal runtime farklari: uygulama logu, backup_meta.json ve bir yeni kapanis yedegi; ozel AIO kisayolu korundu"
+          ],
+          "downloaded_installer_preserved": "<ROLLBACK_ROOT>/OMS-v43-D2-Rollback-20260823-07742d3/live-updater-download/TeklifYonetim_Setup_v4.3.exe",
+          "user_data_preserved": true,
+          "credential_manager_access": "olculmedi; D2 gercek profil smoke'uydu, sifir cagri iddiasi yapilmaz",
+          "manual_user_intervention": "Dort UAC onayi ve yukseltilmis v4.3 installer sihirbazi kullanici tarafindan elle tamamlandi. UAC/yukseltilmis pencere otomatiklestirilmedi."
         }
       },
       "previous_v42_asset_readback": {
