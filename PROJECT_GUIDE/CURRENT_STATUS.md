@@ -11,14 +11,14 @@ volatile: true
 # Son doğrulanmış durum
 
 > **Yakalama tarihi: 2026-08-23 · hedef sürüm: `v4.3` — RELEASE ADAYI DOĞRULANDI.**
-> Public/latest sürüm hâlâ **v4.2**'dir. v4.3 temiz build, değişiklik-etkili frozen/kurulu smoke ve tam installer C tamamlandı; tag, GitHub Release ve canlı updater D1/D2 henüz yapılmadı.
+> Public/latest sürüm hâlâ **v4.2**'dir. v4.3 temiz build, değişiklik-etkili frozen/kurulu smoke ve tam installer C tamamlandı; anotasyonlu tag exact build commit'ine push edildi ve taslak GitHub Release tek installer asset'iyle byte-eşit doğrulandı. Taslak henüz public değildir; D1/D2 yapılmadı.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.3** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.3.0.0` / `v4.3`) eşitlendi; hedef installer adı `TeklifYonetim_Setup_v4.3.exe`
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
-- **v4.3 artifact durumu:** `artifact_verification_status = verified`, `release_candidate_ready = true`. Bu yalnız build+B+C adaylığını ifade eder; push, tag, GitHub Release ve D1/D2 yapılmadı.
+- **v4.3 artifact durumu:** `artifact_verification_status = verified`, `release_candidate_ready = true`. Main push eşit; `v4.3` tag'i exact build commit'i `446fc78` üzerinde; taslak Release ID `375288316`, `draft=true`, `prerelease=false`. Public yayın ve D1/D2 yapılmadı.
 - v4.3 dist EXE: `C037CB3AEF6F…F0ED9AD` (9.722.873 B, FileVersion `4.3.0.0`, ProductVersion `v4.3`) · installer: `TeklifYonetim_Setup_v4.3.exe` `7D7516BC2746…94B8EE` (51.289.869 B). Public v4.2 artifact kimlikleri tarihsel kayıtlarda korunur.
 - **Makinede kurulu sürüm v4.3** — yeni exact installer ile tam C zincirinin temiz yeniden kurulum sonu. Kurulu EXE dist ile byte-birebir aynı; registry `DisplayVersion v4.3`, aynı AppId ve kurulum yolu doğrulandı. Başlangıçtaki gerçek kullanıcı verisi **32/32**, yedekler **13/13** bütün zincirde değişmedi; DB `integrity_check=ok`, `foreign_key_check` temiz.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
@@ -36,6 +36,7 @@ volatile: true
 - Build girdisi: `446fc78`; `packaging/Kurulum-Yap.bat --no-pause` exit 0. Tam test kapısı **1222 passed, 6 skipped, 345 subtests**; temiz PyInstaller onedir + Inno Setup 7.1.0 tamamlandı.
 - v4.3 EXE: `9.722.873 B / C037CB3AEF6F…F0ED9AD / FileVersion 4.3.0.0 / ProductVersion v4.3`; dist ağacı `296 dosya / 170.329.053 B`.
 - v4.3 installer: `51.289.869 B / 7D7516BC2746…94B8EE`; izlenen `.iss` `ABD6CB536816…41422`, `version_info.txt` `70C01FB7F7A…8044`. Build ve paket içerik denetimleri temiz.
+- Taslak GitHub Release read-back: tek asset `TeklifYonetim_Setup_v4.3.exe`, `51.289.869 B`, `state=uploaded`, GitHub digest `sha256:7d7516bc…94b8ee`; bağımsız yeniden indirme yerel installer ile byte-eşit. `--clobber` kullanılmadı.
 - **Frozen/kurulu smoke: GEÇTİ, kapsam sınırı kayıtlı.** Exact dist EXE izole profil + null keyring + loopback proxy ile görünür `v4.3` arayüzünü açtı; log `Version: v4.3`, DB `integrity_check=ok/fk=0`. Dist, upgrade-kurulu ve temiz-kurulu EXE olmak üzere üç smoke da Alt+F4, kapanış yedeği, DB close ve exit 0 ile normal kapandı. Tam B-1..B-9 matrisi yeniden koşulmadı.
 - **Installer C: TAM GEÇTİ.** Önceki v4.3 (`BDEE8AA1…`) → yeni exact v4.3 (`C037CB3A…`) yerinde upgrade, ilk kurulu smoke, uninstall, temiz reinstall ve ikinci kurulu smoke tamamlandı. Her installer/uninstaller exit 0 ve restart yok; kurulum ağacı dist ile birebir (eksik 0, fazla 0, değişen 0; `unins000.*` hariç), eski hedefli DLL'ler yok. Ayrı önceki turda v4.2→v4.3 upgrade de geçmişti; iki kanıt birbirine karıştırılmaz.
 - Uninstall sonrasında Program Files dizini, uninstall registry kaydı ve installer-yönetimli kısayollar kalktı. Kullanıcının özel `AIO\Teklif Yönetim.lnk` kısayoluna dokunulmadı. Temiz reinstall sonunda registry v4.3, AppId, kurulum yolu ve üç installer kısayolu geri geldi.
