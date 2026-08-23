@@ -23,9 +23,11 @@ covers:
   - ui/main_window.py
   - ui/dialogs/backup_manager.py
   - ui/dialogs/category_dialog.py
+  - ui/startup_splash.py
+  - ui_preview
   - pdf/pdf_generator.py
-last_verified_commit: 0a1a1ae
-last_verified_date: 2026-08-14
+last_verified_commit: 50756b1
+last_verified_date: 2026-08-23
 volatile: false
 ---
 
@@ -37,7 +39,7 @@ volatile: false
 
 | Dosya | Sorumluluk |
 |---|---|
-| `main.py` | Giriş noktası; tek örnek kilidi, loglama, exception hook, splash, restart bayrağı |
+| `main.py` | Giriş noktası; tek örnek kilidi, loglama, exception hook, splash akışının orkestrasyonu, restart bayrağı. `_run_entrypoint` beklenmeyen ana-akış `Exception`'ını hook'a tam bir kez verir ve PyInstaller'a ham traceback kaçırmadan çıkış kodu 1 üretir |
 | `core/constants.py` | `APP_VERSION` — **sürümün tek kaynağı**; `CONTACT_MAIL` — iletişim adresinin tek kanonik kaynağı (Hakkında ekranı ve geri bildirim penceresi buradan okur) |
 | `core/app_paths.py` | Asset kökü (frozen'da `sys._MEIPASS`) ve kullanıcı veri/yedek yolları |
 | `core/config.py` | `company.cfg` okuma/yazma (firma bilgileri, PDF metinleri, SMTP ayarları) |
@@ -62,12 +64,13 @@ volatile: false
 
 | Dosya | Sorumluluk |
 |---|---|
-| `ui/main_window.py` | Navigasyon, sayfa yaşam döngüsü, otomatik/kapanış yedeği, `_shutdown_workers`. Yedek **tüketicisi** sınırı: hata servis katmanında zaten tam bir kez güvenli loglandığı için burada yeniden ve ham biçimde loglanmaz; kapanış/teklif-kaydı yedeği hatası `op_hata.logla` ile güvenli geçilir ve tamamlanmış teklif kaydını inkâr etmez. `trigger_now` hatayı içeride yakaladığı için kapanışta **koşulsuz başarı logu yazılmaz** — başarı logu gerçek başarı noktasında (`AutoBackupService._on_backup_done`) atılır. **Açılış bildirimi sınırı:** `acilis_bildirimlerini_planla()` splash fade bittikten sonra çağrılır ve gösterimi **pencereye ait** tek atımlık `QTimer` ile bir sonraki event-loop turuna bırakır (zamanlayıcının sahibi pencere olduğu için pencere yok olursa bekleyen çağrı da gider); `acilis_bildirimlerini_goster()` **idempotenttir** ve pencere görünür değilse ya da kapanış hazırlığı başladıysa hiçbir kutu açmaz |
+| `ui/main_window.py` | Navigasyon, sayfa yaşam döngüsü, otomatik/kapanış yedeği, `_shutdown_workers`. Kapanışta yedek servisi önce susturulur; aktif yedek varsa aynı DB için paralel kapanış yedeği açılmaz, worker bitince ertelenmiş `closeEvent` turunda kapanış yedeği tam bir kez alınır. Yedek **tüketicisi** sınırı: hata servis katmanında zaten tam bir kez güvenli loglandığı için burada yeniden ve ham biçimde loglanmaz; kapanış/teklif-kaydı yedeği hatası `op_hata.logla` ile güvenli geçilir ve tamamlanmış teklif kaydını inkâr etmez. `trigger_now` hatayı içeride yakaladığı için kapanışta **koşulsuz başarı logu yazılmaz** — başarı logu gerçek başarı noktasında (`AutoBackupService._on_backup_done`) atılır. **Açılış bildirimi sınırı:** `acilis_bildirimlerini_planla()` splash fade bittikten sonra çağrılır ve gösterimi **pencereye ait** tek atımlık `QTimer` ile bir sonraki event-loop turuna bırakır (zamanlayıcının sahibi pencere olduğu için pencere yok olursa bekleyen çağrı da gider); `acilis_bildirimlerini_goster()` **idempotenttir** ve pencere görünür değilse ya da kapanış hazırlığı başladıysa hiçbir kutu açmaz |
 | `ui/create_offer_page.py` | 3 adımlı teklif akışı; ürün seçici (sonuç sınırı + debounce), şablondan yükleme, kâr paneli. `_finish_offer` **A) DB kaydı → B) kullanıcının PDF'i → C) program içi arşiv → D) sonraki eylemler** olarak ayrı aşamalarda yürür. Müşteri kaydetme YOLLARI da iki aşamalıdır: **A) servis `add` → B) `_yeni_musteriyi_goster` (liste yenileme + combo seçimi)**. A hatası kaydı engeller ve B'yi çalıştırmaz; B hatası kaydı İNKÂR ETMEZ (`kismi_hata_goster`); yeni kayıt yenilenen listede BULUNAMAZSA da sessizce dönülmez, aynı kısmi başarı sınırına düşer. `_open_add_customer` A hatasında AYNI `CustomerDialog` ile yeniden denemeye izin verir, kayıttan sonra diyaloğu yeniden açmaz |
 | `ui/products_page.py` / `ui/customers_page.py` | Liste, arama, ekle/düzenle/sil; hata durumunda diyalog açık kalır (retry döngüsü) |
 | `ui/dashboard_page.py` / `ui/reports_page.py` | Özet kartları ve raporlar. Dashboard'da teklif durum/şablon/PDF/dışa aktarma hata yolları güvenli mesaj + güvenli log kullanır; `PdfWorker` sonuçları `(exception, güvenli_id)` çiftleri olarak taşır. `_open_file` korumalıdır: PDF açılamazsa üretim inkâr edilmez, yol ve ham hata sızmaz, çoklu döngü devam eder. `reports_page` tarafında rapor **oluşturma** hatası sabit metinli etikete + güvenli loga, rapor **dışa aktarma** hatası güvenli hata diyaloğuna düşer; modülün kendi `logging`/`logger` kullanımı kaldırılmıştır. **Açılış turunda** `on_enter` istatistik ve tabloyu AYNEN yükler ama süresi dolan/dolacak teklif bildirimlerini erteler (`_acilis_bildirimi_bekliyor`); bekleyen bildirimi `acilis_bildirimlerini_goster()` **en fazla bir kez** gösterir ve onay verilirse tabloyu yeniler |
 | `ui/settings_page.py` | Firma bilgileri, PDF metinleri, SMTP ayarları, tema. Ayar kaydetme, SMTP testi ve görsel yükleme/kaldırma yolları sabit metin + güvenli log kullanır. `_upload` **açık `True`/`False` döndürür**: iptal ve kopyalama hatası `False`, dosya kaydedildiyse önizleme başarısız olsa bile `True`. Logo devre dışı işareti (`logo.disabled`) YALNIZ gerçek kayıtta silinir — iptal/hata bu işareti korur, aksi hâlde eski logo sessizce etkinleşirdi. İşaret yazılamazsa önizleme **gerçekte aktif olan** logoyu gösterir (varsayılan logo varsa onu, yoksa "Logo Yok") |
-| `ui/dialogs/backup_manager.py` | Yedek alma/geri yükleme, `AutoBackupService`, worker yaşam döngüsü. `restore_backup` üç sonucu AYIRIR — `preflight_failed` / `rolled_back` / `rollback_failed` (`RestoreError.durum`, sabit metinler). Yedek DOSYASI ile `backup_meta.json` **ayrı aşamalardır**: metadata hatası oluşmuş yedeği geçersiz kılmaz ve `create_backup` tekrarlanmaz. `_geri_al` ilk hatada durmaz; DB ve tüm optional dosyalar denenir, başlangıçtaki var/yok durumu kurulmaya çalışılır, DB yeniden doğrulanır. `_gecici_temizle` ayrı aşamadır ve sonucu değiştiremez. Yeniden başlatma yalnız tam başarıda ve tam bir kez |
+| `ui/dialogs/backup_manager.py` | Yedek alma/geri yükleme, `AutoBackupService`, worker yaşam döngüsü. `begin_shutdown` timer'ı durdurur ve yeni asenkron worker'ı engeller; `trigger_now("kapanma")`, mevcut worker süresinde bitmezse `False` döndürerek kapanış yedeğini sonraki pencere kapanış turuna bırakır. `restore_backup` üç sonucu AYIRIR — `preflight_failed` / `rolled_back` / `rollback_failed` (`RestoreError.durum`, sabit metinler). Yedek DOSYASI ile `backup_meta.json` **ayrı aşamalardır**: metadata hatası oluşmuş yedeği geçersiz kılmaz ve `create_backup` tekrarlanmaz. `_geri_al` ilk hatada durmaz; DB ve tüm optional dosyalar denenir, başlangıçtaki var/yok durumu kurulmaya çalışılır, DB yeniden doğrulanır. `_gecici_temizle` ayrı aşamadır ve sonucu değiştiremez. Yeniden başlatma yalnız tam başarıda ve tam bir kez |
+| `ui/startup_splash.py` | Başlangıç splash widget'ı; boyut, çizim, ikon işleme, ilerleme ve durum metni. `main.py` yalnız yaşam döngüsünü ve fade bağlantılarını yönetir |
 | `ui/dialogs/email_dialog.py` | PDF'i e-posta ile gönderme (SMTP worker) |
 | `ui/dialogs/pdf_preview_dialog.py`, `help_dialogs.py`, `category_dialog.py`, `customer_history_dialog.py` | Yardımcı diyaloglar |
 | `ui/utils/excel_import.py` | CSV/XLSX içe/dışa aktarma: sayfa adayları, sayfa seçimi, doğrulama, mükerrer kontrolü, toplu yazma. Dosya okuma hataları sabit `DOSYA_OKUMA_HATASI` üretir; satır/grup hatalarında `errors` listesine YALNIZ güvenli sıra numarası girer (firma adı, ürün kodu, teklif no girmez) ve güvenli `kayit_id` de bu sıradır. Kategori başarısızlığı önbelleğe alınır (aynı kategori yeniden denenmez), her FARKLI kategori bir kez loglanır, kullanıcıya tek toplu uyarı gösterilir. Aşama durumu çağırana **yalnız sayısal** `stage_state` (`kategori_yazildi`) ile taşınır; dönüş değeri gerçek DB değişikliğini gösterir. `_workbook_kapat` başarı ve hata yollarında `finally` içinde çalışır, kapatma hatası sonucu maskelemez. İlerleme penceresi hata, iptal ve başarı yollarının hepsinde kapanır |
@@ -78,6 +81,10 @@ volatile: false
 | `ui/utils/theme_manager.py` | Açık/koyu tema, QSS üretimi |
 | `ui/utils/updater.py` | Sürüm kontrolü, indirme, kurulum başlatma |
 | `ui/widgets/*` | Ortak widget'lar (kart, tablo, kâr paneli, hover delegate) |
+
+## UI önizleme laboratuvarı
+
+`ui_preview/` üretim verisinden ve normal uygulama girişinden yalıtılmış katalog, senaryo, fixture, sandbox, launcher, ekran yakalama ve geometri baseline altyapısıdır. Yeni veya değiştirilecek pencere/sayfa/bileşenler entegrasyondan önce burada açılıp karşılaştırılır; kullanım sözleşmesi [UI_PREVIEW_GUIDE.md](UI_PREVIEW_GUIDE.md) içindedir.
 
 ## PDF
 

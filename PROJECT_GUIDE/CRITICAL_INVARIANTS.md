@@ -20,9 +20,10 @@ covers:
   - core/restart.py
   - core/credential_store.py
   - main.py
+  - ui/startup_splash.py
   - tests/conftest.py
-last_verified_commit: 0a1a1ae
-last_verified_date: 2026-08-14
+last_verified_commit: 50756b1
+last_verified_date: 2026-08-23
 volatile: false
 ---
 
@@ -55,7 +56,7 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 ## Thread, kapanış, restart
 
 13. **Çalışan worker bitmeden süreç teardown yapmaz.** Bir `QThread` nesnesi YALNIZ yerleşik `finished` sinyalinden sonra bırakılır — sonuç sinyali `run()` İÇİNDE yayıldığı için sonuç slot'unda `deleteLater`/referans temizliği yapılmaz (ölçüldü: `0xC0000409` fast-fail). Gecikmiş eski worker'ın `finished` sinyali yeni worker'ın referansını ve UI durumunu değiştirmez. Çalışan yedek worker'ı kapanış beklemesine dahildir. → `tests/test_shutdown_workers.py`, `tests/test_thread_lifecycle.py`, `tests/test_backup_worker_lifecycle.py`, `tests/test_pdf_worker_lifecycle.py`
-14. **Kapanış sırası:** kapanış yedeği → DB kapatma → çıkış kodu 0.
+14. **Kapanış sırası ve yedek tekilleştirmesi:** otomatik yedek zamanlayıcısı susturulur; çalışan yedek varsa bitmeden aynı DB için kapanış yedeği başlatılmaz; kapanış yedeği tam bir kez tamamlanır; kalan worker'lar beklenir; ardından DB kapatılır ve çıkış kodu 0 olur. Ertelenen `closeEvent` turlarında onaylar veya yedek tekrarlanmaz. → `tests/test_backup_worker_lifecycle.py`, `tests/test_shutdown_workers.py`
 15. **Restart kapanışında yeni kapanış yedeği alınmaz**; normal Qt/DB kapanışı ve sınırlı mutex beklemesi uygulanır. Ardıl `--restarted-from <pid>` ile açılır, komut satırında EXE yolu bir kez geçer, `os.execl` kullanılmaz. → `tests/test_restart_flow.py`
 16. **Tek örnek kilidinde kısmi edinim bırakılmaz**; mutex alınıp paylaşımlı bellek alınamazsa handle kapatılır. → `tests/test_restart_flow.py`
 
@@ -70,7 +71,7 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 18b-3. **Beklenen fallback hata değildir.** Kodlama/ayraç denemesi gibi tasarlanmış geri düşüşler kullanıcıya hata olarak gösterilmez ve loga ham istisna ya da dosya adı yazmaz; ancak tüm denemeler tükenirse SON anlamlı teknik neden kaybolmaz, tam bir kez güvenli loglanır. Gerçek boş dosya hata değil boş sonuçtur. → `tests/test_csv_import_errors.py`, `tests/test_import_safe_errors.py`
 18c. **"Log Klasörünü Aç" düğmesi** yalnız beklenmeyen/teknik hatalarda gösterilir ve mesajdaki ipucu ile kutudaki gerçek düğme birebir eşleşir; doğrulama mesajlarında bulunmaz. → `tests/test_operation_error_dialog.py`
 18d. **Hata/öneri raporu kullanıcı iradesiyle gider ve gizli alan taşımaz.** Program hiçbir koşulda raporu kendiliğinden göndermez, ağa çıkmaz, kullanıcının SMTP hesabını veya güvenli depodaki parolasını kullanmaz; hiçbir yolda "rapor gönderildi" denmez. Rapora YALNIZ pencerede **görünen** alanlar ve kullanıcının kendi açıklaması girer — `str(exception)`, traceback, mutlak yol, kayıt id'si, teklif no ve müşteri/firma verisi girmez. `mailto:` Qt URL/query API'siyle yüzde-kodlanarak kurulur (CRLF/`&`/`?` enjeksiyonu kapalı). Pano yalnız gerçek tıklamada yazılır; "Vazgeç" yan etki üretmez. `core/feedback_report.py` Qt import etmez ve istisnayı YENİDEN KAYDETMEZ. → `tests/test_feedback_report.py`
-19. **Paketlenmiş (windowed) derlemede çalışma zamanı hatası görünür**; hata penceresi log yolunu gösterir, aynı hata kısa süre tekrar bastırılır. → `tests/test_windowed_error_reporting.py`
+19. **Paketlenmiş (windowed) derlemede çalışma zamanı hatası görünür ve tekildir.** Ana girişin beklenmeyen `Exception`'ı ortak hook'a tam bir kez aktarılır, ardından çıkış kodu 1 olur; PyInstaller bootloader'a ham traceback kaçmadığı için ikinci hata penceresi açılmaz. Hata penceresi log yolunu gösterir, aynı hata kısa süre tekrar bastırılır. `SystemExit` / `KeyboardInterrupt` yakalanmaz. → `tests/test_windowed_error_reporting.py`
 
 ## Paketleme ve yayın
 

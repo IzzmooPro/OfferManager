@@ -9,8 +9,9 @@ covers:
   - ui/main_window.py
   - ui/dialogs/backup_manager.py
   - ui/utils/updater.py
-last_verified_commit: 0a1a1ae
-last_verified_date: 2026-08-14
+  - ui/startup_splash.py
+last_verified_commit: 50756b1
+last_verified_date: 2026-08-23
 volatile: false
 ---
 
@@ -42,11 +43,11 @@ main.py  →  ui/  →  services/  →  database/db_manager.py  →  SQLite
 ## Başlangıç sırası (`main.py`)
 
 1. Kaynak modda bağımlılık kontrolü (frozen'da atlanır).
-2. **Tek örnek kilidi**: Windows named mutex `TeklifYonetimSistemi_AppMutex` + `QSharedMemory`. İkisi de alınmadan globaller kirletilmez; kısmi edinim bırakılır. Yeniden başlatma ardılında kilit sınırlı süre (`core/restart.LOCK_WAIT_S`) beklenir.
+2. **Tek örnek kilidi**: Windows named mutex `TeklifYonetimSistemi_AppMutex` + `QSharedMemory`. İkisi de alınmadan globaller kirletilmez; kısmi edinim bırakılmaz. Yeniden başlatma ardılında kilit sınırlı süre (`core/restart.LOCK_WAIT_S`) beklenir.
 3. `core/app_paths` import edilir → veri/yedek klasörleri oluşur ([DATA_AND_PATHS.md](DATA_AND_PATHS.md)).
 4. Loglama kurulur; 30 günden eski log dosyaları silinir.
 5. `exception_hook` kurulur — windowed derlemede de görünür hata penceresi + log yolu ([SECURITY_AND_PRIVACY.md](SECURITY_AND_PRIVACY.md)).
-6. `QApplication`, Türkçe locale/çeviri, ikon, font, splash.
+6. `QApplication`, Türkçe locale/çeviri, ikon ve font hazırlanır; splash bileşeni `ui/startup_splash.py` içinden oluşturulur.
 7. Veri yoksa yedekten geri yükleme sorulur; **yalnız tam başarıda** ardıl süreç başlatılır. Geri yükleme üç sonucu ayırır (`preflight_failed` / `rolled_back` / `rollback_failed`) ve başarısız hiçbir durumda yeniden başlatma yapılmaz — ayrıntı [DATA_AND_PATHS.md](DATA_AND_PATHS.md).
 8. `MainWindow` açılır; otomatik yedek zamanlayıcısı ve güncelleme kontrolü başlar.
 9. **Açılış bildirimleri splash'ten SONRAYA ertelenir.** `MainWindow` oluşturulurken `_navigate(0)` Dashboard verisini **yükler**, ama süresi dolan/dolacak teklif bildirimleri gösterilmez — o an ekranda yalnız splash vardır. Splash fade'i **gerçekten tamamlanınca** (`finished`) `window.acilis_bildirimlerini_planla()` çağrılır; bu, pencereye ait tek atımlık zamanlayıcıyla bildirimi **bir sonraki event-loop turuna** bırakır. Pencere görünür değilse veya kapanış hazırlığı başladıysa modal **açılmaz**; gösterim en fazla **bir kez** olur. Sabit gecikme kullanılmaz.
@@ -55,11 +56,11 @@ main.py  →  ui/  →  services/  →  database/db_manager.py  →  SQLite
 
 - Uzun iş (yedek alma, e-posta, güncelleme indirme) `QThread` worker'ında çalışır; widget'a yalnız ana thread'den dokunulur.
 - Biten worker'lar `deleteLater` ile serbest bırakılır; çalışan worker referansı `AutoBackupService.active_worker()` üzerinden dışarı verilir.
-- `MainWindow.closeEvent` → `_shutdown_workers()` çalışan tüm worker'ları toplar (kimlik tekilleştirmesiyle), kapanışı erteler ve **worker bitmeden teardown yapmaz**. Böylece çalışan `QThread` yok edilmesinden doğan `0xC0000409` oluşmaz.
+- `MainWindow.closeEvent` önce otomatik yedek zamanlayıcısını susturur. Çalışan yedek varsa onun bitmesini bekler; aynı veritabanı için paralel ikinci yedek başlatmaz. Normal kapanış yedeği tamamlandıktan sonra `_shutdown_workers()` kalan çalışan worker'ları toplar (kimlik tekilleştirmesiyle), kapanışı erteler ve **worker bitmeden teardown yapmaz**. Böylece çalışan `QThread` yok edilmesinden doğan `0xC0000409` oluşmaz.
 
 ## Kapanış ve yeniden başlatma
 
-- **Normal kapanış:** kapanış yedeği → DB kapatılır → çıkış kodu 0.
+- **Normal kapanış:** yeni otomatik yedek istekleri durdurulur → varsa aktif yedek bitirilir → kapanış yedeği tam bir kez alınır → kalan worker'lar bitirilir → DB kapatılır → çıkış kodu 0.
 - **Restart (geri yükleme sonrası):** `core/restart.request_restart()` yalnız istek kaydeder. Kapanışta yeni kapanış yedeği **alınmaz**; normal Qt/DB kapanışı işletilir, ardıl süreç `spawn_successor` ile başlatılır ve `--restarted-from <pid>` bayrağı taşınır. Ardıl, tek örnek kilidini sınırlı süre bekler. `os.execl` kullanılmaz.
 - Komut satırı üretimi saf fonksiyondur (`build_restart_command`); frozen'da EXE yolu bir kez geçer.
 
@@ -82,6 +83,8 @@ Doğrulama başarısızsa yarım dosya silinir, `os.startfile` / `os._exit` / ta
 ## Hata bildirimi
 
 Teknik hatalar `ui/utils/operation_error.py` üzerinden **güvenli mesaja** ve kişisel veri içermeyen loga çevrilir; kullanıcıya gösterim `ui/utils/operation_error_dialog.py` ince sarmalayıcısıyla yapılır. Diyalog kapanmaz, kullanıcı düzeltip yeniden dener.
+
+Ana girişteki beklenmeyen `Exception`, `_run_entrypoint()` tarafından ortak `exception_hook`'a tam bir kez aktarılır ve sayısal çıkış kodu 1'e çevrilir. Böylece windowed PyInstaller bootloader'a ham istisna kaçmaz; güvenli uygulama penceresine ek ikinci traceback penceresi oluşmaz. `SystemExit` ve `KeyboardInterrupt` bilinçli çıkış davranışlarını korur.
 
 Bu ortak altyapı yalnız kaydetme/silme yollarında değil; teklif, kategori, dashboard, rapor, ayarlar, yedekleme/geri yükleme ve içe/dışa aktarma yollarında da kullanılır. Değişmeyen iki sınır: **aynı istisna en fazla bir kez** güvenli loglanır (loglama sorumluluğu tek katmandadır) ve **çok aşamalı akışlarda sonraki aşamanın hatası tamamlanmış aşamayı inkâr etmez** — uzun işlem penceresi hata, iptal ve başarı yollarının hepsinde kapanır. Ayrıntı ve koruyan testler: [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) 18 / 18-1 / 18b.
 

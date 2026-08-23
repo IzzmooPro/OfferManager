@@ -9,8 +9,8 @@ covers:
   - services/export_service.py
   - ui/dialogs/backup_manager.py
   - tests/conftest.py
-last_verified_commit: 46d4d75
-last_verified_date: 2026-08-04
+last_verified_commit: 50756b1
+last_verified_date: 2026-08-23
 volatile: false
 ---
 
@@ -76,6 +76,7 @@ Akış: dosya seç → **(XLSX ve birden fazla uygun sayfa varsa) sayfa seç** �
 
 - ZIP içeriği: veritabanı anlık kopyası + `company.cfg` + varsa logo/imzalar + `backup_info.json`.
 - Yedek tetikleyicileri: zamanlayıcı, teklif kaydı, kapanış, manuel.
+- Kapanış başlarken zamanlayıcı susturulur ve yeni asenkron yedek istekleri engellenir. Zaten çalışan yedek 30 saniyede bitmezse aynı veritabanı için paralel kapanış yedeği açılmaz; pencere kapanışı worker'ın yerleşik `finished` sinyaline kadar ertelenir, ardından kapanış yedeği tam bir kez alınır.
 - Yedek **dosyası** ile `backup_meta.json` ayrı aşamalardır: metadata yazılamazsa oluşmuş yedek geçersiz sayılmaz ve yeniden alınmaz.
 - Geri yükleme **üç sonucu ayırır** (`RestoreError.durum`):
 
