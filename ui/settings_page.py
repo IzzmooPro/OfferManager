@@ -193,6 +193,11 @@ class SettingsPage(QWidget):
         # Güvenli depo okunamadıysa True; boş parola alanının yanlışlıkla
         # "kaydı sil" olarak yorumlanmasını engeller.
         self._sifre_okunamadi = False
+        # Ayar sayfası MainWindow kurulurken oluşturulur. Bu sırada modal
+        # açılırsa ana pencere henüz görünür değildir ve splash bekler.
+        # Güvenli metin burada saklanır; MainWindow splash fade bittikten
+        # sonra pencereyi parent vererek tam bir kez gösterir.
+        self._acilis_kimlik_uyarisi = None
         self._build_ui()
         self._load()
         self._snapshot = self._current_values()
@@ -836,8 +841,7 @@ class SettingsPage(QWidget):
         # Şifre: önce güvenli depodan oku, gerekiyorsa eski düz metni taşı
         smtp_pw, smtp_uyari = self._sifreyi_oku(cfg)
         self.f_smtp_pass.setText(smtp_pw)
-        if smtp_uyari:
-            QMessageBox.warning(self, "Güvenli Depo", smtp_uyari)
+        self._acilis_kimlik_uyarisi = smtp_uyari
         # PDF metinleri (PDF sırasına göre)
         for key in ("pdf_giris_metni", "pdf_iskonto", "pdf_teslim_yeri",
                     "pdf_kur_notu", "pdf_kdv_notu", "pdf_onay_metni",
@@ -848,6 +852,21 @@ class SettingsPage(QWidget):
                 self._pdf_toggles[key].setChecked(enabled)
                 getattr(self, key).setEnabled(enabled)
         self._refresh_previews()
+
+    def acilis_kimlik_uyarisini_goster(self, parent=None) -> bool:
+        """Bekleyen güvenli depo uyarısını tam bir kez gösterir.
+
+        `_load()` veri ve credential durumunu pencere kurulurken okumaya devam
+        eder; yalnız modal gösterimi splash kapanışına ertelenir. Mesaj,
+        kutudan önce tüketilir; yeniden giriş veya ikinci açılış bildirimi aynı
+        uyarıyı tekrar açmaz.
+        """
+        uyari = getattr(self, "_acilis_kimlik_uyarisi", None)
+        if not uyari:
+            return False
+        self._acilis_kimlik_uyarisi = None
+        QMessageBox.warning(parent or self, "Güvenli Depo", uyari)
+        return True
 
     def _save(self):
         new_prefix = self.f_prefix.text().strip() or "SNS"

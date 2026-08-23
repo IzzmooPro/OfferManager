@@ -373,6 +373,26 @@ class AcilisSirasiTests(_TeklifTemel):
         self.assertEqual(len(self.acilan), 0,
                          "modal ana pencere görünmeden açıldı (splash üzerinde)")
 
+    def test_credential_uyarisi_pencere_sonrasinda_tek_sefer_gosterilir(self):
+        from core.credential_store import CredentialStoreError
+        with mock.patch("ui.settings_page.get_smtp_password",
+                        side_effect=CredentialStoreError("backend")), \
+             mock.patch("ui.settings_page.QMessageBox.warning") as uyari:
+            w = self._ana_pencere()
+            self.assertEqual(uyari.call_count, 0,
+                             "credential uyarısı splash üzerinde açıldı")
+            w.show()
+            self.assertEqual(uyari.call_count, 0,
+                             "show() credential uyarısını erken açtı")
+            w.acilis_bildirimlerini_goster()
+            self.assertEqual(uyari.call_count, 1)
+            self.assertIs(uyari.call_args.args[0], w)
+            self.assertEqual(uyari.call_args.args[1], "Güvenli Depo")
+            self.assertIn("OKUNAMADI", uyari.call_args.args[2])
+            w.acilis_bildirimlerini_goster()
+            self.assertEqual(uyari.call_count, 1,
+                             "credential uyarısı ikinci kez gösterildi")
+
     def test_pencere_olusturulurken_dashboard_verisi_yuklenir(self):
         self._teklif(2, "30 Gün")
         self._teklif(2, "30 Gün")

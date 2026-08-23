@@ -359,6 +359,7 @@ class _SahteSayfa:
     _load = SettingsPage._load
     _sifreyi_kaydet = SettingsPage._sifreyi_kaydet
     _sifreyi_oku = SettingsPage._sifreyi_oku
+    acilis_kimlik_uyarisini_goster = SettingsPage.acilis_kimlik_uyarisini_goster
     _current_values = mock.Mock(return_value={})
     _refresh_previews = mock.Mock()
     _sync_person_cards = mock.Mock()
@@ -466,13 +467,22 @@ class RealLoadFlowTests(unittest.TestCase):
             sayfa._load()
         return sayfa, k
 
-    def test_read_error_sets_flag_and_warns(self):
+    def test_read_error_sets_flag_and_defers_warning_until_startup_display(self):
         with mock.patch("ui.settings_page.get_smtp_password",
                         side_effect=CredentialStoreError("x")):
             sayfa, k = self._yukle(_cfg())
         self.assertTrue(sayfa._sifre_okunamadi)
-        self.assertEqual(len(k.uyari), 1)
-        self.assertIn("OKUNAMADI", k.uyari[0][2])
+        self.assertEqual(len(k.uyari), 0,
+                         "ayar sayfası kurulurken modal açıldı")
+
+        with _Kutular() as gosterim:
+            ilk = sayfa.acilis_kimlik_uyarisini_goster(mock.sentinel.ana_pencere)
+            ikinci = sayfa.acilis_kimlik_uyarisini_goster(mock.sentinel.ana_pencere)
+        self.assertTrue(ilk)
+        self.assertFalse(ikinci, "aynı açılış uyarısı ikinci kez gösterildi")
+        self.assertEqual(len(gosterim.uyari), 1)
+        self.assertIs(gosterim.uyari[0][0], mock.sentinel.ana_pencere)
+        self.assertIn("OKUNAMADI", gosterim.uyari[0][2])
 
     def test_keyring_value_wins_over_cfg_plaintext(self):
         cfg = _cfg(smtp_password="ESKI-FARKLI")
@@ -503,8 +513,12 @@ class RealLoadFlowTests(unittest.TestCase):
                         side_effect=OSError("disk")):
             sayfa, k = self._yukle(cfg)
         self.assertEqual(cfg.get("smtp_password"), GIZLI)
-        self.assertEqual(len(k.uyari), 1)
-        self.assertIn("iki kopya", k.uyari[0][2])
+        self.assertEqual(len(k.uyari), 0,
+                         "taşıma uyarısı ayar sayfası kurulurken modal açtı")
+        with _Kutular() as gosterim:
+            self.assertTrue(sayfa.acilis_kimlik_uyarisini_goster())
+        self.assertEqual(len(gosterim.uyari), 1)
+        self.assertIn("iki kopya", gosterim.uyari[0][2])
 
 
 class EmailDialogReadErrorTests(unittest.TestCase):

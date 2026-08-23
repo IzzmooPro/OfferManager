@@ -573,10 +573,21 @@ class MainWindow(QMainWindow):
             return False
         self._acilis_bildirimleri_gosterildi = True
         self.acilis_bildirimleri_hazir = True
+
+        # SettingsPage credential durumunu __init__ sırasında okumaya devam
+        # eder; fakat modalı burada, splash fade bittikten ve ana pencere
+        # görünür olduktan sonra MainWindow parent'ıyla gösterir.
+        gosterildi = False
+        ayarlar = self.pages.get(5)
+        if (ayarlar is not None
+                and hasattr(ayarlar, "acilis_kimlik_uyarisini_goster")):
+            gosterildi = bool(
+                ayarlar.acilis_kimlik_uyarisini_goster(self))
+
         sayfa = self.pages.get(0)
         if sayfa is not None and hasattr(sayfa, "acilis_bildirimlerini_goster"):
-            return bool(sayfa.acilis_bildirimlerini_goster())
-        return False
+            gosterildi = bool(sayfa.acilis_bildirimlerini_goster()) or gosterildi
+        return gosterildi
 
     def _sync_sidebar_selection(self, active_index):
         """Sol menüde her zaman yalnızca aktif sayfanın seçili kalmasını sağlar."""
