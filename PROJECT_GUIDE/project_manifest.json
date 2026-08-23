@@ -42,14 +42,14 @@
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
     "source_commit": "0a1a1ae",
-    "source_commit_note": "Son tam A-suite ile butunlesik kaynak snapshot'i; R10a/R10b/R10c guvenli hata turlari, R12c build sonrasi provenance kapisi ve acilis bildirimi ertelemesi dahildir. Canli HEAD 17117b0'dir; shutdown worker quiesce (662d66a) ve duplicate frozen error dialog duzeltmesi icin hedefli test + yerel EXE kaniti ayri current_source_validation_build alaninda kayitlidir. Yayimlanmis artifact bu kaynak farklarini ICERMEZ (built_from_commit=227656b).",
+    "source_commit_note": "Son tam A-suite ile butunlesik kaynak snapshot'i; R10a/R10b/R10c guvenli hata turlari, R12c build sonrasi provenance kapisi ve acilis bildirimi ertelemesi dahildir. Canli HEAD 841ab4c'dir; shutdown worker quiesce (662d66a), duplicate frozen error dialog ve PDF konsol log duzeltmesi icin tam build kapisi + yerel artifact kaniti ayri current_source_validation_build alaninda kayitlidir. Yayimlanmis artifact bu kaynak farklarini ICERMEZ (built_from_commit=227656b).",
     "built_from_commit": "227656b",
-    "built_from_commit_note": "Yayimlanmis v4.2 installer/artifact setinin build edildigi gercek HEAD. Guncel kaynak bu commit'ten ileridedir: R10a/R10b/R10c, R12c, acilis bildirimi ertelemesi, shutdown worker quiesce ve duplicate frozen error dialog duzeltmesi bu yayin setine DAHIL DEGILDIR. 17117b0 icin yerel EXE dogrulama build'i alindi; ancak yeni installer uretilmedigi icin yayim setinin built_from_commit degeri degistirilmedi.",
+    "built_from_commit_note": "Yayimlanmis v4.2 installer/artifact setinin build edildigi gercek HEAD. Guncel kaynak bu commit'ten ileridedir: R10a/R10b/R10c, R12c, acilis bildirimi ertelemesi, shutdown worker quiesce, duplicate frozen error dialog ve PDF konsol log duzeltmesi bu yayin setine DAHIL DEGILDIR. 841ab4c icin yerel EXE ve installer yeniden uretildi; ancak installer C dogrulamasi ve release yapilmadigi icin yayim setinin built_from_commit degeri degistirilmedi.",
     "version": "v4.2",
     "artifact_built_for_version": "v4.2",
     "artifact_verification_status": "stale_source_changed",
     "release_candidate_ready": false,
-    "release_readiness_note": "release_candidate_ready=false: yayimlanmis v4.2 artifact seti 227656b'ye aittir. 17117b0 icin temiz yerel PyInstaller EXE'si alindi ve hedefli frozen B-8/B-9 gecti; fakat Inno installer yeniden uretilmedi, installer (C) dogrulanmadi ve tam B-1..B-9 turu bu kayitta iddia edilmez. Yerel dogrulama build'i mevcut public v4.2 asset'inin yerine gecmez.",
+    "release_readiness_note": "release_candidate_ready=false: yayimlanmis v4.2 artifact seti 227656b'ye aittir. 841ab4c icin temiz yerel EXE ve Inno installer uretildi; hedefli frozen PDF/cp1254 konsol smoke gecti. Installer calistirilmadi, C dogrulanmadi ve tam B-1..B-9 turu bu kayitta iddia edilmez. Yerel dogrulama build'i mevcut public v4.2 asset'inin yerine gecmez.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -65,14 +65,14 @@
       "subtests_passed": 345,
       "date": "2026-08-14",
       "skipped": 3,
-      "note": "0a1a1ae icerigiyle daha once alinan dogrulama; BU METADATA TURUNDA TAM PAKET YENIDEN CALISTIRILMADI. Onceki olcum 1152/4/343 (c3f711e) idi. build_gate_test_result BUILD ANINDAKI (227656b) tarihsel kapi sonucudur ve degistirilmez."
+      "note": "0a1a1ae icerigiyle daha once alinan dogrulama; BU METADATA TURUNDA TAM PAKET YENIDEN CALISTIRILMADI. 841ab4c build girdisindeki guncel tam kapi sonucu current_source_validation_build altinda ayrica kayitlidir. build_gate_test_result BUILD ANINDAKI (227656b) tarihsel yayin kapisi sonucudur ve degistirilmez."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
       "passed": 1165,
       "subtests_passed": 345,
       "date": "2026-08-14",
-      "note": "Guncel kaynakta (0a1a1ae) dogrulandi; guide_integrated_test_result ile aynidir. BU METADATA TURUNDA YENIDEN CALISTIRILMADI. source_test_result 648/29 baseline'ini (060baf3) TARIHSEL alan olarak korur.",
+      "note": "Guncel birincil kaynak snapshot'inda (0a1a1ae) dogrulandi; guide_integrated_test_result ile aynidir. 841ab4c tam build kapisi current_source_validation_build altinda ayridir. source_test_result 648/29 baseline'ini (060baf3) TARIHSEL alan olarak korur.",
       "skipped": 3
     },
     "dist_exe": {
@@ -112,23 +112,23 @@
     },
     "current_source_validation_build": {
       "purpose": "Yayim sonrasi guncel kaynak icin yerel frozen davranis dogrulamasi; public v4.2 release artifact'inin veya installer C kanitinin yerine gecmez",
-      "built_from_commit": "17117b077ab4cfd464e4d9c9ee4e805831a14007",
+      "built_from_commit": "841ab4c002656444017c5584660e1f1f16be2f91",
       "date": "2026-08-23",
-      "build_method": "temiz PyInstaller onedir build; Inno installer uretilmedi",
+      "build_method": "packaging/Kurulum-Yap.bat --no-pause; tam test kapisi, temiz PyInstaller onedir ve Inno Setup 7.1.0",
       "dist_exe": {
         "path": "dist/TeklifYonetim/TeklifYonetim.exe",
-        "sha256": "B0222011D6638009C46779CE41C36F066FC8BEB0B26DF38914438F19C804FC3E",
-        "size": 9722876,
+        "sha256": "2F8921854EFD72346C4E8C75140D87D380E05631795A1A12EDE9BE50A67E5807",
+        "size": 9722873,
         "file_version": "4.2.0.0",
         "product_version": "v4.2",
         "file_count": 296,
-        "tree_size": 170329056
+        "tree_size": 170329053
       },
       "local_installer_observed": {
         "path": "installer_output/TeklifYonetim_Setup_v4.2.exe",
-        "sha256": "B78A2454ED30EE25117F9FB9FAF3FCE1DBAE87BD81D0E8BFF7B0B437794DD001",
-        "size": 51299378,
-        "status": "Bu PyInstaller build'inde yeniden uretilmedi; 17117b0 EXE'siyle ayni build seti oldugu iddia edilmez ve installer C kaniti yoktur"
+        "sha256": "1712D017EB161B1365C0298F90D911E0430B899EF737712CED87511A5F685CF3",
+        "size": 51294577,
+        "status": "841ab4c build zincirinde yeniden uretildi; installer calistirilmadi ve C kaniti yoktur"
       },
       "packaging_input": {
         "spec_sha256": "253D6A6DC0529FBA9E47F9F944EA67F3B159536472CF4BD3F1ACE1390C734B67",
@@ -136,38 +136,39 @@
         "toc_evidence": "pyi-disable-windowed-traceback girdisi build TOC icinde dogrulandi"
       },
       "source_regressions": [
-        "tests/test_windowed_error_reporting.py: 29 passed",
-        "tests/test_restart_flow.py: 32 passed",
-        "tests/test_project_guide.py: 100 passed, 7 subtests"
+        "packaging/Kurulum-Yap.bat --no-pause test kapisi: 1221 passed, 6 skipped, 345 subtests",
+        "tests/test_pdf_console_logging.py: 1 passed",
+        "tests/test_regressions.py + tests/test_profit.py + tests/test_offer_archive_naming.py: 38 passed"
       ],
       "frozen_targeted_smoke": {
         "result": "GECTI",
         "covered_scenarios": [
-          "B-8 hata penceresi",
-          "B-9 modal/progress entegrasyonu"
+          "B-4 alt kapsami: paketli PDF uretimi ve cp1254 konsol logu"
         ],
-        "B8": {
+        "B4_pdf_console": {
           "result": "GECTI",
+          "environment": "sekiz profil/temp degiskeni izole kok altinda; fail.Keyring; HTTP/HTTPS/ALL proxy 127.0.0.1:9; NO_PROXY bos; konsol kod sayfasi cp1254",
           "evidence": [
-            "bozuk izole veritabaninda tek guvenli Turkce hata penceresi acildi",
-            "ikinci PyInstaller traceback penceresi acilmadi",
-            "UI SQLite ayrintisi ve traceback gostermedi; teknik traceback loga tam bir kez yazildi",
-            "process exit code 1; gercek kullanici verisi degismedi"
+            "paketli EXE'de secili izole teklif icin PDF gercek UI akisi ve native kaydet penceresiyle uretildi",
+            "konsolda 'PDF olusturuluyor: SNS-000001 -> ...' ve 'PDF tamamlandi' satirlari yazildi; UnicodeEncodeError ve Logging error yoktu",
+            "gorunur PDF Olusturuldu penceresi dogrulandi; PDF 1 sayfa, teklif no mevcut, maliyet/kar metni yok",
+            "PDF SHA256 147CBD262DD56F8D3ED7A063FE1F637DB97E09E9F2F656E3571669CE76B06B9B; 219514 bayt",
+            "canli izole DB ve kapanis yedegi integrity_check=ok; normal kapanis exit 0; gercek kullanici veri/yedek sayimlari degismedi"
           ]
         },
-        "B9": {
-          "result": "GECTI",
-          "environment": "sekiz profil/temp degiskeni izole kok altinda; fail.Keyring; HTTP/HTTPS/ALL proxy 127.0.0.1:9; NO_PROXY bos",
-          "evidence": [
-            "Güvenli Depo uyarisi kontrollu kapatildiktan sonra iki sayfali XLSX ile musteri import akisi acildi",
-            "Calisma Sayfasi Sec native IsWindowEnabled=true; HWND=78056274; owner HWND=21040436",
-            "secim penceresi acikken gorunur Ice Aktarma progress penceresi yoktu",
-            "iptal oncesi ve sonrasi DB dump SHA256 A608A520E80DC35FD624C16DC169B1424EDA0768C8EA0B11B164C3A6E57F2C26; integrity_check=ok; tum uygulama tablolari 0 satir",
-            "normal kapanis exit 0; workbook ve gercek kullanici veri/yedek parmak izi degismedi; native crash marker yok"
-          ]
-        },
-        "scope_limit": "Bu hedefli kayit yalniz B-8 ve B-9'u kapsar; tam B-1..B-9 turu olarak genellenmez. Installer C yapilmadi."
+        "scope_limit": "Bu hedefli kayit yalniz B-4'un PDF/cp1254 konsol alt kapsamidir; musteri/urun/teklif olusturma tekrarlanmadi ve tam B-1..B-9 turu olarak genellenmez. Installer uretildi ama calistirilmadi; C yapilmadi."
       }
+    },
+    "previous_targeted_validation_build": {
+      "built_from_commit": "17117b077ab4cfd464e4d9c9ee4e805831a14007",
+      "date": "2026-08-23",
+      "dist_exe_sha256": "B0222011D6638009C46779CE41C36F066FC8BEB0B26DF38914438F19C804FC3E",
+      "covered_scenarios": [
+        "B-8 hata penceresi",
+        "B-9 modal/progress entegrasyonu"
+      ],
+      "result": "GECTI",
+      "scope_limit": "Tarihsel hedefli yerel EXE kaniti; 841ab4c artifact'inin yerine gecmez. Ayrintilar CURRENT_STATUS 2026-08-23 bolumunde korunur."
     },
     "frozen_smoke": {
       "result": "GECTI",
@@ -492,6 +493,6 @@
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
     },
-    "artifact_stale_reason": "Kaynak, yayimlanmis artifact setinin build commit'inden (227656b) ileridedir: R10a/R10b/R10c guvenli hata turlari, R12c provenance kapisi, acilis bildirimi ertelemesi, shutdown worker quiesce ve duplicate frozen error dialog duzeltmesi eklendi. Yayimlanmis/tarihsel v4.2 dist EXE ve installer proje kokunde yoktur; arsiv hash'leri degismemistir. Proje kokundeki yerel dist EXE ve installer farkli kimliklerdir ve current_source_validation_build altinda ayri kaydedilir. 17117b0 icin hedefli B-8/B-9 kaniti vardir; fakat installer yeniden uretilmedi ve C kaniti yoktur. Bu nedenle public v4.2 artifact seti guncel kaynagi temsil etmez ve release_candidate_ready=false kalir."
+    "artifact_stale_reason": "Kaynak, yayimlanmis artifact setinin build commit'inden (227656b) ileridedir: R10a/R10b/R10c guvenli hata turlari, R12c provenance kapisi, acilis bildirimi ertelemesi, shutdown worker quiesce, duplicate frozen error dialog ve PDF konsol log duzeltmesi eklendi. Yayimlanmis/tarihsel v4.2 dist EXE ve installer arsiv kimlikleri degismemistir. Proje kokundeki 841ab4c yerel EXE ve installer farkli kimliklerdir ve current_source_validation_build altinda ayri kaydedilir. Hedefli B-4 PDF/cp1254 konsol kaniti vardir; fakat tam B turu ve installer C kaniti yoktur. Bu nedenle public v4.2 artifact seti guncel kaynagi temsil etmez ve release_candidate_ready=false kalir."
   }
 }

@@ -3,7 +3,7 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: 17117b0
+last_verified_commit: 841ab4c
 last_verified_date: 2026-08-23
 volatile: true
 ---
@@ -11,27 +11,37 @@ volatile: true
 # Son doğrulanmış durum
 
 > **Yakalama tarihi: 2026-08-23 · sürüm: `v4.2` — YAYINLANDI (public, latest).**
-> **Kaynak, yayımlanmış v4.2 artifact'ından ileridedir.** `17117b0` için ayrı bir yerel PyInstaller EXE'si alındı ve hedefli B-8/B-9 frozen smoke geçti; ancak installer yeniden üretilmedi ve C kanıtı alınmadı. Bu yerel build public v4.2 asset'inin yerine geçmez.
+> **Kaynak, yayımlanmış v4.2 artifact'ından ileridedir.** `841ab4c` için temiz yerel EXE + Inno installer üretildi ve hedefli B-4 PDF/cp1254 konsol smoke geçti; ancak installer çalıştırılmadı, C kanıtı alınmadı ve tam B turu yapılmadı. Bu yerel build public v4.2 asset'inin yerine geçmez.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.2** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.2.0.0` / `v4.2`) eşitlendi; installer adı `TeklifYonetim_Setup_v4.2.exe`
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
-- **Yerel doğrulama build durumu (`17117b0`):** EXE build'i ve hedefli B-8/B-9 kanıtı var; tam B turu ve installer C yoktur. Yayımlanmış set için `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false` kalır.
-- Yayımlanmış v4.2 artifact'ları: dist EXE `476015268A26…5353B` (9.476.704 B, 4.2.0.0 / v4.2) · installer `TeklifYonetim_Setup_v4.2.exe` `D61488DFE55D…82B2` (52.548.738 B). Yerel güncel-kaynak doğrulama EXE'si ayrıdır: `B0222011D663…FC3E` (9.722.876 B).
+- **Yerel doğrulama build durumu (`841ab4c`):** tam test kapısı + temiz EXE/Inno build ve hedefli B-4 PDF/cp1254 konsol kanıtı var; tam B turu ve installer C yoktur. Önceki `17117b0` B-8/B-9 kanıtı tarihsel hedefli kayıt olarak korunur. Yayımlanmış set için `artifact_verification_status = stale_source_changed`, `release_candidate_ready = false` kalır.
+- Yayımlanmış v4.2 artifact'ları: dist EXE `476015268A26…5353B` (9.476.704 B, 4.2.0.0 / v4.2) · installer `TeklifYonetim_Setup_v4.2.exe` `D61488DFE55D…82B2` (52.548.738 B). Yerel güncel-kaynak doğrulama seti ayrıdır: EXE `2F8921854EFD…E5807` (9.722.873 B) · installer `1712D017EB16…5CF3` (51.294.577 B).
 - **Makinede kurulu sürüm v4.2** — son hâli **D2 canlı güncellemesiyle** kuruldu: kurulu EXE `476015268A26…5353B`, registry `DisplayVersion v4.2`, AppId ve kurulum dizini korundu. **Gerçek kullanıcı verisi ve yedekleri değişmedi** (30 + 20 dosya: YENİ=0, SİLİNEN=0, DEĞİŞEN=0; `database.db` `AB7B8AE5…`). **v4.2 için kaldırma ve temiz yeniden kurulum yapılmadı** — installer mekanizması v4.1'den beri değişmedi ve o senaryolar v4.1 turunda tam yürütüldü.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- **Canlı HEAD ve yerel doğrulama build girdisi: `17117b077ab4cfd464e4d9c9ee4e805831a14007`.** Manifest `source_commit=0a1a1ae` alanı son tam A-suite snapshot'ını korur; 17117b0 hedefli test/build kanıtı ayrı alandadır.
-- Son tam suite (`0a1a1ae` içeriği): **1165 passed, 3 skipped, 345 subtests**. `17117b0` için tam paket yeniden çalıştırılmadı; değişiklik-etkili regresyonlar aşağıdaki 2026-08-23 bölümünde ayrı kayıtlıdır.
+- **Canlı HEAD ve yerel doğrulama build girdisi: `841ab4c002656444017c5584660e1f1f16be2f91`.** Manifestin birincil `source_commit=0a1a1ae` alanı önceki bütünleşik A-snapshot'ını, `built_from_commit=227656b` ise yayımlanmış seti korur; yeni tam build kapısı ve artifact kanıtı `current_source_validation_build` altındadır.
+- Birincil bütünleşik son tam suite (`0a1a1ae`): **1165 passed, 3 skipped, 345 subtests**. Güncel `841ab4c` build kapısı ayrıca `1221 passed, 6 skipped, 345 subtests` ölçtü ve `current_source_validation_build` altında tutulur.
 - Tarihsel bağlam: `c3f711e` turunda ölçülen tam paket **1152 passed, 4 skipped, 343 subtests** idi; güncel sonuç değildir.
 - v4.2 **build anındaki** kapı sonucu ayrı ve tarihsel bir alandır: manifest `build_gate_test_result` (`227656b`) — aşağıdaki "v4.2 Aşama 1 doğrulaması" bölümünde.
 - `py_compile` tüm proje dosyalarında temiz
 - Upstream durumu **her release öncesi canlı git komutlarıyla** doğrulanır; bu belgede canlı remote hash tutulmaz
 
-## 2026-08-23 yerel HEAD frozen doğrulaması
+## 2026-08-23 yerel HEAD build + PDF konsol doğrulaması
+
+- Build girdisi: `841ab4c`; `packaging/Kurulum-Yap.bat --no-pause` exit 0. Tam test kapısı **1221 passed, 6 skipped, 345 subtests**; temiz PyInstaller onedir + Inno Setup 7.1.0 tamamlandı.
+- Yerel EXE: `9.722.873 B / 2F8921854EFD…E5807 / FileVersion 4.2.0.0 / ProductVersion v4.2`; dist ağacı `296 dosya / 170.329.053 B`.
+- Yerel installer: `51.294.577 B / 1712D017EB16…5CF3`. Installer **çalıştırılmadı**; kurulum/upgrade/kaldırma/registry/kısayol kanıtı yoktur ve C sınıfı sayılmaz.
+- Yerel `.spec` SHA-256: `253D6A6DC0529FBA9E47F9F944EA67F3B159536472CF4BD3F1ACE1390C734B67`; `disable_windowed_traceback=True` korundu.
+- **Hedefli B-4 PDF/cp1254 konsol alt kapsamı: GEÇTİ.** Sekiz profil/temp değişkeni + `fail.Keyring` + loopback proxy ile izole paketli EXE'de var olan sentetik teklif seçildi; native kaydet penceresiyle PDF üretildi. Konsolda `PDF oluşturuluyor: SNS-000001 -> ...` ve `PDF tamamlandı` satırları görüldü; `UnicodeEncodeError`, `Logging error`, traceback ve native crash izi yoktu.
+- PDF `219.514 B / 147CBD262DD5…06B9B`, 1 sayfa; teklif no mevcut, maliyet/kâr metni yok. Canlı izole DB ve kapanış yedeği `integrity_check=ok`; normal kapanış exit 0; gerçek kullanıcı veri/yedek sayımları değişmedi.
+- **Kanıt sınırı:** Bu tur B-4'ün yalnız PDF üretimi/konsol log alt kapsamıdır; müşteri/ürün/teklif oluşturma ve diğer B senaryoları tekrarlanmadı. Installer yalnız üretildi, C yapılmadı. Public v4.2 release/tag/asset kayıtları değiştirilmedi.
+
+### Önceki `17117b0` hedefli frozen doğrulaması — tarihsel
 
 - Build girdisi: `17117b0`; temiz PyInstaller onedir build. Inno installer **üretilmedi**. EXE `9.722.876 B / B0222011D663…FC3E / FileVersion 4.2.0.0 / ProductVersion v4.2`; dist ağacı `296 dosya / 170.329.056 B`.
 - Yerel `.spec` SHA-256: `253D6A6DC0529FBA9E47F9F944EA67F3B159536472CF4BD3F1ACE1390C734B67`; `disable_windowed_traceback=True` ve build TOC içinde `pyi-disable-windowed-traceback` doğrulandı.
@@ -177,8 +187,8 @@ Süresi dolan teklif modalı, `MainWindow` oluşturulurken (`_navigate(0)` → `
 
 ## Bu yakalamadaki artifact durumu
 
-- Son tam A-suite snapshot'ı `source_commit = 0a1a1ae`; canlı HEAD/yerel build `17117b0`; yayımlanmış setin `built_from_commit = 227656b` değiştirilmedi. Yerel EXE manifestte ayrı `current_source_validation_build` alanındadır.
-- Proje kökünde `build/` ve yeni `dist/` vardır. `installer_output/` içindeki `B78A2454…DD001 / 51.299.378 B` installer da public `D61488DF…BF82B2` installer değildir; bu PyInstaller turunda yeniden üretilmemiştir ve yeni EXE ile aynı build setine ait olduğu iddia edilmez. Bu nedenle installer C bekler ve `release_candidate_ready=false` kalır.
+- Birincil bütünleşik A-suite snapshot'ı `source_commit = 0a1a1ae`; canlı HEAD/yerel build girdisi `841ab4c`; yayımlanmış setin `built_from_commit = 227656b` değeri değiştirilmedi. Güncel tam build kapısı ile yerel EXE/installer manifestte ayrı `current_source_validation_build` alanındadır.
+- Proje kökünde `841ab4c` build setine ait yeni `build/`, `dist/` ve `installer_output/` vardır. Yerel installer `1712D017…5CF3 / 51.294.577 B` public `D61488DF…BF82B2` installer değildir; çalıştırılmadığı için installer C bekler ve `release_candidate_ready=false` kalır.
 - Manifestin birincil `dist_exe` alanı yayımlanmış/tarihsel v4.2 EXE kimliğini korur; yeni yerel `dist/TeklifYonetim/TeklifYonetim.exe` bunun yerine yazılmaz. `--artifacts`, tarihsel EXE proje kökünde bulunmadığı için o alanı uyarıyla atlar; tarihsel installer'ı hash/boyutla doğrular. Yeni yerel EXE hash'i ayrı olarak doğrulanır.
 - **Yayımlanmış v4.2 artifact'ı tarihsel olarak geçerlidir** ve proje kökünün dışındaki doğrulanmış arşivde korunur: `<RELEASE_ARCHIVE>/v4.2-published-before-ui-redesign` — **299 dosya, 229.266.985 bayt**; dist EXE `476015268A26…5353B`, installer `D61488DFE55D…82B2`. Bu kopya **tarihsel** bir kayıttır; güncel kaynağın artifact'ı **değildir**.
 - v4.2 tag'i, GitHub Release'i ve D1/D2/D2b kanıtları **tarihsel olarak geçerlidir**; bu tur yalnız güncel kaynağın artifact tazeliğini düşürür.
