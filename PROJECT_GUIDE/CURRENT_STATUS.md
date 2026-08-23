@@ -3,14 +3,14 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: 8054be0
+last_verified_commit: 446fc78
 last_verified_date: 2026-08-23
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-23 · hedef sürüm: `v4.3` — ARTIFACT DOĞRULANDI, RELEASE BEKLİYOR.**
+> **Yakalama tarihi: 2026-08-23 · hedef sürüm: `v4.3` — RELEASE ADAYI DOĞRULANDI.**
 > Public/latest sürüm hâlâ **v4.2**'dir. v4.3 temiz build, değişiklik-etkili frozen/kurulu smoke ve tam installer C tamamlandı; tag, GitHub Release ve canlı updater D1/D2 henüz yapılmadı.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
@@ -18,14 +18,14 @@ volatile: true
 
 - Hedef sürüm: **v4.3** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.3.0.0` / `v4.3`) eşitlendi; hedef installer adı `TeklifYonetim_Setup_v4.3.exe`
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
-- **v4.3 artifact durumu:** `artifact_verification_status = verified`. `release_candidate_ready = false` yalnız release provenance kapısı henüz bu metadata turunda yeşil kaydedilmediği ve tag/release/D1/D2 yapılmadığı için korunuyor.
-- v4.3 dist EXE: `BDEE8AA1EF44…082972` (9.722.873 B, FileVersion `4.3.0.0`, ProductVersion `v4.3`) · installer: `TeklifYonetim_Setup_v4.3.exe` `C276EF303B57…56460A` (51.299.628 B). Public v4.2 artifact kimlikleri tarihsel kayıtlarda korunur.
-- **Makinede kurulu sürüm v4.3** — tam C zincirinin temiz yeniden kurulum sonu. Kurulu EXE dist ile byte-birebir aynı; registry `DisplayVersion v4.3`, aynı AppId ve kurulum yolu doğrulandı. Gerçek kullanıcı verisi **34/34**, yedekler **12/12** bütün zincirde değişmedi; DB `integrity_check=ok`, `foreign_key_check` temiz.
+- **v4.3 artifact durumu:** `artifact_verification_status = verified`, `release_candidate_ready = true`. Bu yalnız build+B+C adaylığını ifade eder; push, tag, GitHub Release ve D1/D2 yapılmadı.
+- v4.3 dist EXE: `C037CB3AEF6F…F0ED9AD` (9.722.873 B, FileVersion `4.3.0.0`, ProductVersion `v4.3`) · installer: `TeklifYonetim_Setup_v4.3.exe` `7D7516BC2746…94B8EE` (51.289.869 B). Public v4.2 artifact kimlikleri tarihsel kayıtlarda korunur.
+- **Makinede kurulu sürüm v4.3** — yeni exact installer ile tam C zincirinin temiz yeniden kurulum sonu. Kurulu EXE dist ile byte-birebir aynı; registry `DisplayVersion v4.3`, aynı AppId ve kurulum yolu doğrulandı. Başlangıçtaki gerçek kullanıcı verisi **32/32**, yedekler **13/13** bütün zincirde değişmedi; DB `integrity_check=ok`, `foreign_key_check` temiz.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- **v4.3 kaynak ve build girdisi: `8054be0434c4b6a344f9b0dfaae004e4ab80911d`.** Manifestte `source_commit` ve `built_from_commit` bu kesin commit'e eşittir; sonraki değişiklikler yalnız build-sonrası izinli manifest/durum metadata dosyalarıdır.
-- v4.3 build kapısı: **1221 passed, 7 skipped, 345 subtests**.
+- **v4.3 kaynak ve build girdisi: `446fc780131dd77a8a4dcf630f8baa8287b367dd`.** Manifestte `source_commit` ve `built_from_commit` bu kesin commit'e eşittir; sonraki değişiklikler yalnız build-sonrası exact-match izinli kanıt dosyalarıdır.
+- v4.3 build kapısı: **1222 passed, 6 skipped, 345 subtests**.
 - Tarihsel bağlam: `c3f711e` turunda ölçülen tam paket **1152 passed, 4 skipped, 343 subtests** idi; güncel sonuç değildir.
 - v4.2 **build anındaki** kapı sonucu ayrı ve tarihsel bir alandır: manifest `build_gate_test_result` (`227656b`) — aşağıdaki "v4.2 Aşama 1 doğrulaması" bölümünde.
 - `py_compile` tüm proje dosyalarında temiz
@@ -33,13 +33,13 @@ volatile: true
 
 ## 2026-08-23 v4.3 build + frozen/kurulu smoke + tam C doğrulaması
 
-- Build girdisi: `8054be0`; `packaging/Kurulum-Yap.bat --no-pause` exit 0. Tam test kapısı **1221 passed, 7 skipped, 345 subtests**; temiz PyInstaller onedir + Inno Setup 7.1.0 tamamlandı.
-- v4.3 EXE: `9.722.873 B / BDEE8AA1EF44…082972 / FileVersion 4.3.0.0 / ProductVersion v4.3`; dist ağacı `296 dosya / 170.329.053 B`.
-- v4.3 installer: `51.299.628 B / C276EF303B57…56460A`; izlenen `.iss` `ABD6CB536816…41422`, `version_info.txt` `70C01FB7F7A…8044`. Build ve paket içerik denetimleri temiz.
-- **Frozen/kurulu smoke: GEÇTİ, kapsam sınırı kayıtlı.** Bağımsız dist EXE izole profilde ana pencereyi açtı ve log `Version: v4.3` yazdı; fakat pencere otomasyon hedef listesine kaydolmadığı için bu süreç zorla kapatıldı ve normal kapanış sayılmadı. Aynı SHA-256'ya sahip kurulu EXE upgrade ve temiz reinstall sonrasında iki kez görünür `v4.3` arayüzüyle açıldı; ikisi de Alt+F4, kapanış yedeği, DB close ve exit 0 ile normal kapandı. Tam B-1..B-9 matrisi yeniden koşulmadı.
-- **Installer C: TAM GEÇTİ.** v4.2→v4.3 upgrade, ilk kurulu smoke, uninstall, temiz reinstall ve ikinci kurulu smoke tamamlandı. Her installer/uninstaller exit 0 ve restart yok; kurulum ağacı dist ile birebir (eksik 0, fazla 0, değişen 0; `unins000.*` hariç), eski hedefli DLL'ler yok.
+- Build girdisi: `446fc78`; `packaging/Kurulum-Yap.bat --no-pause` exit 0. Tam test kapısı **1222 passed, 6 skipped, 345 subtests**; temiz PyInstaller onedir + Inno Setup 7.1.0 tamamlandı.
+- v4.3 EXE: `9.722.873 B / C037CB3AEF6F…F0ED9AD / FileVersion 4.3.0.0 / ProductVersion v4.3`; dist ağacı `296 dosya / 170.329.053 B`.
+- v4.3 installer: `51.289.869 B / 7D7516BC2746…94B8EE`; izlenen `.iss` `ABD6CB536816…41422`, `version_info.txt` `70C01FB7F7A…8044`. Build ve paket içerik denetimleri temiz.
+- **Frozen/kurulu smoke: GEÇTİ, kapsam sınırı kayıtlı.** Exact dist EXE izole profil + null keyring + loopback proxy ile görünür `v4.3` arayüzünü açtı; log `Version: v4.3`, DB `integrity_check=ok/fk=0`. Dist, upgrade-kurulu ve temiz-kurulu EXE olmak üzere üç smoke da Alt+F4, kapanış yedeği, DB close ve exit 0 ile normal kapandı. Tam B-1..B-9 matrisi yeniden koşulmadı.
+- **Installer C: TAM GEÇTİ.** Önceki v4.3 (`BDEE8AA1…`) → yeni exact v4.3 (`C037CB3A…`) yerinde upgrade, ilk kurulu smoke, uninstall, temiz reinstall ve ikinci kurulu smoke tamamlandı. Her installer/uninstaller exit 0 ve restart yok; kurulum ağacı dist ile birebir (eksik 0, fazla 0, değişen 0; `unins000.*` hariç), eski hedefli DLL'ler yok. Ayrı önceki turda v4.2→v4.3 upgrade de geçmişti; iki kanıt birbirine karıştırılmaz.
 - Uninstall sonrasında Program Files dizini, uninstall registry kaydı ve installer-yönetimli kısayollar kalktı. Kullanıcının özel `AIO\Teklif Yönetim.lnk` kısayoluna dokunulmadı. Temiz reinstall sonunda registry v4.3, AppId, kurulum yolu ve üç installer kısayolu geri geldi.
-- Gerçek veri 34/34 ve yedekler 12/12 tüm zincirde değişmedi; DB `integrity_check=ok`, `foreign_key_check` temiz. Rollback: `<ROLLBACK_ROOT>/OMS-v43-Rollback-20260823-8054be0`; silinmeyecek.
+- Başlangıçtaki gerçek veri 32/32 ve yedekler 13/13 tüm zincirde değişmedi; DB `integrity_check=ok`, `foreign_key_check` temiz. Kaldırma-sonrası salt-okunur bütünlük probu boş `database.db-wal` ve `database.db-shm` oluşturdu; ana DB değişmedi ve bunlar installer'a atfedilmedi. Rollback: `<ROLLBACK_ROOT>/OMS-v43-Rollback-20260823-446fc78`; silinmeyecek.
 - Upgrade, uninstall ve temiz reinstall için üç UAC kullanıcı tarafından elle onaylandı; UAC otomatikleştirilmedi.
 - Yerel `.spec` SHA-256: `253D6A6DC0529FBA9E47F9F944EA67F3B159536472CF4BD3F1ACE1390C734B67`; `disable_windowed_traceback=True` korundu.
 - **Hedefli B-4 PDF/cp1254 konsol alt kapsamı: GEÇTİ.** Sekiz profil/temp değişkeni + `fail.Keyring` + loopback proxy ile izole paketli EXE'de var olan sentetik teklif seçildi; native kaydet penceresiyle PDF üretildi. Konsolda `PDF oluşturuluyor: SNS-000001 -> ...` ve `PDF tamamlandı` satırları görüldü; `UnicodeEncodeError`, `Logging error`, traceback ve native crash izi yoktu.
@@ -176,7 +176,7 @@ Diğer maddelerin durumu bu turda değişmedi — güncel liste [KNOWN_RISKS.md]
 - Yeni `kontrol_build_sonrasi_provenance` kapısı build sonrasında YALNIZ dört **tam** yola izin verir: `PROJECT_GUIDE/project_manifest.json`, `PROJECT_GUIDE/CURRENT_STATUS.md`, `PROJECT_GUIDE/KNOWN_RISKS.md`, `docs/CHANGELOG.md`. Klasör/prefix izni yoktur.
 - Commit edilmiş, staged, unstaged ve untracked/non-ignored yasak yollar birlikte denetlenir (add/modify/delete/rename). Eksik/bozuk `built_from_commit`, Git okunamaması ve build commit'inin HEAD'in atası olmaması **fail-closed**. Kontrol yalnız `--release` modunda zorunludur.
 - Kanıt: kırmızı **23 failed / 1 passed** → provenance testleri **24 geçti**; `test_project_guide` **98 geçti / 7 subtest**; `test_project_guide + test_version_consistency` **148 geçti / 4 atlandı / 9 subtest**; tam paket **1152 passed, 4 skipped, 343 subtests**. Tam paket ölçümü `c3f711e`'ye giren aynı kaynak/test içeriğiyle **commit'ten önce** yapıldı; commit sonrasında yeniden çalıştırılmadı. `py_compile` ve `git diff --check` temiz.
-- Gerçek depo modları: normal **exit 0**, `--stale` **exit 0 / 0 uyarı**, `--artifacts` **exit 0**, `--release` **exit 1** — `release_candidate_ready=false` **ve** build sonrası provenance ihlalleri nedeniyle. (Provenance hata **sayısı** her metadata değişikliğinde değişir; bu snapshot'ta sabitlenmez — güncel değer komutu çalıştırarak ölçülür.) **Yeni build alınana kadar `--release`'in kırmızı kalması doğru davranıştır.**
+- Gerçek depo modları bu exact artifact kanıtı işlendiğinde: normal **exit 0**, `--stale` **exit 0 / 0 uyarı**, `--artifacts` **exit 0 / 0 uyarı**, `--release` **exit 0 / 0 uyarı**. Bu yalnız teknik aday kapısıdır; push/tag/GitHub Release/D1/D2 için ayrı açık onay gerekir.
 
 > **Kanıt sınırı — silinmemeli.** Kapı yalnız **Git'in görebildiği** provenance'ı kanıtlar; gitignore/local-only `packaging/` ve `assets/` girdilerinin geçmişini kanıtlamaz. `built_from_commit` kapının **güvendiği** girdidir ve artifact ile commit arasında kriptografik bağ yoktur — gerçek build loguyla eşleşmesi release incelemesinde **ayrıca** doğrulanmalıdır.
 
@@ -192,9 +192,9 @@ Süresi dolan teklif modalı, `MainWindow` oluşturulurken (`_navigate(0)` → `
 
 ## Bu yakalamadaki artifact durumu
 
-- `source_commit = built_from_commit = 8054be0434c4b6a344f9b0dfaae004e4ab80911d`; v4.3 artifact bu kesin HEAD'den üretildi. Sonraki iki değişiklik yalnız build-sonrası izinli manifest ve durum metadata dosyalarıdır.
+- `source_commit = built_from_commit = 446fc780131dd77a8a4dcf630f8baa8287b367dd`; v4.3 artifact bu kesin temiz HEAD'den üretildi. Sonraki değişiklikler yalnız build-sonrası exact-match izinli kanıt dosyalarıdır.
 - Proje kökündeki `build/`, `dist/` ve `installer_output/` v4.3 setine aittir. Birincil `dist_exe` ve `installer` alanları v4.3 yerel artifact kimliklerini taşır; `--artifacts` bunları hash/boyutla doğrulamalıdır.
-- Artifact build, hedefli B ve tam C kanıtı geçti. `release_candidate_ready=false`, tag/release/D1/D2 yapılmadığı ve release kapısı bu metadata güncellemesinden sonra henüz ölçülmediği için bilinçli olarak korunur.
+- Artifact build, exact-hash hedefli B ve tam C kanıtı geçti. `release_candidate_ready=true`; bu yayın yapıldığı anlamına gelmez. Tag/release/D1/D2 yapılmadı.
 - **Yayımlanmış v4.2 artifact'ı tarihsel olarak geçerlidir** ve proje kökünün dışındaki doğrulanmış arşivde korunur: `<RELEASE_ARCHIVE>/v4.2-published-before-ui-redesign` — **299 dosya, 229.266.985 bayt**; dist EXE `476015268A26…5353B`, installer `D61488DFE55D…82B2`. Bu kopya **tarihsel** bir kayıttır; güncel kaynağın artifact'ı **değildir**.
 - v4.2 tag'i, GitHub Release'i ve D1/D2/D2b kanıtları **tarihsel olarak geçerlidir**; v4.3 için yeni tag/release veya updater kanıtı değildir.
 
