@@ -7,7 +7,7 @@ covers:
   - core/app_paths.py
   - ui/dialogs/backup_manager.py
   - main.py
-last_verified_commit: 50756b1
+last_verified_commit: 8054be0
 last_verified_date: 2026-08-23
 volatile: false
 ---
@@ -120,8 +120,8 @@ D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater 
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
-**A sınıfı — güncel kaynak (2026-08-14):** `1165 passed, 3 skipped, 345 subtests`. Ölçüm `0a1a1ae` içeriğiyle daha önce alındı ve açılış bildirimi ertelemesini içerir; bu metadata turunda tam paket yeniden çalıştırılmadı. Sonraki shutdown/frozen-hata düzeltmeleri için yalnız hedefli kaynak testleri ve aşağıdaki hedefli B kanıtı vardır.
+**A sınıfı — güncel kaynak (2026-08-23):** `1221 passed, 7 skipped, 345 subtests`. Ölçüm v4.3 build girdisi `8054be0434c4b6a344f9b0dfaae004e4ab80911d` üzerinde `packaging/Kurulum-Yap.bat --no-pause` test kapısında alındı. Sonraki belge/metadata turunda tam paket yeniden çalıştırılmadı.
 
-**B sınıfı — güncel kaynak için yalnız hedefli B-8/B-9 var.** `17117b0` girdisinden temiz yerel PyInstaller onedir EXE üretildi; B-8'de tek güvenli hata penceresi / ikinci PyInstaller penceresi yok / exit 1, B-9'da native `IsWindowEnabled=true` / progress penceresi yok / iptalde DB yazımı yok ölçüldü. Bu kayıt **tam B-1..B-9 turu değildir**.
+**B sınıfı — v4.3 için değişiklik-etkili hedefli smoke GEÇTİ.** `8054be0` girdisinden üretilen dist EXE izole profil + `fail.Keyring` + loopback proxy ile ana pencereyi açtı; log `Version: v4.3` ve izole DB `integrity_check=ok` ölçüldü. Dist penceresi otomasyon hedef listesine kaydolmadığı için bu süreç zorla kapatıldı ve **normal kapanış kanıtı sayılmadı**. Aynı SHA-256'ya (`BDEE8AA1…082972`) sahip kurulu EXE, upgrade ve temiz reinstall sonrasında iki ayrı smoke'ta görünür v4.3 arayüzüyle açıldı; ikisi de Alt+F4, kapanış yedeği, DB close ve exit 0 ile normal kapandı. Bu kayıt **tam B-1..B-9 turu değildir**.
 
-**C sınıfı — güncel kaynak için YOK.** Bu yerel PyInstaller turunda Inno installer yeniden üretilmedi; proje kökündeki farklı hash'li installer yeni EXE ile aynı build seti sayılmaz. Yayımlanmış **v4.2** artifact'ına ait B/C/D kanıtları **tarihseldir**: kendi turunda geçerlidir ama `17117b0` yerel doğrulama build'inin veya güncel kaynağın installer kanıtı değildir. `release_candidate_ready=false` kalır; kesin hash/boyut ve kanıt kayıtları [project_manifest.json](project_manifest.json) içindedir.
+**C sınıfı — v4.3 için TAM GEÇTİ.** `TeklifYonetim_Setup_v4.3.exe` (`51.299.628 B / C276EF30…56460A`) ile v4.2→v4.3 upgrade, kurulu smoke, uninstall, temiz reinstall ve ikinci kurulu smoke tamamlandı. Üç installer/uninstaller işlemi exit 0 ve restart yok; kurulu EXE dist ile byte-eşit, kurulum ağacı dist ile eşleşiyor, registry/AppId/kısayollar doğru. Kullanıcıya ait özel kısayol korundu; gerçek veri 34/34 ve yedekler 12/12 bütün zincirde değişmedi; DB `integrity_check=ok`, `foreign_key_check` temiz. Üç UAC onayı kullanıcı tarafından elle verildi. Bu C kanıtı v4.3 tag/release veya canlı updater D1/D2 kanıtı değildir.

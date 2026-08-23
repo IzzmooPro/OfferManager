@@ -6,8 +6,8 @@ covers:
   - core/profit.py
   - services/export_service.py
   - pdf/pdf_generator.py
-last_verified_commit: 5a79789
-last_verified_date: 2026-07-28
+last_verified_commit: 8054be0
+last_verified_date: 2026-08-23
 volatile: false
 ---
 

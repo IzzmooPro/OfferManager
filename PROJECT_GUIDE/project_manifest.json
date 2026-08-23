@@ -41,15 +41,15 @@
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "0a1a1ae",
-    "source_commit_note": "Son tam A-suite ile butunlesik kaynak snapshot'i; R10a/R10b/R10c guvenli hata turlari, R12c build sonrasi provenance kapisi ve acilis bildirimi ertelemesi dahildir. Canli yerel build girdisi e479b5b'dir; shutdown worker quiesce, duplicate frozen error dialog, PDF konsol log duzeltmesi ve izlenen Inno upgrade temizligi icin tam build + yerel artifact/installer kaniti ayri current_source_validation_build alaninda kayitlidir. Yayimlanmis artifact bu kaynak farklarini ICERMEZ (built_from_commit=227656b).",
-    "built_from_commit": "227656b",
-    "built_from_commit_note": "Yayimlanmis v4.2 installer/artifact setinin build edildigi gercek HEAD. Guncel kaynak bu commit'ten ileridedir: R10a/R10b/R10c, R12c, acilis bildirimi ertelemesi, shutdown worker quiesce, duplicate frozen error dialog, PDF konsol log duzeltmesi ve izlenen Inno upgrade temizligi bu yayin setine DAHIL DEGILDIR. e479b5b icin yerel EXE/installer yeniden uretildi ve installer C gecti; release yapilmadigi icin yayim setinin built_from_commit degeri degistirilmedi.",
+    "source_commit": "8054be0434c4b6a344f9b0dfaae004e4ab80911d",
+    "source_commit_note": "v4.3 surum hazirligi ve build girdisi. Temiz build, hedefli frozen/kurulu smoke ve tam installer C bu commit'in kaynak ve paketleme girdileriyle dogrulandi; sonraki degisiklikler yalniz izinli manifest/durum metadata alanlaridir.",
+    "built_from_commit": "8054be0434c4b6a344f9b0dfaae004e4ab80911d",
+    "built_from_commit_note": "v4.3 artifact seti build basinda canli olarak kaydedilen bu HEAD'den uretildi. Build sonrasi yalniz izinli PROJECT_GUIDE/project_manifest.json ve PROJECT_GUIDE/CURRENT_STATUS.md metadata dosyalari degistirildi.",
     "version": "v4.3",
-    "artifact_built_for_version": "v4.2",
-    "artifact_verification_status": "stale_for_target_version",
+    "artifact_built_for_version": "v4.3",
+    "artifact_verification_status": "verified",
     "release_candidate_ready": false,
-    "release_readiness_note": "release_candidate_ready=false: hedef v4.3'e yukseltildi; eldeki artifact setleri v4.2'ye aittir. v4.3 icin temiz build, frozen smoke, tam installer C ve release kaniti henuz yoktur. Public v4.2 kaniti tarihsel olarak korunur.",
+    "release_readiness_note": "v4.3 artifact build, hedefli B smoke ve tam installer C gecti. release_candidate_ready=false kalir: release provenance kapisinin belge tazeligi ve canli git sonucu metadata turunda yeniden olculmeli; tag, GitHub Release ve D1/D2 ayrica yapilmadi.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -61,43 +61,43 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
-      "passed": 1165,
+      "passed": 1221,
       "subtests_passed": 345,
-      "date": "2026-08-14",
-      "skipped": 3,
-      "note": "0a1a1ae icerigiyle daha once alinan dogrulama; BU METADATA TURUNDA TAM PAKET YENIDEN CALISTIRILMADI. e479b5b build girdisindeki guncel tam kapi sonucu current_source_validation_build altinda ayrica kayitlidir. build_gate_test_result BUILD ANINDAKI (227656b) tarihsel yayin kapisi sonucudur ve degistirilmez."
+      "date": "2026-08-23",
+      "skipped": 7,
+      "note": "8054be0 v4.3 build kapisi sonucu; 345 subtest dahil. Bu metadata turunda tam paket yeniden calistirilmadi."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 1165,
+      "passed": 1221,
       "subtests_passed": 345,
-      "date": "2026-08-14",
-      "note": "Guncel birincil kaynak snapshot'inda (0a1a1ae) dogrulandi; guide_integrated_test_result ile aynidir. e479b5b tam build kapisi current_source_validation_build altinda ayridir. source_test_result 648/29 baseline'ini (060baf3) TARIHSEL alan olarak korur.",
-      "skipped": 3
+      "date": "2026-08-23",
+      "note": "8054be0 v4.3 build kapisi sonucu; source_test_result 648/29 baseline'i tarihsel olarak korunur.",
+      "skipped": 7
     },
     "dist_exe": {
-      "path": "historical_artifacts/v4.2-published/TeklifYonetim/TeklifYonetim.exe",
-      "sha256": "476015268A2620F60C0617E52D5E518CAF32559D17E618BB1022971AA8D5353B",
-      "size": 9476704,
-      "built_for_version": "v4.2",
-      "file_version": "4.2.0.0",
-      "product_version": "v4.2"
+      "path": "dist/TeklifYonetim/TeklifYonetim.exe",
+      "sha256": "BDEE8AA1EF446F89800E8C886476A1ACD34E61E0871014D10784F01139082972",
+      "size": 9722873,
+      "built_for_version": "v4.3",
+      "file_version": "4.3.0.0",
+      "product_version": "v4.3"
     },
     "installer": {
-      "path": "historical_artifacts/v4.2-published/TeklifYonetim_Setup_v4.2.exe",
-      "sha256": "D61488DFE55D5F0D7A6D4245B97176498CDD22B9BD442A2056EB87DDA5BF82B2",
-      "size": 52548738,
-      "built_for_version": "v4.2",
-      "version": "4.2.0.0"
+      "path": "installer_output/TeklifYonetim_Setup_v4.3.exe",
+      "sha256": "C276EF303B570B47FE1F46AA9D2849F7C804664C37CF3061475ED55CAC56460A",
+      "size": 51299628,
+      "built_for_version": "v4.3",
+      "version": "4.3.0.0"
     },
     "installed_exe": {
       "path": "<INSTALL_DIR>/TeklifYonetim.exe",
-      "sha256": "D06ECFDECB5CBFB8A8F3CE74AB332C0E24DAD568510B671E8A2341C6D985A534",
+      "sha256": "BDEE8AA1EF446F89800E8C886476A1ACD34E61E0871014D10784F01139082972",
       "size": 9722873,
-      "built_for_version": "v4.2",
-      "file_version": "4.2.0.0",
-      "product_version": "v4.2",
-      "note": "kurulu sürüm v4.2. e479b5b yerel doğrulama installer'i ile kontrollü yerinde upgrade yapıldı; hash güncel yerel dist EXE ile birebir aynı. Public v4.2 asset kimliği değildir."
+      "built_for_version": "v4.3",
+      "file_version": "4.3.0.0",
+      "product_version": "v4.3",
+      "note": "Tam C zincirinin temiz yeniden kurulum sonundaki kurulu v4.3 EXE'si; dist EXE ile byte-birebir ayni."
     },
     "upgrade_baseline": {
       "from_version": "v4.0",
@@ -111,42 +111,41 @@
       "note": "SmartScreen 'bilinmeyen yayımcı' uyarısı beklenir"
     },
     "current_source_validation_build": {
-      "purpose": "Yayim sonrasi guncel kaynak icin yerel build, dar frozen davranis ve installer C dogrulamasi; public v4.2 release artifact'inin yerine gecmez",
-      "built_from_commit": "e479b5b88d0a5b1476e5bf648b3ccc28768595f7",
+      "purpose": "v4.3 release adayi icin temiz build, hedefli frozen/kurulu smoke ve tam installer C dogrulamasi",
+      "built_from_commit": "8054be0434c4b6a344f9b0dfaae004e4ab80911d",
       "date": "2026-08-23",
       "build_method": "packaging/Kurulum-Yap.bat --no-pause; tam test kapisi, temiz PyInstaller onedir ve Inno Setup 7.1.0",
       "dist_exe": {
         "path": "dist/TeklifYonetim/TeklifYonetim.exe",
-        "sha256": "D06ECFDECB5CBFB8A8F3CE74AB332C0E24DAD568510B671E8A2341C6D985A534",
+        "sha256": "BDEE8AA1EF446F89800E8C886476A1ACD34E61E0871014D10784F01139082972",
         "size": 9722873,
-        "file_version": "4.2.0.0",
-        "product_version": "v4.2",
+        "file_version": "4.3.0.0",
+        "product_version": "v4.3",
         "file_count": 296,
         "tree_size": 170329053
       },
       "local_installer_observed": {
-        "path": "installer_output/TeklifYonetim_Setup_v4.2.exe",
-        "sha256": "F1B6316A4CC146D145F8D93664D7F31236362362E3102940F249A201DF0A2F4E",
-        "size": 51293458,
-        "status": "e479b5b build zincirinde yeniden uretildi; kontrollu yerinde upgrade ve installer C gecti"
+        "path": "installer_output/TeklifYonetim_Setup_v4.3.exe",
+        "sha256": "C276EF303B570B47FE1F46AA9D2849F7C804664C37CF3061475ED55CAC56460A",
+        "size": 51299628,
+        "status": "8054be0 build zincirinde uretildi; tam upgrade, uninstall ve temiz reinstall C zinciri gecti"
       },
       "packaging_input": {
         "spec_sha256": "253D6A6DC0529FBA9E47F9F944EA67F3B159536472CF4BD3F1ACE1390C734B67",
-        "iss_sha256": "59E75C075E77A2E572EB5CC2C6629A09CDA977F58D4FC91389AF39A2110CA5BE",
+        "iss_sha256": "ABD6CB5368163F3A4BB800F2C19A82961DE08AD9BA59BEC235A1AE0644041422",
+        "version_info_sha256": "70C01FB7F7A23CE1CF8B212CD34072C7E71F4E539BB5568C8729E463EFAC8044",
         "iss_tracked": true,
         "disable_windowed_traceback": true,
         "toc_evidence": "pyi-disable-windowed-traceback girdisi build TOC icinde dogrulandi"
       },
       "source_regressions": [
-        "packaging/Kurulum-Yap.bat --no-pause test kapisi: 1222 passed, 6 skipped, 345 subtests",
-        "tests/test_version_consistency.py + tests/test_project_guide.py: 149 passed, 6 skipped, 9 subtests",
-        "tests/test_pdf_console_logging.py: 1 passed",
-        "tests/test_regressions.py + tests/test_profit.py + tests/test_offer_archive_naming.py: 38 passed"
+        "packaging/Kurulum-Yap.bat --no-pause test kapisi: 1221 passed, 7 skipped, 345 subtests"
       ],
       "frozen_targeted_smoke": {
         "result": "GECTI",
         "covered_scenarios": [
-          "B-4 alt kapsami: paketli PDF uretimi ve cp1254 konsol logu"
+          "v4.3 dist EXE izole profilde ana pencereyi acti ve log Version: v4.3 yazdi",
+          "dist ile byte-esit kurulu EXE upgrade ve temiz reinstall sonrasinda v4.3 olarak acildi ve normal kapandi"
         ],
         "B4_pdf_console": {
           "result": "GECTI",
@@ -159,32 +158,33 @@
             "canli izole DB ve kapanis yedegi integrity_check=ok; normal kapanis exit 0; gercek kullanici veri/yedek sayimlari degismedi"
           ]
         },
-        "scope_limit": "B-4 PDF/cp1254 kaniti 841ab4c paketli EXE'sinde alindi; e479b5b yalniz installer recetesi/test/politika degisikligidir ve uygulama runtime kaynagini degistirmez. Bu tarihsel hedefli kanit final artifact hash'ine ozgu tam B turu olarak genellenmez."
+        "scope_limit": "Yeni dist penceresi otomasyon hedef listesine kaydolmadigi icin o surec zorla kapatildi; bu kosu normal kapanis kaniti sayilmaz. Ayni SHA-256'ya sahip kurulu EXE iki ayri smoke'ta Alt+F4 ile normal kapandi. Tam B-1..B-9 turu yeniden kosulmadi."
       },
       "installed_app_smoke": {
         "result": "GECTI",
         "environment": "sekiz profil/temp degiskeni izole kok altinda; fail.Keyring; HTTP/HTTPS/ALL proxy 127.0.0.1:9; NO_PROXY bos",
         "evidence": [
-          "final kurulu EXE logunda ana pencere acildi",
+          "upgrade ve temiz reinstall sonrasinda iki ayri final kurulu EXE smoke'unda ana pencere acildi ve gorunen surum v4.3 oldu",
           "beklenen fail.Keyring guvenli depo hatasi izole profilde kaydedildi; gercek credential erisimi yok",
-          "kapanis yedegi olustu; veritabani baglantisi kapandi; cikis kodu 0",
+          "her iki smoke Alt+F4 ile normal kapandi; kapanis yedegi olustu, veritabani baglantisi kapandi ve cikis kodu 0 oldu",
           "TeklifYonetim sureci kalmadi; gercek veri/yedek manifestleri degismedi"
         ],
-        "scope_limit": "Ayni uygulama runtime kaynagi onceki kurulu UI smoke'larda v4.2 ana ekranla goruntulendi. Final computer-use yakalamasi fiziksel Esc ile durduruldu; uygulamanin calistigi kullanici tarafindan da gozlemlendi. Tekrarli UI smoke riskle orantisiz oldugu icin yeniden kosulmadi."
+        "scope_limit": "Smoke'lar izole profilde fail.Keyring ve loopback proxy ile yapildi; gercek Credential Manager veya ag kullanilmadi."
       },
       "installer_validation": {
         "result": "GECTI",
-        "scope": "kontrollu yerinde upgrade; uninstall ve temiz reinstall yok",
+        "scope": "v4.2 -> v4.3 yerinde upgrade, kurulu smoke, uninstall, temiz reinstall ve ikinci kurulu smoke",
         "evidence": [
           "installer /SILENT /NORESTART /LOG cikis 0; Installation process succeeded; restart gerekmedi",
           "kurulu EXE SHA256 final dist EXE ile birebir ayni",
           "kurulu paket agaci dist ile birebir: eksik 0, fazla 0, degisen 0; yalniz unins000 metadata dosyalari haric",
           "eski _internal/libcrypto-3-x64.dll ve libssl-3-x64.dll kontrollu upgrade ile silindi; izlenen ISS yalniz bu iki kesin dosyayi hedefler",
-          "registry DisplayVersion v4.2, AppId ve kurulum dizini korundu",
-          "gercek kullanici verisi 34/34 ve yedekler 12/12 byte/hash olarak degismedi; database integrity_check=ok"
+          "registry DisplayVersion v4.3, AppId ve kurulum dizini dogrulandi; installer yonetimli kisayollar kaldirmada silindi ve reinstall'de geri geldi; kullaniciya ait ozel kisayol korundu",
+          "uninstall sonrasi Program Files kurulum dizini ve uninstall registry kaydi kalmadi",
+          "gercek kullanici verisi 34/34 ve yedekler 12/12 tum zincirde byte/hash olarak degismedi; database integrity_check=ok ve foreign_key_check temiz"
         ],
-        "rollback": "<ROLLBACK_ROOT> altinda kurulum, kullanici verisi, yedek, registry ve kisayol kopyalari korunuyor",
-        "manual_user_intervention": "UAC onaylari kullanici tarafindan elle verildi; UAC otomatiklestirilmedi"
+        "rollback": "<ROLLBACK_ROOT>/OMS-v43-Rollback-20260823-8054be0 altinda kurulum, kullanici verisi, yedek, registry ve dort kisayol kopyasi korunuyor",
+        "manual_user_intervention": "Upgrade, uninstall ve temiz reinstall icin UC UAC onayi kullanici tarafindan elle verildi; UAC otomatiklestirilmedi"
       }
     },
     "previous_targeted_validation_build": {
@@ -200,10 +200,16 @@
     },
     "frozen_smoke": {
       "result": "GECTI",
-      "verified_for_version": "v4.2",
-      "date": "2026-08-02",
-      "artifact_sha256_prefix": "47601526",
-      "scope": [
+      "verified_for_version": "v4.3",
+      "date": "2026-08-23",
+      "artifact_sha256_prefix": "BDEE8AA1",
+      "v43_scope": [
+        "v4.3 dist EXE izole profil, fail.Keyring ve loopback proxy ile ana pencereyi acti; log Version: v4.3 ve DB integrity_check=ok",
+        "dist penceresi otomasyon hedef listesine kaydolmadigi icin surec zorla kapatildi; bu kosu normal kapanis kaniti sayilmadi",
+        "dist ile byte-esit kurulu EXE upgrade ve temiz reinstall sonrasinda iki kez gorunen v4.3 arayuzuyle acildi; Alt+F4, kapanis yedegi, DB close ve exit 0 dogrulandi",
+        "gercek veri 34/34 ve yedekler 12/12 degismedi; tam B-1..B-9 matrisi yeniden kosulmadi"
+      ],
+      "historical_v42_scope": [
         "izole profilde açılış: ana pencere açıldı, kenar çubuğu sürümü v4.2, log 'Version: v4.2'",
         "veri/log/yedek klasörleri yalnız izole kökte oluştu; gerçek profile yazım yok",
         "null keyring: HİÇ modal açılmadı, ana pencere enabled",
@@ -214,13 +220,13 @@
         "logda 0xC0000409 / QThread destroyed / Traceback YOK",
         "indirme, tarayıcı, e-posta istemcisi ve TeklifUpdate klasörü oluşmadı"
       ],
-      "not_covered": [
+      "historical_v42_not_covered": [
         "bildirim penceresi İÇİNDE Panoya Kopyala tıklaması ve pano içeriğinin doğrulanması — QPlainTextEdit Tab'ı yuttuğu ve Qt açılır menüsü UIA Invoke'unu blokladığı için frozen modda otomatikleştirilemedi (kaynak testleriyle örtülüdür; frozen kanıt YERİNE GEÇMEZ)",
         "teknik hata kutusu → 'Hata Raporla' düğmesi ve tek-form pencere — frozen modda tetiklenemedi (aynı sınır)",
         "B-4 temel UI akışı (müşteri/ürün/teklif/PDF), B-6 uzun worker ile kapanış, B-7 restart, B-9 modal/progress (O16) — bu turda TEKRARLANMADI: ilgili kod v4.1'den beri değişmedi"
       ],
       "isolation": "izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/HOMEDRIVE/HOMEPATH/TMP/TEMP + loopback proxy (127.0.0.1:9); gerçek kullanıcı verisi ve Credential Manager kullanılmadı",
-      "r12a_feedback_paths": {
+      "historical_v42_r12a_feedback_paths": {
         "date": "2026-08-02",
         "method": "üretim artifact'ine HOOK EKLENMEDİ; uygulama yalnız dışarıdan sürüldü (UI Automation ile OKUMA + gerçek fare tıklaması + gerçek klavye). İzole profil, loopback proxy; tarayıcı/e-posta/SMTP/ağ açılmadı.",
         "path_A_help_menu": {
@@ -266,9 +272,9 @@
     },
     "installer_test": {
       "result": "GECTI",
-      "verified_for_version": "v4.2",
-      "date": "2026-08-02",
-      "scope": [
+      "verified_for_version": "v4.3",
+      "date": "2026-08-23",
+      "historical_v42_scope": [
         "v4.1 -> v4.2 yerinde upgrade, yerel TeklifYonetim_Setup_v4.2.exe ile (/SILENT /NORESTART /LOG), exit 0, 7.2 s",
         "Inno log: 'Installation process succeeded', 'Need to restart Windows? No'",
         "kurulu EXE 9.476.704 B / 476015268A26...5353B — dist EXE ile BİREBİR AYNI",
@@ -279,16 +285,21 @@
         "kurulu v4.2 izole profil + null keyring + loopback proxy ile smoke edildi: açılış, gezinme, normal kapanış exit 0",
         "logda 0xC0000409 / QThread destroyed / Traceback YOK"
       ],
-      "skipped_scenarios": [
-        "uninstall (kaldırma)",
-        "aynı installer ile temiz reinstall",
-        "ikinci kurulu smoke"
+      "v43_scope": [
+        "v4.2 -> v4.3 yerinde upgrade exit 0; restart gerekmedi; kurulu EXE dist ile byte-esit",
+        "upgrade kurulum agaci dist ile birebir: eksik 0, fazla 0, degisen 0 (unins000.* haric); hedefli eski DLL'ler yok",
+        "upgrade sonrasi izole kurulu smoke: gorunen v4.3, Alt+F4, kapanis yedegi, DB close ve exit 0",
+        "uninstall exit 0; Program Files dizini, uninstall registry kaydi ve installer yonetimli kisayollar kaldirildi; kullanici ozel kisayolu korundu",
+        "ayni installer ile temiz reinstall exit 0; registry v4.3, AppId, kurulum yolu ve uc installer kisayolu dogrulandi",
+        "temiz reinstall sonrasi ikinci izole kurulu smoke: gorunen v4.3, Alt+F4, kapanis yedegi, DB close ve exit 0",
+        "gercek veri 34/34 ve yedekler 12/12 tum zincirde byte/hash degismedi; DB integrity_check=ok, foreign_key_check temiz"
       ],
-      "skipped_justification": "Installer mekanizması (AppId, SetupMutex, CloseApplications, PrepareToInstall, [Code] bölümü) v4.1'den beri DEĞİŞMEDİ; .iss dosyasında yalnız sürüm alanları güncellendi. Bu senaryolar v4.1 turunda (2026-07-31) TAM olarak yürütülmüş ve GEÇMİŞTİR — bkz. published_releases['v4.1'] ve AUDIT_HISTORY. Bu tur onların yerine geçmez; v4.2 için kaldırma/yeniden kurulum DOĞRULANMAMIŞTIR.",
+      "skipped_scenarios": [],
+      "skipped_justification": "Yok; tam C zinciri tamamlandi.",
       "user_data_preserved": true,
-      "user_data_evidence": "gerçek database.db upgrade öncesi ve sonrası BYTE-BİREBİR AYNI (1.921.024 B / AB7B8AE5722315C47DBFD3A26D4FE7B67F830440C11E5322779278B6371CA2D6); PRAGMA integrity_check=ok, foreign_key_check temiz (salt-okunur bağlantı, içerik satırı okunmadı); yedek kökü 20 dosya YENİ=0 SİLİNEN=0 DEĞİŞEN=0. Veri kökünde beliren database.db-wal/-shm dosyalarını installer değil, integrity_check bağlantısı oluşturdu.",
+      "user_data_evidence": "gercek veri koku 34/34 ve yedek koku 12/12 upgrade, uninstall ve temiz reinstall boyunca byte/hash olarak degismedi; PRAGMA integrity_check=ok ve foreign_key_check temiz.",
       "credential_manager_access": "get/set/delete = 0 (erişilmedi; izole smoke'lar null keyring)",
-      "manual_user_intervention": "TEK UAC onayı kullanıcı tarafından güvenli masaüstünde elle verildi; UAC otomatikleştirilmedi. Başka manuel adım YOK — R12a Yol B dâhil tüm UI navigasyonu dış otomasyonla yapıldı."
+      "manual_user_intervention": "UC UAC onayi kullanici tarafindan guvenli masaustunde elle verildi (upgrade, uninstall, temiz reinstall); UAC otomatiklestirilmedi."
     },
     "release": {
       "target_version": "v4.3",
@@ -298,8 +309,8 @@
       "existing_remote_tag": "v4.2",
       "existing_remote_tag_note": "uzakta en son tag v4.2; v4.3 tag'i henuz yok",
       "upstream_sync_must_be_verified_live": true,
-      "status": "preparing",
-      "note": "v4.3 surum alanlari hazirlaniyor; build, tag, GitHub Release ve canli updater kaniti henuz yoktur. Public v4.2 release kaniti asagidaki previous_v42 alanlarinda ve CURRENT_STATUS'ta tarihsel olarak korunur.",
+      "status": "artifact_verified_release_pending",
+      "note": "v4.3 temiz build, hedefli B ve tam installer C gecti. Release provenance kapisi henuz yesil olarak kaydedilmedi; tag, GitHub Release ve canli updater D1/D2 yapilmadi. Public v4.2 kaniti tarihsel olarak korunur.",
       "tag_commit": "",
       "tag_commit_note": "v4.3 tag'i ancak dogrulanmis build commit'ine olusturulacak; metadata commit'ine tasinmayacak.",
       "release_url": "",
@@ -384,8 +395,8 @@
         }
       }
     },
-    "version_prepare_commit": "a70879b",
-    "version_prepare_commit_note": "v4.3 surum alanlari a70879b temiz tabani uzerinde hazirlaniyor; kesin version_prepare_commit degeri commit sonrasi metadata turunda guncellenecek.",
+    "version_prepare_commit": "8054be0434c4b6a344f9b0dfaae004e4ab80911d",
+    "version_prepare_commit_note": "v4.3 surum alanlari ve build girdisi bu commit'te sabitlendi.",
     "published_releases": {
       "v4.1": {
         "target_version": "v4.1",
@@ -521,6 +532,6 @@
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
     },
-    "artifact_stale_reason": "Hedef surum v4.3'tur; R10a/R10b/R10c guvenli hata turlari, R12c provenance kapisi, acilis bildirimi ertelemesi, shutdown worker quiesce, duplicate frozen error dialog, PDF konsol log duzeltmesi ve izlenen Inno upgrade temizligini iceren guncel kaynak icin v4.3 artifact'i henuz uretilmedi. Elde edilen yayimlanmis artifact seti v4.2'ye aittir ve tarihsel dist EXE/installer proje kokunde bulunmaz; proje kokundeki e479b5b yerel EXE/installer da v4.2 kimligini tasir. v4.3 build edilip frozen ve installer kanitlari tamamlanmadan eski hashler yeni surum gibi etiketlenmez; release_candidate_ready=false kalir."
+    "artifact_stale_reason": ""
   }
 }
