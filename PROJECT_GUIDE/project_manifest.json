@@ -41,15 +41,15 @@
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "e46139322755469362b764fcb35e81aaa21802b5",
-    "source_commit_note": "Guncel islevsel kaynak: R7 acilis bildirimi splash sonrasina ertelendi ve Guvenli Depo uyarisi iki durumlu test ekranina baglandi. R10a guvenli hata ve R12c provenance zinciri korunur; 44 yuzey ve 188 preview durumu vardir. Yerel build betiginin dis PATH DLL'lerini paketlememesi tracked regresyon testiyle zorlanir.",
+    "source_commit": "17cd101d95430bcdd5a258ea2b779696b77db482",
+    "source_commit_note": "Guncel islevsel kaynak: R7 acilis bildirimi splash sonrasina ertelendi ve Guvenli Depo uyarisi iki durumlu test ekranina baglandi. R10a guvenli hata ve R12c provenance zinciri korunur; 44 yuzey ve 188 preview durumu vardir. Yerel build betiginin dis PATH DLL'lerini paketlememesi ve tirnakli Python yoluyla calismasi tracked regresyon testleriyle zorlanir.",
     "built_from_commit": "446fc780131dd77a8a4dcf630f8baa8287b367dd",
     "built_from_commit_note": "Yayimlanmis v4.3 artifact seti R10a ve R12c dahil bu temiz HEAD'den uretildi; R7 acilis bildirimi ve Guvenli Depo test ekrani degisikliklerini icermez, guncel kaynak icin eskidir.",
     "version": "v4.3",
     "artifact_built_for_version": "v4.3",
     "artifact_verification_status": "stale_source_changed",
     "release_candidate_ready": false,
-    "release_readiness_note": "Mevcut public v4.3 yayin kanitlari 446fc78 icin gecerlidir. e461393 R7 acilis bildirimi, Guvenli Depo test ekrani ve PATH kontaminasyonu regresyonu yeni temiz build ve frozen UI smoke ile dogrulanmadan guncel kaynak release adayi degildir.",
+    "release_readiness_note": "Mevcut public v4.3 yayin kanitlari 446fc78 icin gecerlidir. 17cd101 R7 acilis bildirimi, Guvenli Depo test ekrani ve build izolasyonu regresyonlari yeni temiz build ve frozen UI smoke ile dogrulanmadan guncel kaynak release adayi degildir.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -61,18 +61,18 @@
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
-      "passed": 1224,
+      "passed": 1225,
       "subtests_passed": 345,
       "date": "2026-08-23",
       "skipped": 6,
-      "note": "e461393 PATH kontaminasyonu regresyonu dahil beklenen tam suite sonucu; 345 subtest dahil. Temiz build kapisinda yeniden olculur."
+      "note": "17cd101 PATH kontaminasyonu ve tirnakli Python build komutu regresyonlari dahil beklenen tam suite sonucu; 345 subtest dahil. Temiz build kapisinda yeniden olculur."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 1224,
+      "passed": 1225,
       "subtests_passed": 345,
       "date": "2026-08-23",
-      "note": "e461393 PATH kontaminasyonu regresyonu dahil beklenen tam suite sonucu; source_test_result 648/29 baseline'i tarihsel olarak korunur.",
+      "note": "17cd101 build izolasyonu regresyonlari dahil beklenen tam suite sonucu; source_test_result 648/29 baseline'i tarihsel olarak korunur.",
       "skipped": 6
     },
     "dist_exe": {
@@ -647,6 +647,6 @@
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
     },
-    "artifact_stale_reason": "Yayimlanmis v4.3 artifact seti 446fc78 kaynaklidir; R10a ve R12c zincirini icerir fakat e461393 R7 acilis bildirimi, Guvenli Depo test ekrani ve dis PATH kontaminasyonu regresyonunu icermez. Artifact dosyalari su anda proje kokunde bulunmaz; ara buildler gecici kanit klasorlerine alinmistir. Yeni temiz build ve frozen UI smoke tamamlanmadan guncel kaynak icin release adayi sayilamaz."
+    "artifact_stale_reason": "Yayimlanmis v4.3 artifact seti 446fc78 kaynaklidir; R10a ve R12c zincirini icerir fakat 17cd101 R7 acilis bildirimi, Guvenli Depo test ekrani ve build izolasyonu regresyonlarini icermez. Artifact dosyalari su anda proje kokunde bulunmaz; ara buildler gecici kanit klasorlerine alinmistir. Yeni temiz build ve frozen UI smoke tamamlanmadan guncel kaynak icin release adayi sayilamaz."
   }
 }
