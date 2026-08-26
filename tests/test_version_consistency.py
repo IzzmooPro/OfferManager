@@ -430,6 +430,16 @@ class PaketlemeSurumTests(unittest.TestCase):
         self.assertNotIn('set "build_path=%path%', metin,
                          "kontrollü build PATH'i dış PATH'i miras alamaz")
 
+    def test_build_surumu_tirnakli_python_yoluyla_guvenli_okur(self):
+        self.assertTrue(BUILD_SCRIPT.is_file(), "yerel build betiği bulunamadı")
+        metin = BUILD_SCRIPT.read_text(encoding="utf-8").lower()
+        self.assertIn('"%python_exe%" -c "from core.constants import app_version;',
+                      metin)
+        self.assertIn('set /p app_version=<"%version_tmp%"', metin)
+        self.assertIn('del /q "%version_tmp%"', metin)
+        self.assertNotIn("for /f %%v in ('\"%python_exe%\"", metin,
+                         "FOR /F tam Python yolunun ilk tırnağını düşürebilir")
+
 class InstallerUpgradeTemizlikTests(unittest.TestCase):
     """İzlenen Inno reçetesinin upgrade temizliği her clone'da sınanır."""
 
