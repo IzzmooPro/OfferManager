@@ -37,19 +37,19 @@
     "clean_clone_buildable": false
   },
   "snapshot": {
-    "captured_at": "2026-08-23",
+    "captured_at": "2026-08-27",
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "17cd101d95430bcdd5a258ea2b779696b77db482",
-    "source_commit_note": "Guncel islevsel kaynak: R7 acilis bildirimi splash sonrasina ertelendi ve Guvenli Depo uyarisi iki durumlu test ekranina baglandi. R10a guvenli hata ve R12c provenance zinciri korunur; 44 yuzey ve 188 preview durumu vardir. Yerel build betiginin dis PATH DLL'lerini paketlememesi ve tirnakli Python yoluyla calismasi tracked regresyon testleriyle zorlanir.",
+    "source_commit": "270e2223c90b6c889f757f1e53c523dd5bb74c12",
+    "source_commit_note": "Guncel kaynak ve temiz build HEAD'i. R7 acilis bildirimi splash sonrasina ertelendi ve Guvenli Depo uyarisi iki durumlu test ekranina baglandi. R10a guvenli hata ve R12c provenance zinciri korunur; 44 yuzey ve 188 preview durumu vardir. Yerel build betiginin dis PATH DLL'lerini paketlememesi ve tirnakli Python yoluyla calismasi tracked regresyon testleriyle zorlanir.",
     "built_from_commit": "446fc780131dd77a8a4dcf630f8baa8287b367dd",
     "built_from_commit_note": "Yayimlanmis v4.3 artifact seti R10a ve R12c dahil bu temiz HEAD'den uretildi; R7 acilis bildirimi ve Guvenli Depo test ekrani degisikliklerini icermez, guncel kaynak icin eskidir.",
     "version": "v4.3",
     "artifact_built_for_version": "v4.3",
     "artifact_verification_status": "stale_source_changed",
     "release_candidate_ready": false,
-    "release_readiness_note": "Mevcut public v4.3 yayin kanitlari 446fc78 icin gecerlidir. 17cd101 R7 acilis bildirimi, Guvenli Depo test ekrani ve build izolasyonu regresyonlari yeni temiz build ve frozen UI smoke ile dogrulanmadan guncel kaynak release adayi degildir.",
+    "release_readiness_note": "Mevcut public v4.3 yayin kanitlari 446fc78 icin gecerlidir. 17cd101 R7 kaynak degisiklikleri 270e222 temiz yerel build ve hedefli frozen UI smoke ile dogrulandi; ancak ayni surum numarali yerel aday icin installer C ve yeni yayin yapilmadi. Public artifact alanlari degistirilmedi ve release_candidate_ready false kalir.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -63,16 +63,16 @@
       "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
       "passed": 1225,
       "subtests_passed": 345,
-      "date": "2026-08-23",
+      "date": "2026-08-27",
       "skipped": 6,
-      "note": "17cd101 PATH kontaminasyonu ve tirnakli Python build komutu regresyonlari dahil beklenen tam suite sonucu; 345 subtest dahil. Temiz build kapisinda yeniden olculur."
+      "note": "270e222 temiz build kapisinda gercek sonuc; 17cd101 PATH kontaminasyonu ve tirnakli Python build komutu regresyonlari dahil, 345 subtest."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
       "passed": 1225,
       "subtests_passed": 345,
-      "date": "2026-08-23",
-      "note": "17cd101 build izolasyonu regresyonlari dahil beklenen tam suite sonucu; source_test_result 648/29 baseline'i tarihsel olarak korunur.",
+      "date": "2026-08-27",
+      "note": "270e222 temiz build kapisinda gercek sonuc; 17cd101 build izolasyonu regresyonlari dahil. source_test_result 648/29 baseline'i tarihsel olarak korunur.",
       "skipped": 6
     },
     "dist_exe": {
@@ -188,6 +188,35 @@
         "rollback": "<ROLLBACK_ROOT>/OMS-v43-Rollback-20260823-446fc78 altinda 298 kurulum, 32 veri, 13 yedek, registry ve dort kisayol kopyasi byte/hash dogrulanmis olarak korunuyor",
         "manual_user_intervention": "Upgrade, uninstall ve temiz reinstall icin UC UAC onayi kullanici tarafindan elle verildi; UAC otomatiklestirilmedi"
       }
+    },
+    "r7_local_candidate": {
+      "status": "LOCAL_BUILD_AND_TARGETED_B_VERIFIED_NOT_PUBLISHED",
+      "built_from_commit": "270e2223c90b6c889f757f1e53c523dd5bb74c12",
+      "functional_source_commit": "17cd101d95430bcdd5a258ea2b779696b77db482",
+      "date": "2026-08-27",
+      "archive": "<R7_CANDIDATE_ARCHIVE>",
+      "build_gate": "1225 passed, 6 skipped, 345 subtests",
+      "build_script_sha256": "32B55D5D3BF0E2A786069399FBDDFFA26E9E68A0FBA56FBC9FFC6E4163490A1F",
+      "codex_runtime_toc_origins": 0,
+      "dist_exe": {
+        "sha256": "67EC8958CD542193CF6FB9822D32B45E9BBFC18216C66E50ED794C9FECE20F4E",
+        "size": 9723436,
+        "file_count": 256,
+        "tree_size": 168723696
+      },
+      "installer": {
+        "sha256": "15D27AFA7529F039C995E3A9BF2E73AB1F42978AD792EC149C23DFF04DD633E7",
+        "size": 50881775,
+        "installer_c_result": "NOT_RUN"
+      },
+      "frozen_r7_smoke": {
+        "result": "GECTI",
+        "null_keyring": "uyari 0; ana pencere 3.193 sn; normal WM_CLOSE; kapanis yedegi; DB close; exit 0; surec sizintisi 0",
+        "fail_keyring": "ana pencere 3.193 sn; Guvenli Depo 3.700 sn; splash sonrasi tek modal; ana pencere native disabled; otomatik Tamam; WM_CLOSE; exit 0; surec sizintisi 0",
+        "forbidden_log_markers": 0,
+        "real_profile_unchanged": "data 32 dosya / 2341254 bayt; backups 15 dosya / 11056957 bayt"
+      },
+      "scope_limit": "Yerel exact dist EXE icin R7 degisiklik-etkili B kanitidir. Installer C, tag, GitHub Release ve yayinlanmis artifact kaniti degildir."
     },
     "previous_targeted_validation_build": {
       "built_from_commit": "17117b077ab4cfd464e4d9c9ee4e805831a14007",
@@ -647,6 +676,6 @@
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
     },
-    "artifact_stale_reason": "Yayimlanmis v4.3 artifact seti 446fc78 kaynaklidir; R10a ve R12c zincirini icerir fakat 17cd101 R7 acilis bildirimi, Guvenli Depo test ekrani ve build izolasyonu regresyonlarini icermez. Artifact dosyalari su anda proje kokunde bulunmaz; ara buildler gecici kanit klasorlerine alinmistir. Yeni temiz build ve frozen UI smoke tamamlanmadan guncel kaynak icin release adayi sayilamaz."
+    "artifact_stale_reason": "Yayimlanmis v4.3 artifact seti 446fc78 kaynaklidir; R10a ve R12c zincirini icerir fakat 270e222 R7 acilis bildirimi, Guvenli Depo test ekrani ve build izolasyonu regresyonlarini icermez. Bu degisiklikler 270e222 yerel temiz build ve hedefli B smoke ile dogrulandi; exact aday proje disinda korunur ve public artifact dosyalari proje kokunde bulunmaz. Ayni surum numarali aday icin installer C ve yeni yayin yapilmadigindan public artifact kimlikleri degistirilmedi ve guncel kaynak release adayi sayilmaz."
   }
 }
