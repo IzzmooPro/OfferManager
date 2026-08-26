@@ -27,6 +27,7 @@ REHBER = KOK / "PROJECT_GUIDE"
 PACKAGING = KOK / "packaging"
 ISS = PACKAGING / "TeklifYonetim.iss"
 VERSION_INFO = PACKAGING / "version_info.txt"
+BUILD_SCRIPT = PACKAGING / "Kurulum-Yap.bat"
 VERIFY = REHBER / "scripts" / "verify_project_guide.py"
 
 # Hedef sürüm sözleşmesi
@@ -418,6 +419,16 @@ class PaketlemeSurumTests(unittest.TestCase):
         m = re.search(r'#define\s+MyAppVersion\s+"([^"]+)"', metin)
         self.assertEqual(m.group(1), APP_VERSION,
                          "Inno sürümü core/constants.py ile uyuşmuyor")
+
+    def test_build_pyinstaller_dis_path_bagimliliklarini_paketlemez(self):
+        self.assertTrue(BUILD_SCRIPT.is_file(), "yerel build betiği bulunamadı")
+        metin = BUILD_SCRIPT.read_text(encoding="utf-8").lower()
+        self.assertIn('set "python_exe=', metin)
+        self.assertIn('set "build_path=', metin)
+        self.assertIn('set "path=%build_path%"', metin)
+        self.assertIn('"%python_exe%" -m pyinstaller', metin)
+        self.assertNotIn('set "build_path=%path%', metin,
+                         "kontrollü build PATH'i dış PATH'i miras alamaz")
 
 class InstallerUpgradeTemizlikTests(unittest.TestCase):
     """İzlenen Inno reçetesinin upgrade temizliği her clone'da sınanır."""
