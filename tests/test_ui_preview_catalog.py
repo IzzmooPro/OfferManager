@@ -92,6 +92,17 @@ def test_catalog_schema_and_unique_ids():
     assert surfaces, "UI preview kataloğu boş olamaz"
     ids = [item["id"] for item in surfaces]
     assert len(ids) == len(set(ids)), "UI preview kimlikleri benzersiz olmalı"
+    secure = next(
+        (item for item in surfaces
+         if item["id"] == "modal.secure_storage_warning"),
+        None,
+    )
+    assert secure is not None, "Güvenli Depo uyarısının test ekranı yok"
+    assert secure["source"] == {
+        "path": "ui/settings_page.py",
+        "symbol": "acilis_kimlik_uyarisini_goster",
+    }
+    assert secure["states"] == ["read_error", "migration_cleanup_error"]
 
     allowed_kinds = {"window", "page", "dialog", "component", "runtime_modal"}
     allowed_priorities = {"critical", "standard", "supporting"}

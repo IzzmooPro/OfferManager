@@ -333,7 +333,7 @@ def run_all_scenarios_smoke(
     registry: ScenarioRegistry,
     context: ScenarioContext,
 ) -> dict[str, Any]:
-    """Katalogdaki 186 durumun tamamını gerçek widget olarak oluştur/kapat."""
+    """Katalogdaki bütün durumları gerçek widget olarak oluştur/kapat."""
     failed = []
     smoked = 0
     for scenario in registry.scenarios:

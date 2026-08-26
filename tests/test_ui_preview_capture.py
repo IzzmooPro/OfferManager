@@ -124,7 +124,7 @@ def test_identical_inputs_produce_identical_png_bytes(tmp_path):
     assert hashes[0] == hashes[1]
 
 
-def test_surface_capture_set_creates_43_item_theme_contact_sheet(tmp_path):
+def test_surface_capture_set_creates_44_item_theme_contact_sheet(tmp_path):
     output = tmp_path / "surface-capture"
     proc = _run(
         "--capture-surfaces", "--output", str(output),
@@ -133,14 +133,14 @@ def test_surface_capture_set_creates_43_item_theme_contact_sheet(tmp_path):
     )
     assert proc.returncode == 0, proc.stderr
     result = json.loads(proc.stdout)
-    assert result["captured"] == 43
+    assert result["captured"] == 44
     manifest = json.loads((output / "capture_manifest.json").read_text("utf-8"))
-    assert manifest["capture_count"] == 43
-    assert len({item["surface_id"] for item in manifest["captures"]}) == 43
+    assert manifest["capture_count"] == 44
+    assert len({item["surface_id"] for item in manifest["captures"]}) == 44
     assert {item["theme"] for item in manifest["captures"]} == {"dark"}
     assert {item["viewport"] for item in manifest["captures"]} == {"1100x700"}
     html = (output / "index.html").read_text("utf-8")
-    assert html.count('<article class="card">') == 43
+    assert html.count('<article class="card">') == 44
 
 
 def test_compare_generates_before_after_diff_and_html_without_baseline_update(tmp_path):

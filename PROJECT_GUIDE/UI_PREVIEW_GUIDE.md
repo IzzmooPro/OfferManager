@@ -107,11 +107,11 @@ python -m ui_preview --baseline-plan <CAPTURE_ROOT>\candidate\capture_manifest.j
 python -m ui_preview --baseline-accept <CAPTURE_ROOT>\candidate\capture_manifest.json --baseline-root <BASELINE_ROOT> --approval-token <PLAN_CIKTISINDAKI_TAM_TOKEN> --json
 ```
 
-Aşama 4 itibariyla 43 yüzey ve 186 durumun tamamı gerçek üretim widget
+Aşama 4 itibariyla 44 yüzey ve 188 durumun tamamı gerçek üretim widget
 factory'sine bağlıdır; `preview_status` değerleri `implemented` durumundadır.
 Sayfa, diyalog, runtime modal, splash ve bileşenler için kopya, HTML veya
 placeholder UI üretilmez. `--smoke-surfaces` her yüzeyden bir temsilciyi,
-`--smoke-all` ise 186 durumun tamamını tek izole preview profilinde oluşturup
+`--smoke-all` ise 188 durumun tamamını tek izole preview profilinde oluşturup
 kapatır.
 
 Splash widget'ı önizlenebilirlik için `ui/startup_splash.py` içindeki
@@ -126,7 +126,7 @@ değişmez.
 
 ## Aşama 5 — capture ve karşılaştırma raporu
 
-Tek senaryo veya 43 yüzeylik temsilci seti gerçek widget'tan PNG olarak
+Tek senaryo veya 44 yüzeylik temsilci seti gerçek widget'tan PNG olarak
 yakalanabilir. Her capture seti şunları içerir:
 
 - `capture_manifest.json`: senaryo, sınıf, sentetik profil, tema, viewport,
@@ -149,7 +149,7 @@ baseline güncelleme seçeneği yoktur; açık kullanıcı onaylı akış aşağ
 
 ## Aşama 6 — geometri ve değiştirilemez baseline
 
-`--geometry-surfaces` 43 yüzeyin ilk temsilcisini, `--geometry-all` ise 186
+`--geometry-surfaces` 44 yüzeyin ilk temsilcisini, `--geometry-all` ise 188
 durumun tamamını gerçek widget olarak açıp denetler. Görünür ve kullanılabilir
 alanı olduğu hâlde sıfır boyutta kalan widget `critical`; tek satırlık label
 ve button metin taşmaları `warning` olarak raporlanır. Qt'nin boş tabloya ait

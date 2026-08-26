@@ -25,6 +25,7 @@
     {"surface_id":"dialog.date_picker","factory":"ui_preview.scenarios.dialogs:make_date_picker","presentation":"standalone","expected_class":"PySide6.QtWidgets.QDialog"},
     {"surface_id":"window.startup_splash","factory":"ui_preview.scenarios.runtime:make_startup_splash","presentation":"standalone","expected_class":"ui.startup_splash.StartupSplash"},
     {"surface_id":"modal.expired_offers","factory":"ui_preview.scenarios.runtime:make_expired_offers","presentation":"standalone","expected_class":"PySide6.QtWidgets.QMessageBox"},
+    {"surface_id":"modal.secure_storage_warning","factory":"ui_preview.scenarios.runtime:make_secure_storage_warning","presentation":"standalone","expected_class":"PySide6.QtWidgets.QMessageBox"},
     {"surface_id":"modal.pdf_created","factory":"ui_preview.scenarios.runtime:make_pdf_created","presentation":"standalone","expected_class":"PySide6.QtWidgets.QMessageBox"},
     {"surface_id":"modal.customer_registration","factory":"ui_preview.scenarios.runtime:make_customer_registration","presentation":"standalone","expected_class":"PySide6.QtWidgets.QMessageBox"},
     {"surface_id":"modal.existing_offer_items","factory":"ui_preview.scenarios.runtime:make_existing_offer_items","presentation":"standalone","expected_class":"PySide6.QtWidgets.QMessageBox"},

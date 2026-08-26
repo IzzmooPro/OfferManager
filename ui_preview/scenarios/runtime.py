@@ -65,6 +65,48 @@ def make_expired_offers(context: ScenarioContext):
     return box
 
 
+def make_secure_storage_warning(context: ScenarioContext):
+    from PySide6.QtWidgets import QMessageBox
+    from ui.settings_page import SettingsPage
+
+    messages = {
+        "read_error": (
+            "Kayıtlı SMTP şifresi güvenli depodan OKUNAMADI.\n"
+            "Şifre alanı boş görünüyor; bu, şifrenin silindiği anlamına gelmez. "
+            "Kaydetmeden önce güvenli depo sorununu giderin."
+        ),
+        "migration_cleanup_error": (
+            "SMTP şifresi güvenli depoya taşındı ancak ayar dosyasındaki düz "
+            "metin kopya KALDIRILAMADI.\nŞifrenin iki kopyası bulunabilir; "
+            "Ayarlar'ı yeniden kaydetmeyi deneyin."
+        ),
+    }
+    page = SettingsPage()
+    page._acilis_kimlik_uyarisi = messages[context.state]
+    captured = []
+
+    def _capture(parent, title, text, *_args, **_kwargs):
+        box = QMessageBox(
+            QMessageBox.Icon.Warning,
+            title,
+            text,
+            QMessageBox.StandardButton.Ok,
+            parent,
+        )
+        captured.append(box)
+        return QMessageBox.StandardButton.Ok
+
+    with patch.object(QMessageBox, "warning", _capture):
+        shown = page.acilis_kimlik_uyarisini_goster(page)
+    if not shown or len(captured) != 1:
+        page.deleteLater()
+        raise RuntimeError("Güvenli Depo runtime modalı üretilemedi")
+    box = captured[0]
+    box.setParent(None)
+    page.deleteLater()
+    return box
+
+
 def make_pdf_created(context: ScenarioContext):
     from ui.dashboard_page import DashboardPage
 

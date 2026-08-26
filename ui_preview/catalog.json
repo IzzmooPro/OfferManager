@@ -236,6 +236,15 @@
       "preview_status": "implemented"
     },
     {
+      "id": "modal.secure_storage_warning",
+      "kind": "runtime_modal",
+      "title": "Güvenli Depo açılış uyarısı",
+      "source": {"path": "ui/settings_page.py", "symbol": "acilis_kimlik_uyarisini_goster"},
+      "priority": "critical",
+      "states": ["read_error", "migration_cleanup_error"],
+      "preview_status": "implemented"
+    },
+    {
       "id": "modal.pdf_created",
       "kind": "runtime_modal",
       "title": "PDF oluşturma sonucu",

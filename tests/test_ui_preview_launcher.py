@@ -32,8 +32,8 @@ def _run_preview(*args: str) -> subprocess.CompletedProcess[str]:
 def test_registry_references_only_catalogued_surface_states():
     registry = ScenarioRegistry.load()
     assert registry.catalog_status == "geometry_baseline_ready"
-    assert registry.surface_count == 43
-    assert registry.scenario_count == 186
+    assert registry.surface_count == 44
+    assert registry.scenario_count == 188
     assert registry.missing_state_count == 0
 
     ids = [scenario.id for scenario in registry.scenarios]
@@ -90,9 +90,9 @@ def test_cli_list_is_read_only_and_machine_readable():
     assert proc.returncode == 0, proc.stderr
     data = json.loads(proc.stdout)
     assert data["catalog_status"] == "geometry_baseline_ready"
-    assert data["surface_count"] == 43
-    assert data["scenario_count"] == 186
-    assert len(data["scenarios"]) == 186
+    assert data["surface_count"] == 44
+    assert data["scenario_count"] == 188
+    assert len(data["scenarios"]) == 188
 
 
 def test_cli_check_validates_registry_without_starting_qt():
@@ -161,8 +161,8 @@ def test_launcher_smoke_exposes_catalog_and_controls():
     assert proc.returncode == 0, proc.stderr
     data = json.loads(proc.stdout)
     assert data["ok"] is True
-    assert data["surface_count"] == 43
-    assert data["implemented_scenarios"] == 186
+    assert data["surface_count"] == 44
+    assert data["implemented_scenarios"] == 188
     assert data["themes"] == ["light", "dark"]
     assert data["viewports"] == ["1100x700", "1300x800", "1600x900", "1920x1080"]
     assert data["dpi"] == 125

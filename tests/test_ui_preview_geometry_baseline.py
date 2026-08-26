@@ -97,7 +97,7 @@ def test_geometry_surface_cli_checks_every_catalog_surface_without_critical_erro
     assert proc.returncode == 0, proc.stderr
     result = json.loads(proc.stdout)
     assert result["ok"] is True
-    assert result["checked"] == 43
+    assert result["checked"] == 44
     assert result["critical_count"] == 0
     assert result["text_metrics_reliable"] is False
     assert result["warning_count"] == 0
