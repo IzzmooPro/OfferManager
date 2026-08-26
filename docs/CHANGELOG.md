@@ -8,8 +8,10 @@
 - Güvenli depodaki SMTP parolası okunamadığında uyarı artık splash ekranı
   sırasında açılışı kesmiyor; ana pencere görünür olduktan sonra yalnız bir kez
   gösteriliyor.
-- Bu değişiklik `1458e7e` kaynağındadır. Mevcut public v4.3 paketi `446fc78`
-  kaynaklı olduğundan yeni build ve frozen UI doğrulaması bekleniyor.
+- Runtime değişikliği `1458e7e` kaynağındadır; `c6c7cdf` ile aynı uyarının
+  iki güvenli durumunu gösteren ayrı test ekranı da eklendi. Mevcut public v4.3
+  paketi `446fc78` kaynaklı olduğundan yeni build ve frozen UI doğrulaması
+  bekleniyor.
 
 ## [v4.3] — 2026-08-23
 
