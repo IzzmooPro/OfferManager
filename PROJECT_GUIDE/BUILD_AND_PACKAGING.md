@@ -42,9 +42,14 @@ başka native DLL klasörleri pakete yanlış bağımlılık olarak girmez.
 - Sabit `AppId` (upgrade aynı kaydı günceller), `DefaultDirName={autopf}\Teklif Yönetim`, `PrivilegesRequired=admin`, `ArchitecturesInstallIn64BitMode=x64compatible`.
 - `UsePreviousAppDir=yes`, `UsePreviousTasks=yes`.
 - `[Files]`: yalnız `dist\TeklifYonetim\*` → `{app}` (`ignoreversion recursesubdirs createallsubdirs`).
-- `[InstallDelete]`: yalnız yeni pakette artık bulunmayan iki eski OpenSSL adı
-  (`_internal\libcrypto-3-x64.dll`, `_internal\libssl-3-x64.dll`) yerinde
-  yükseltmede silinir. Joker, klasör veya kullanıcı verisi temizliği yoktur.
+- `[InstallDelete]`: yeni pakette artık bulunmayan iki eski OpenSSL adı
+  (`_internal\libcrypto-3-x64.dll`, `_internal\libssl-3-x64.dll`), exact
+  `_internal\ucrtbase.dll` ve yalnız uygulamanın yönettiği `_internal`
+  içindeki `api-ms-win-*.dll` ailesi yerinde yükseltmede silinir. Bu dar joker
+  klasör/kullanıcı verisine uzanmaz; yeni dist aynı adlı bir dosyayı içerirse
+  sonraki `[Files]` aşaması onu yeniden yazar. Klasör veya recursive temizlik
+  yoktur. Gereksinim gerçek v4.3 → v4.4 upgrade ölçümünde kalan 40 eski runtime
+  DLL'iyle kanıtlandı; sözleşme `tests/test_version_consistency.py` ile zorlanır.
 - `[Icons]`: grup kısayolu, kaldırma kısayolu, isteğe bağlı masaüstü kısayolu (varsayılan işaretli).
 - `[Run]`: kurulum sonrası uygulamayı açar — `skipifsilent` olduğu için sessiz kurulumda açılmaz.
 - `[Code]`: `InitializeUninstall` (Inno 7 kaldırıcı hatasını atlatmak için **silinmez**) ve `PrepareToInstall` içinde `taskkill /F /IM TeklifYonetim.exe`.

@@ -7,7 +7,7 @@ covers:
   - core/app_paths.py
   - ui/dialogs/backup_manager.py
   - main.py
-last_verified_commit: 2fbb931
+last_verified_commit: 8fe66bd
 last_verified_date: 2026-08-27
 volatile: false
 ---
@@ -120,9 +120,9 @@ D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater 
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
-**A sınıfı — güncel kaynak (2026-08-27):** `1224 passed, 7 skipped, 346 subtests` (`2fbb93109944873e9887918d1f6ce9424a882024` v4.4 kaynak hazırlığı). `compileall` temizdir. R7 açılış bildirimi, iki durumlu Güvenli Depo test ekranı ve dış PATH/tırnaklı Python komutu regresyonları korunur. Yedi skip, v4.4 artifact ve buna ait B/C kanıtı bulunmayan ara duruma aittir.
+**A sınıfı — güncel kaynak (2026-08-27):** `1226 passed, 5 skipped, 346 subtests` (`8fe66bd504096b58c0a3be73aab541a98d69606b` build HEAD'i üzerine installer upgrade temizleme düzeltmesi ve regresyon testi; henüz commit/build yok). R7 açılış bildirimi, iki durumlu Güvenli Depo test ekranı ve dış PATH/tırnaklı Python komutu regresyonları korunur. Exact build anı sonucu ayrı ve tarihsel olarak `1224 passed, 7 skipped, 346 subtests` kalır; yeni düzeltme build edilmeden mevcut artifact'a aktarılmaz.
 
-**v4.4 A→B/C boşluğu:** Sürüm kaynakları v4.4 olarak eşitlendi; eldeki public artifact, frozen B ve installer C kanıtı v4.3 içindir. Yeni temiz v4.4 build alınıp hedefli frozen smoke ve installer zinciri tamamlanmadan v4.4 için B/C veya release adaylığı iddia edilmez.
+**v4.4 A→B/C durumu:** Exact `82630D4B…D809FA86` v4.4 EXE için değişiklik-etkili B geçti. Null-keyring: modal 0, ikinci örnek exit 0 ve ilk süreç yaşadı. Fail-keyring: tek Güvenli Depo modalı, ana pencere native disabled, modal enabled; varsayılan Enter sonrası ana pencere enabled. İki tur WM_CLOSE, tek kapanış yedeği, DB close, exit 0; iki DB integrity_check=ok; forbidden log marker/süreç sızıntısı 0. Gerçek profil ve yedek manifestleri değişmedi. Computer Use ve gerçek Credential Manager kullanılmadı. Kapsam B-1/B-2/B-3/B-5'tir; B-4/B-6/B-7/B-8/B-9 tekrarlanmadı ve tarihsel kanıtları exact v4.4'e devredilmedi. İlk C upgrade denemesi exit 0 ve exact v4.4 EXE/registry verdi fakat kurulum ağacında 40 eski runtime DLL'i bıraktığı için **KIRMIZI** durduruldu; uninstall/reinstall'e geçilmedi. Dar `[InstallDelete]` düzeltmesi kaynakta ve regresyon testinde hazırdır, fakat yeni build/B/C yapılmadan kanıt sayılmaz. Durum `installer_pending`, release adaylığı false.
 
 **R7 hedefli B sonucu:** `270e222` temiz girdisinden kontrollü PATH ile üretilen exact `67EC8958…CE20F4E` EXE iki izole turda doğrulandı. Null-keyring: ana pencere, uyarı 0, WM_CLOSE, kapanış yedeği, DB close, exit 0. Fail-keyring: gerçek 1300×800 ana pencere 3,193 sn'de, Güvenli Depo 3,700 sn'de; splash sonrası tek modal, ana pencere native disabled, varsayılan Tamam otomatik klavye olayıyla kabul edildi; WM_CLOSE, kapanış yedeği, DB close, exit 0. İki turda da süreç sızıntısı ve `Traceback`/`QThread: Destroyed`/`0xC0000409` 0. Gerçek profil envanteri `32 / 2.341.254 B`, yedek envanteri `15 / 11.056.957 B` olarak korundu. Bu hedefli B kanıtı installer C veya yayın kanıtı değildir.
 

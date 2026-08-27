@@ -443,8 +443,14 @@ class PaketlemeSurumTests(unittest.TestCase):
 class InstallerUpgradeTemizlikTests(unittest.TestCase):
     """İzlenen Inno reçetesinin upgrade temizliği her clone'da sınanır."""
 
-    def test_yalniz_bilinen_eski_dllleri_siler(self):
-        """Upgrade temizliği kullanıcı dosyalarına uzanan joker içeremez."""
+    def test_yalniz_uygulama_icindeki_bilinen_eski_runtime_dlllerini_siler(self):
+        """Upgrade temizliği yalnız yönetilen ``_internal`` DLL'lerine uzanır.
+
+        v4.3 -> v4.4 gerçek upgrade ölçümünde yeni dist'te bulunmayan 39
+        ``api-ms-win-*.dll`` ile ``ucrtbase.dll`` kurulum ağacında kaldı.
+        Dar joker yalnız bu ad ailesini hedefler; gelecekte yeni dist aynı
+        dosyalardan birini yeniden içerirse ``[Files]`` aşaması onu geri yazar.
+        """
         self.assertTrue(ISS.is_file(), "izlenen Inno reçetesi bulunamadı")
         metin = ISS.read_text(encoding="utf-8")
         bolum = re.search(
@@ -458,12 +464,16 @@ class InstallerUpgradeTemizlikTests(unittest.TestCase):
         self.assertEqual(satirlar, [
             'Type: files; Name: "{app}\\_internal\\libcrypto-3-x64.dll"',
             'Type: files; Name: "{app}\\_internal\\libssl-3-x64.dll"',
+            'Type: files; Name: "{app}\\_internal\\api-ms-win-*.dll"',
+            'Type: files; Name: "{app}\\_internal\\ucrtbase.dll"',
         ])
         for satir in satirlar:
-            self.assertNotRegex(satir, r"[*?]",
-                                "upgrade temizliği joker içeremez")
             self.assertNotIn("filesandordirs", satir.lower())
             self.assertNotIn("recursesubdirs", satir.lower())
+        jokerli = [satir for satir in satirlar if re.search(r"[*?]", satir)]
+        self.assertEqual(jokerli, [
+            'Type: files; Name: "{app}\\_internal\\api-ms-win-*.dll"',
+        ], "yalnız dar api-ms-win DLL jokerine izin verilir")
 
 
 class UpdaterKarsilastirmaTests(unittest.TestCase):

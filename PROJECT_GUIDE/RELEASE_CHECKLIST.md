@@ -56,7 +56,7 @@ Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı öl
 - [ ] `python PROJECT_GUIDE/scripts/verify_project_guide.py --release` → **exit 0**; provenance açısından da temiz. **Bu geçmeden tag ve release YAPILMAZ.**
 - [ ] Local-only `packaging/` ve `assets/` girdileri **ayrıca** hash/envanter/build incelemesiyle doğrulandı — provenance kapısı bunların geçmişini kanıtlamaz ([CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md))
 
-> **2026-08-27 v4.4 kaynak hazırlığında `--release` için `exit 1` BEKLENİR.** Elde bulunan yayımlanmış artifact v4.3'tür; v4.4 için yeni temiz build, frozen B ve installer C henüz yoktur. 3–5. adımlar exact v4.4 artifact üzerinde tamamlanmadan `release_candidate_ready` true yapılmaz ve tag/Release oluşturulmaz.
+> **2026-08-27 v4.4 installer düzeltmesi çalışma ağacındayken `--release` için `exit 1` BEKLENİR.** Exact v4.4 temiz build ve değişiklik-etkili B geçti; ilk C upgrade denemesi kurulum ağacında 40 eski runtime DLL'i bıraktığı için kırmızı durduruldu. Dar `[InstallDelete]` düzeltmesi ve regresyon testi mevcut artifact'tan sonra değişti; yeni temiz build, B ve tam C tamamlanmadan `release_candidate_ready` true yapılmaz, tag/Release oluşturulmaz.
 
 ## 4. Paketli doğrulama (kanıt sınıfı B)
 

@@ -50,10 +50,14 @@ Name: "desktopicon"; Description: "Masaüstü kısayolu oluştur"; GroupDescript
 
 [InstallDelete]
 ; Önceki Python/PyInstaller tabanından kalan, yeni pakette artık bulunmayan
-; OpenSSL DLL'lerini yerinde yükseltmede temizle. Yalnız bu iki kesin dosya
-; hedeflenir; kullanıcı dosyalarını etkileyebilecek joker/klasör silme yoktur.
+; DLL'leri yerinde yükseltmede temizle. api-ms-win jokeri yalnız uygulamanın
+; yönettiği _internal içindeki bu kesin ad ailesine uzanır; [Files] sonradan
+; yeni dist'te bulunan aynı adlı dosyaları yeniden yazar. Klasör veya kullanıcı
+; verisi silinmez.
 Type: files; Name: "{app}\_internal\libcrypto-3-x64.dll"
 Type: files; Name: "{app}\_internal\libssl-3-x64.dll"
+Type: files; Name: "{app}\_internal\api-ms-win-*.dll"
+Type: files; Name: "{app}\_internal\ucrtbase.dll"
 
 [Files]
 ; onedir: PyInstaller çıktısı klasör halinde (exe + _internal\) — tamamı kurulur
