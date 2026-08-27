@@ -10,15 +10,15 @@ volatile: true
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-08-27 · hedef sürüm: `v4.4` — TEMİZ BUILD + HEDEFLİ B + TAM INSTALLER C GEÇTİ; RELEASE BELGE KAPISI KIRMIZI.**
-> Public/latest sürüm **v4.3**'tür ve tarihsel yayın kanıtı geçerlidir. Exact `35f23ac` v4.4 artifact seti temiz build, hedefli B ve tam C zincirini geçti. Yalnız izinli kanıt dosyaları güncellendi; v4.4 tag/Release ve D1/D2 henüz yapılmadı.
+> **Yakalama tarihi: 2026-08-27 · hedef sürüm: `v4.4` — BUILD + B + C + PUBLIC RELEASE + CANLI D1/D2 GEÇTİ.**
+> Public/latest sürüm **v4.4**'tür. Exact `35f23ac` artifact seti temiz build, hedefli B, tam C, anotasyonlu tag, tek installer asset’li GitHub Release ve paketli v4.3 → public v4.4 canlı güncelleme zincirini geçti.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
 - Hedef sürüm: **v4.4** — tek kaynak `core/constants.py:APP_VERSION`; Inno `.iss` (`MyAppVersion`, `VersionInfoVersion`, `VersionInfoProductVersion`) ve `version_info.txt` (`4.4.0.0` / `v4.4`) eşitlendi; hedef installer adı `TeklifYonetim_Setup_v4.4.exe`
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
-- **v4.4 güncel durum:** `35f23ac` exact HEAD'inden temiz v4.4 EXE ve installer üretildi; `1225 passed, 6 skipped, 346 subtests`, değişiklik-etkili frozen B ve tam installer C geçti. Upgrade ve temiz reinstall ağaçları dist ile `256/256`, fark `0/0/0`; eski runtime DLL sayısı `0`. `artifact_verification_status = verified`, `release_candidate_ready = true`.
+- **v4.4 güncel durum:** `35f23ac` exact HEAD'inden temiz v4.4 EXE ve installer üretildi; `1225 passed, 6 skipped, 346 subtests`, değişiklik-etkili frozen B ve tam installer C geçti. Anotasyonlu `v4.4` tag exact build commit’ini gösteriyor; public/latest Release ve tek asset read-back temiz; canlı D1 ve paketli v4.3 → v4.4 D2 geçti.
 - v4.3 dist EXE: `C037CB3AEF6F…F0ED9AD` (9.722.873 B, FileVersion `4.3.0.0`, ProductVersion `v4.3`) · installer: `TeklifYonetim_Setup_v4.3.exe` `7D7516BC2746…94B8EE` (51.289.869 B). Public v4.2 artifact kimlikleri tarihsel kayıtlarda korunur.
 - **Makinede kurulu sürüm v4.4** — exact `4D074FB0…B5FC1` installer ile tam C zincirinin temiz yeniden kurulum sonu. Kurulu EXE `ACABD2DE…53FF8` dist ile byte-birebir aynı; registry `DisplayVersion v4.4`, aynı AppId ve kurulum yolu doğrulandı. Ana DB hash'i rollback snapshotıyla aynı; DB `integrity_check=ok`, `foreign_key_check` temiz.
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
@@ -43,7 +43,16 @@ volatile: true
 - Rollback: `<USER_DOCUMENTS>/OMS-v44-C-Rollback-20260827-0d9b6c2-20260827-104943`; snapshot anında kurulum `258/258`, veri `32/32`, yedek `16/16`, kopya farkı `0/0/0`; registry ve dört kısayol kopyası; kopya DB `integrity_check=ok`, FK `0`.
 - Üç yükseltilmiş işlem exit `0`, restart yok. Kaldırmada kurulum klasörü/registry/üç installer kısayolu kalktı, özel `AIO` kısayolu korundu; reinstall sonunda registry v4.4 ve dört kısayol hedefi doğru.
 - Ana DB `312C189C…9D0CE` rollback snapshotıyla aynı kaldı. Salt-okunur DB probunun oluşturduğu `database.db-wal` (`0 B`) ve `database.db-shm` (`32.768 B`) installer değişikliği sayılmadı; ardından veri `32/32`, yedek `16/16` hashleri uninstall/reinstall ve kurulu smoke'larda korundu.
-- Upgrade ve reinstall sonrası toplam dört izole kurulu smoke null/fail-keyring ile geçti; Computer Use ve gerçek Credential Manager kullanılmadı. **Kapsam sınırı:** B-1/B-2/B-3/B-5 doğrulandı; B-4/B-6/B-7/B-8/B-9 tekrarlanmadı. Tag, GitHub Release ve canlı updater D1/D2 yapılmadı.
+- Upgrade ve reinstall sonrası toplam dört izole kurulu smoke null/fail-keyring ile geçti; Computer Use ve gerçek Credential Manager kullanılmadı. **Kapsam sınırı:** B-1/B-2/B-3/B-5 doğrulandı; B-4/B-6/B-7/B-8/B-9 tekrarlanmadı.
+
+## 2026-08-27 v4.4 public yayın + canlı updater — GEÇTİ
+
+- Anotasyonlu `v4.4` tag peeled hedefi exact build commit `35f23ac2762ef46c183f60baee539b9033310f1e`; kanıt commit’ine taşınmadı.
+- Public/latest Release: <https://github.com/IzzmooPro/OfferManager/releases/tag/v4.4> · `draft=false`, `prerelease=false` · yayın `2026-08-27T07:57:12Z`.
+- Tek asset `TeklifYonetim_Setup_v4.4.exe`: `50.889.592 B`, GitHub digest ve bağımsız yeniden indirme SHA-256 `4D074FB0…B5FC1`; yerel installer ile byte-eşit.
+- **D1 GEÇTİ:** gerçek `releases/latest` HTTP 200 ile v4.4’ü döndürdü; üretim asset seçimi tam adı, boyutu ve SHA-256’yı doğruladı. Eksik digest, yanlış ad, sıfır boyut ve çift aynı-ad senaryoları fail-closed kaldı; installer çalıştırılmadı.
+- **D2 GEÇTİ:** exact public v4.3 istemci (`C037CB3A…F0ED9AD`) canlı v4.4’ü gördü; görünür güncelleme modalı dış Win32 otomasyonuyla tıklandı. İndirilen dosya `50.889.592 B / 4D074FB0…B5FC1`; logda “Yeni sürüm indirildi” ve “Kurulum başlatıldı” görüldü. Final kurulu EXE `ACABD2DE…53FF8 / v4.4`, registry v4.4; görünür final smoke normal kapanış, DB close ve exit 0 verdi.
+- Ana DB `312C189C…9D0CE` rollback ile byte-eşit, `integrity_check=ok`, FK 0. Normal gerçek-profil runtime farkı yalnız log/`backup_meta.json` ve bir yeni kapanış yedeğidir (`16 → 17`). Süreç sızıntısı `0`.
 
 ## 2026-08-27 v4.4 installer C ilk denemesi — TARİHSEL KIRMIZI / DURDURULDU
 

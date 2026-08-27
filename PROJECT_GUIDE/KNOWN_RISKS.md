@@ -2,12 +2,12 @@
 purpose: Doğrulanmış açık riskler ve sonraki adımları — snapshot.
 read_when: Denetim, release kararı, risk analizi.
 covers: []
-last_verified_commit: 17cd101
+last_verified_commit: 35f23ac
 last_verified_date: 2026-08-27
 volatile: true
 ---
 
-# Bilinen riskler (snapshot — 2026-08-14)
+# Bilinen riskler (snapshot — 2026-08-27)
 
 Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içindedir.
 
@@ -31,6 +31,7 @@ Kapanmış bulgular burada değil, [AUDIT_HISTORY.md](AUDIT_HISTORY.md) içinded
 | R10c | ~~**import / settings / backup / reports** ham hata mesajları envanterlenmedi (~19 çağrı yeri)~~ — **kapandı 2026-08-04**: dört alt tur test-first tamamlandı. R10c-1 REPORTS `c2dfca0`, R10c-2 SETTINGS `745fd55`, R10c-3 BACKUP `8616862`, R10c-4 IMPORT `46d4d75`. **R10c kapsamında ele alınan ve regresyon testleriyle bağlanan hata yollarında**: ham istisna/traceback/SQL/yerel yol/müşteri verisi kullanıcı mesajına, `errors` listesine veya loga girmiyor; her teknik istisna tam bir kez güvenli loglanıyor; aşamalar birbirinin başarısını inkâr etmiyor. Bu, ilgili modüllerin **gelecekteki bütün** hata yolları için mutlak garanti değildir — yeni yol eklenirken [CRITICAL_INVARIANTS.md](CRITICAL_INVARIANTS.md) 18 / 18-1 / 18b maddeleri uygulanır. **Kanıt sınıfı:** kaynak testleri, mock/izole geçici profil ölçümleri (gerektiği yerde test DB veya geçici dosya) ve bazı alt turlarda izole kaynak-modu Windows Qt smoke/probları. **Yeni frozen/paketli EXE, installer, gerçek disk-dolu, gerçek dosya kilidi ve gerçek SQLite commit hatası kanıtı ÜRETİLMEDİ.** → `tests/test_reports_safe_errors.py`, `tests/test_settings_safe_errors.py`, `tests/test_backup_safe_errors.py`, `tests/test_import_safe_errors.py`, `tests/test_csv_import_errors.py` | **KAPALI** |
 | R11 | **500 kalemli teklifte UI doldurma ~3 sn** (`_add_row`) | Düşük | Gerçek veride maks ~10 kalem; toplu/gecikmeli satır kurulumu ileride |
 | R12 | **Normal kapanış yedeği büyük veritabanında kapanışı uzatır** | Düşük | Ölçüldü ve kabul edildi; gerekirse ilerleme göstergesi |
+| R13 | **Ürün Yönetimi tablosunda “Ürün Kodu” sütunu çok dar** — v4.4 gerçek ekranında başlık kesiliyor (`Ürün Kod`) ve uzun ürün kodlarının tam görünmesi garanti değil. İşlevsel veri kaybı kanıtı yok; bu bir okunabilirlik/yerleşim bulgusudur. **v4.4.1 kapsamına ertelendi (2026-08-27); yayımlanmış v4.4 kodu/tag’i değiştirilmeyecek.** | Düşük | v4.4.1'de ürün kodu sütununa içerikle uyumlu asgari genişlik ver; kullanıcı yeniden boyutlandırmasını bozma. Açık/koyu tema ve dar/normal pencere önizlemelerinde başlık ile temsilî uzun kodların kesilmediğini doğrula; UI preview senaryosu ve sütun genişliği regresyon testi ekle. |
 
 ## R12 — v4.2 turu bulguları (2026-08-02)
 

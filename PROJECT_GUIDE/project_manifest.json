@@ -449,21 +449,68 @@
     },
     "release": {
       "target_version": "v4.4",
-      "tag_created": false,
-      "github_release_created": false,
-      "updater_end_to_end_verified": false,
-      "existing_remote_tag": "",
-      "existing_remote_tag_note": "Canli on kontrolde v4.4 tag ve release bulunmadi; public latest v4.3 olarak korundu.",
+      "tag_created": true,
+      "github_release_created": true,
+      "updater_end_to_end_verified": true,
+      "existing_remote_tag": "v4.4",
+      "existing_remote_tag_note": "Anotasyonlu v4.4 tag uzakta mevcut; peeled hedefi exact build commit 35f23ac2762ef46c183f60baee539b9033310f1e. Public latest release, D1 ve paketli v4.3 -> v4.4 D2 tamamlandi.",
       "upstream_sync_must_be_verified_live": true,
-      "status": "local_release_candidate_verified_not_published",
-      "note": "Exact 35f23ac temiz build, hedefli frozen B ve tam installer C gecti. Upgrade ve temiz reinstall agaci 256/256 temizdir; kullanici verisi ve yedekleri korundu. Tag, GitHub Release ve canli updater D1/D2 henuz yapilmadi.",
-      "tag_commit": "",
-      "tag_commit_note": "v4.4 tag henuz olusturulmadi.",
-      "release_url": "",
-      "published_at": "",
+      "status": "published_and_live_updater_verified",
+      "note": "v4.4 exact build+B+C, anotasyonlu tag, public/latest GitHub Release, kaynak duzeyi canli D1 ve exact paketli public v4.3 istemciden gercek v4.4 teslimati D2 gecti.",
+      "tag_commit": "35f23ac2762ef46c183f60baee539b9033310f1e",
+      "tag_commit_note": "Uzak annotated v4.4 tag peeled hedefi read-back ile exact build commit'ine esit; metadata commit'ine tasinmadi.",
+      "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.4",
+      "published_at": "2026-08-27T07:57:12Z",
       "draft": false,
       "prerelease": false,
-      "latest": false
+      "latest": true,
+      "asset_readback": {
+        "name": "TeklifYonetim_Setup_v4.4.exe",
+        "size": 50889592,
+        "digest": "sha256:4d074fb0a8aa5bc9c4b2c992364d161368b808ea1fa8cb228828c348872b5fc1",
+        "state": "uploaded",
+        "url": "https://github.com/IzzmooPro/OfferManager/releases/download/v4.4/TeklifYonetim_Setup_v4.4.exe",
+        "exe_asset_count": 1,
+        "note": "Public read-back ve bagimsiz yeniden indirme yerel installer ile byte-esit."
+      },
+      "live_updater_verification": {
+        "D1_source_trust_chain": {
+          "result": "GECTI",
+          "date": "2026-08-27",
+          "scope": "Guncel kaynak uzerinde gercek releases/latest + gercek asset indirmesi; installer calistirilmadi.",
+          "evidence": [
+            "gercek releases/latest HTTP 200; tag v4.4, draft=false, prerelease=false",
+            "tam asset adi TeklifYonetim_Setup_v4.4.exe secildi",
+            "API size = yazilan bayt = 50889592",
+            "API digest = indirilen SHA-256 = yerel installer SHA-256 = 4D074FB0A8AA5BC9C4B2C992364D161368B808EA1FA8CB228828C348872B5FC1",
+            "digest yok / yanlis ad / size=0 / ayni ad iki kez senaryolari fail-closed"
+          ],
+          "installer_executed": false
+        },
+        "D2_real_delivery_e2e": {
+          "result": "GECTI",
+          "date": "2026-08-27",
+          "scope": "Exact paketli public v4.3 istemciden canli public/latest v4.4 teslimati.",
+          "input_client": {
+            "version": "v4.3",
+            "size": 9722873,
+            "sha256": "C037CB3AEF6FCD45D965311BC2AE66A52AF74B7197CBACE50915CC521F0ED9AD",
+            "source_installer_size": 51289869,
+            "source_installer_sha256": "7D7516BC27467E8AD64FC591AD6F78281C456D098C599E597F8BF7277F94B8EE"
+          },
+          "evidence": [
+            "paketli v4.3 logu canli releases/latest uzerinden Guncelleme mevcut: v4.4 yazdi",
+            "gorunur Guncelleme Mevcut modali dis Win32 otomasyonuyla tiklandi",
+            "indirilen installer bagimsiz olculdu: 50889592 bayt / 4D074FB0A8AA5BC9C4B2C992364D161368B808EA1FA8CB228828C348872B5FC1",
+            "updater logu Yeni surum indirildi ve Kurulum baslatildi satirlarini kaydetti",
+            "final kurulu EXE 9723435 bayt / ACABD2DE0EC49EAC508B4AFB11CD9F18ECF1646585DB4499735AEF5B8A853FF8 / v4.4; registry v4.4",
+            "final v4.4 gorunur smoke normal WM_CLOSE, kapanis yedegi, DB close ve exit 0 ile kapandi",
+            "database.db SHA256 312C189CC66B0CCC3B5F3E3326C4D90D10CEB5E78855708BBD449D4553C9D0CE olarak korundu; integrity_check=ok, foreign_key_check 0"
+          ],
+          "user_data_evidence": "Ana DB rollback ile byte-esit. Normal gercek-profil runtime farki yalniz log/backup_meta ve bir yeni kapanis yedegi; yedek sayisi 16 -> 17.",
+          "manual_user_intervention": "UAC ve yukseltilmis v4.4 installer sihirbazi kullanici tarafindan tamamlandi; UAC otomatiklestirilmedi."
+        }
+      }
     },
     "previous_v43_release": {
       "target_version": "v4.3",
