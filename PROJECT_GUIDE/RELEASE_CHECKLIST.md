@@ -7,7 +7,7 @@ covers:
   - packaging/version_info.txt
   - packaging/Kurulum-Yap.bat
   - ui/utils/updater.py
-last_verified_commit: 2fbb931
+last_verified_commit: 0d9b6c2
 last_verified_date: 2026-08-27
 volatile: false
 ---
@@ -56,7 +56,7 @@ Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı öl
 - [ ] `python PROJECT_GUIDE/scripts/verify_project_guide.py --release` → **exit 0**; provenance açısından da temiz. **Bu geçmeden tag ve release YAPILMAZ.**
 - [ ] Local-only `packaging/` ve `assets/` girdileri **ayrıca** hash/envanter/build incelemesiyle doğrulandı — provenance kapısı bunların geçmişini kanıtlamaz ([CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md))
 
-> **2026-08-27 v4.4 installer düzeltmesi çalışma ağacındayken `--release` için `exit 1` BEKLENİR.** Exact v4.4 temiz build ve değişiklik-etkili B geçti; ilk C upgrade denemesi kurulum ağacında 40 eski runtime DLL'i bıraktığı için kırmızı durduruldu. Dar `[InstallDelete]` düzeltmesi ve regresyon testi mevcut artifact'tan sonra değişti; yeni temiz build, B ve tam C tamamlanmadan `release_candidate_ready` true yapılmaz, tag/Release oluşturulmaz.
+> **2026-08-27 v4.4 süreç durumu:** Exact `0d9b6c2` artifact seti temiz build, değişiklik-etkili B ve tam installer C zincirini geçti; ilk 40-artık-DLL kırmızı denemesi tarihsel kayıtta korunur. Ancak bu belge ile `BUILD_AND_PACKAGING.md`, `0d9b6c2` değişikliklerine göre build sonrasında yeniden doğrulandığı için mevcut artifact'ın provenance kapısı hâlâ exit `1` verir. Bu iki süreç belgesi kanıt commit'ine alınmadan ve o yeni exact commit'ten temiz build üretilmeden `release_candidate_ready` true yapılmaz; tag/Release oluşturulmaz.
 
 ## 4. Paketli doğrulama (kanıt sınıfı B)
 

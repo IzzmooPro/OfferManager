@@ -8,7 +8,7 @@ covers:
   - packaging/version_info.txt
   - core/constants.py
   - requirements.txt
-last_verified_commit: 2fbb931
+last_verified_commit: 0d9b6c2
 last_verified_date: 2026-08-27
 volatile: false
 ---
@@ -50,6 +50,11 @@ başka native DLL klasörleri pakete yanlış bağımlılık olarak girmez.
   sonraki `[Files]` aşaması onu yeniden yazar. Klasör veya recursive temizlik
   yoktur. Gereksinim gerçek v4.3 → v4.4 upgrade ölçümünde kalan 40 eski runtime
   DLL'iyle kanıtlandı; sözleşme `tests/test_version_consistency.py` ile zorlanır.
+  Düzeltme sonrası exact `0d9b6c2` artifact setinin tam C zincirinde upgrade ve
+  temiz reinstall ağaçları dist ile `256/256`, fark `0/0/0`; hedeflenen eski
+  runtime DLL sayısı `0` ölçüldü. Artifact kimlikleri ve kapsam sınırı
+  [CURRENT_STATUS.md](CURRENT_STATUS.md) ile
+  [VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md) içinde tutulur.
 - `[Icons]`: grup kısayolu, kaldırma kısayolu, isteğe bağlı masaüstü kısayolu (varsayılan işaretli).
 - `[Run]`: kurulum sonrası uygulamayı açar — `skipifsilent` olduğu için sessiz kurulumda açılmaz.
 - `[Code]`: `InitializeUninstall` (Inno 7 kaldırıcı hatasını atlatmak için **silinmez**) ve `PrepareToInstall` içinde `taskkill /F /IM TeklifYonetim.exe`.
