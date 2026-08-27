@@ -1,6 +1,6 @@
 """Uygulama geneli sabitler — tek kaynak, tüm modüller buradan import eder."""
 
-APP_VERSION = "v4.3"
+APP_VERSION = "v4.4"
 
 # İletişim adresi — TEK kanonik kaynak. Hem "Hakkında" ekranı hem de
 # "Hata Raporla / Sorun veya Öneri Bildir" taslağı buradan okur.

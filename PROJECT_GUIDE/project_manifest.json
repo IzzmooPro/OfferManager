@@ -45,11 +45,11 @@
     "source_commit_note": "Guncel kaynak ve temiz build HEAD'i. R7 acilis bildirimi splash sonrasina ertelendi ve Guvenli Depo uyarisi iki durumlu test ekranina baglandi. R10a guvenli hata ve R12c provenance zinciri korunur; 44 yuzey ve 188 preview durumu vardir. Yerel build betiginin dis PATH DLL'lerini paketlememesi ve tirnakli Python yoluyla calismasi tracked regresyon testleriyle zorlanir.",
     "built_from_commit": "446fc780131dd77a8a4dcf630f8baa8287b367dd",
     "built_from_commit_note": "Yayimlanmis v4.3 artifact seti R10a ve R12c dahil bu temiz HEAD'den uretildi; R7 acilis bildirimi ve Guvenli Depo test ekrani degisikliklerini icermez, guncel kaynak icin eskidir.",
-    "version": "v4.3",
+    "version": "v4.4",
     "artifact_built_for_version": "v4.3",
-    "artifact_verification_status": "stale_source_changed",
+    "artifact_verification_status": "stale_for_target_version",
     "release_candidate_ready": false,
-    "release_readiness_note": "Mevcut public v4.3 yayin kanitlari 446fc78 icin gecerlidir. 17cd101 R7 kaynak degisiklikleri 270e222 temiz yerel build ve hedefli frozen UI smoke ile dogrulandi; ancak ayni surum numarali yerel aday icin installer C ve yeni yayin yapilmadi. Public artifact alanlari degistirilmedi ve release_candidate_ready false kalir.",
+    "release_readiness_note": "v4.4 surum alanlari hazirlandi; eldeki public artifact ve B/C/yayin kanitlari v4.3 icindir. Yeni v4.4 temiz build, frozen B ve installer C tamamlanmadan release adayi degildir.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -348,6 +348,24 @@
       "manual_user_intervention": "UC UAC onayi kullanici tarafindan guvenli masaustunde elle verildi (upgrade, uninstall, temiz reinstall); UAC otomatiklestirilmedi."
     },
     "release": {
+      "target_version": "v4.4",
+      "tag_created": false,
+      "github_release_created": false,
+      "updater_end_to_end_verified": false,
+      "existing_remote_tag": "",
+      "existing_remote_tag_note": "Canli on kontrolde v4.4 tag ve release bulunmadi; public latest v4.3 olarak korundu.",
+      "upstream_sync_must_be_verified_live": true,
+      "status": "source_prepared_build_pending",
+      "note": "v4.4 kaynak ve surum alanlari hazirlik asamasinda; build, B, C, push, tag, GitHub Release ve canli updater kanitlari henuz yoktur.",
+      "tag_commit": "",
+      "tag_commit_note": "v4.4 tag henuz olusturulmadi.",
+      "release_url": "",
+      "published_at": "",
+      "draft": false,
+      "prerelease": false,
+      "latest": false
+    },
+    "previous_v43_release": {
       "target_version": "v4.3",
       "tag_created": true,
       "github_release_created": true,
@@ -542,6 +560,19 @@
     "version_prepare_commit": "8054be0434c4b6a344f9b0dfaae004e4ab80911d",
     "version_prepare_commit_note": "v4.3 surum alanlari ve build girdisi bu commit'te sabitlendi.",
     "published_releases": {
+      "v4.3": {
+        "target_version": "v4.3",
+        "tag_created": true,
+        "github_release_created": true,
+        "updater_end_to_end_verified": true,
+        "existing_remote_tag": "v4.3",
+        "release_url": "https://github.com/IzzmooPro/OfferManager/releases/tag/v4.3",
+        "tag_commit": "446fc780131dd77a8a4dcf630f8baa8287b367dd",
+        "asset_name": "TeklifYonetim_Setup_v4.3.exe",
+        "asset_size": 51289869,
+        "asset_digest": "sha256:7d7516bc27467e8ad64fc591ad6f78281c456d098c599e597f8bf7277f94b8ee",
+        "note": "Public v4.3 tag, tek installer asset, D1 ve D2 kanitlari previous_v43_release alaninda ayrintili olarak korunur."
+      },
       "v4.1": {
         "target_version": "v4.1",
         "tag_created": true,
@@ -676,6 +707,6 @@
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
     },
-    "artifact_stale_reason": "Yayimlanmis v4.3 artifact seti 446fc78 kaynaklidir; R10a ve R12c zincirini icerir fakat 270e222 R7 acilis bildirimi, Guvenli Depo test ekrani ve build izolasyonu regresyonlarini icermez. Bu degisiklikler 270e222 yerel temiz build ve hedefli B smoke ile dogrulandi; exact aday proje disinda korunur ve public artifact dosyalari proje kokunde bulunmaz. Ayni surum numarali aday icin installer C ve yeni yayin yapilmadigindan public artifact kimlikleri degistirilmedi ve guncel kaynak release adayi sayilmaz."
+    "artifact_stale_reason": "Hedef v4.4 olarak yukseltildi; eldeki yayimlanmis artifact seti v4.3 ve 446fc78 kaynaklidir. R10a ve R12c zincirini icerir fakat 270e222 R7 acilis bildirimi, Guvenli Depo test ekrani ve build izolasyonu regresyonlarini icermez. Public v4.3 artifact dosyalari proje kokunde bulunmaz; hash ve boyutlari v4.4 gibi yeniden etiketlenmedi. Yeni v4.4 temiz build, frozen B ve installer C tamamlanmadan release adayi sayilamaz."
   }
 }

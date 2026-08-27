@@ -2,16 +2,24 @@
 
 ---
 
-## Yayınlanmamış kaynak değişiklikleri — 2026-08-23
+## [v4.4] — 2026-08-27
+
+Bu sürüm, açılış sırasındaki güvenli depo uyarısını ve yerel build
+izolasyonunu iyileştirir.
 
 ### Açılış ve güvenli depo uyarısı
 - Güvenli depodaki SMTP parolası okunamadığında uyarı artık splash ekranı
   sırasında açılışı kesmiyor; ana pencere görünür olduktan sonra yalnız bir kez
   gösteriliyor.
-- Runtime değişikliği `1458e7e` kaynağındadır; `c6c7cdf` ile aynı uyarının
-  iki güvenli durumunu gösteren ayrı test ekranı da eklendi. Mevcut public v4.3
-  paketi `446fc78` kaynaklı olduğundan yeni build ve frozen UI doğrulaması
-  bekleniyor.
+- Aynı uyarının iki güvenli durumunu gerçek kullanıcı verisine veya
+  Credential Manager'a dokunmadan gösteren ayrı test ekranı eklendi.
+
+### Build izolasyonu
+- PyInstaller build'i, geliştirme araçlarının PATH'e eklediği ilgisiz Poppler,
+  libheif ve OpenSSL DLL'lerini uygulama bağımlılığı sanmayacak şekilde
+  kontrollü PATH ile çalışıyor.
+- Boşluklu ve tırnaklı Python yollarında sürüm okuma adımı güvenli hâle
+  getirildi.
 
 ## [v4.3] — 2026-08-23
 
