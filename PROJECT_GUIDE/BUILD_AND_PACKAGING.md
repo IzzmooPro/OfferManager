@@ -8,8 +8,8 @@ covers:
   - packaging/version_info.txt
   - core/constants.py
   - requirements.txt
-last_verified_commit: 8054be0
-last_verified_date: 2026-08-23
+last_verified_commit: 2fbb931
+last_verified_date: 2026-08-27
 volatile: false
 ---
 
@@ -22,6 +22,12 @@ packaging/Kurulum-Yap.bat --no-pause
 ```
 
 Adımlar: araç kontrolü → **`python -m pytest tests -q`** → eski `build/`, `dist/`, `installer_output/` temizliği → PyInstaller (onedir) → Inno Setup → dosya doğrulama. Testler kırmızıysa build durur. Sürüm `core/constants.py` içinden okunur, elle yazılmaz.
+
+Build betiği gerçek Python executable yolunu başta sabitler; sürümü tırnaklı
+Python yolunu bozmadan benzersiz geçici dosya üzerinden okur. PyInstaller adımında
+`PATH`, yalnız Python ve Windows sistem klasörlerinden oluşan kontrollü listeye
+daraltılır. Böylece Codex/ofis araçlarının eklediği Poppler, libheif veya
+başka native DLL klasörleri pakete yanlış bağımlılık olarak girmez.
 
 ## PyInstaller (`packaging/TeklifYonetim.spec`)
 

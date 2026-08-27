@@ -7,8 +7,8 @@ covers:
   - packaging/version_info.txt
   - packaging/Kurulum-Yap.bat
   - ui/utils/updater.py
-last_verified_commit: 8054be0
-last_verified_date: 2026-08-23
+last_verified_commit: 2fbb931
+last_verified_date: 2026-08-27
 volatile: false
 ---
 
@@ -56,7 +56,7 @@ Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı öl
 - [ ] `python PROJECT_GUIDE/scripts/verify_project_guide.py --release` → **exit 0**; provenance açısından da temiz. **Bu geçmeden tag ve release YAPILMAZ.**
 - [ ] Local-only `packaging/` ve `assets/` girdileri **ayrıca** hash/envanter/build incelemesiyle doğrulandı — provenance kapısı bunların geçmişini kanıtlamaz ([CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md))
 
-> **2026-08-23 v4.3 belge yeniden doğrulama anında bu adımın `exit 1` vermesi BEKLENİR.** v4.3 artifact'ı `8054be0` girdisinden build edildi ve B/C geçti; fakat bu belge dâhil beş provenance belgesi build sonrasında yeniden doğrulandığı için mevcut artifact artık son çalışma ağacını temsil etmez. Belgeler tamamlandıktan sonra yeni temiz build ve 3–5. adım kanıtları alınmadan kapı yeşile çevrilmez.
+> **2026-08-27 v4.4 kaynak hazırlığında `--release` için `exit 1` BEKLENİR.** Elde bulunan yayımlanmış artifact v4.3'tür; v4.4 için yeni temiz build, frozen B ve installer C henüz yoktur. 3–5. adımlar exact v4.4 artifact üzerinde tamamlanmadan `release_candidate_ready` true yapılmaz ve tag/Release oluşturulmaz.
 
 ## 4. Paketli doğrulama (kanıt sınıfı B)
 

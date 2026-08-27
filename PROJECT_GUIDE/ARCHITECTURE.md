@@ -10,8 +10,8 @@ covers:
   - ui/dialogs/backup_manager.py
   - ui/utils/updater.py
   - ui/startup_splash.py
-last_verified_commit: 50756b1
-last_verified_date: 2026-08-23
+last_verified_commit: 2fbb931
+last_verified_date: 2026-08-27
 volatile: false
 ---
 
@@ -50,7 +50,7 @@ main.py  →  ui/  →  services/  →  database/db_manager.py  →  SQLite
 6. `QApplication`, Türkçe locale/çeviri, ikon ve font hazırlanır; splash bileşeni `ui/startup_splash.py` içinden oluşturulur.
 7. Veri yoksa yedekten geri yükleme sorulur; **yalnız tam başarıda** ardıl süreç başlatılır. Geri yükleme üç sonucu ayırır (`preflight_failed` / `rolled_back` / `rollback_failed`) ve başarısız hiçbir durumda yeniden başlatma yapılmaz — ayrıntı [DATA_AND_PATHS.md](DATA_AND_PATHS.md).
 8. `MainWindow` açılır; otomatik yedek zamanlayıcısı ve güncelleme kontrolü başlar.
-9. **Açılış bildirimleri splash'ten SONRAYA ertelenir.** `MainWindow` oluşturulurken `_navigate(0)` Dashboard verisini **yükler**, ama süresi dolan/dolacak teklif bildirimleri gösterilmez — o an ekranda yalnız splash vardır. Splash fade'i **gerçekten tamamlanınca** (`finished`) `window.acilis_bildirimlerini_planla()` çağrılır; bu, pencereye ait tek atımlık zamanlayıcıyla bildirimi **bir sonraki event-loop turuna** bırakır. Pencere görünür değilse veya kapanış hazırlığı başladıysa modal **açılmaz**; gösterim en fazla **bir kez** olur. Sabit gecikme kullanılmaz.
+9. **Açılış bildirimleri splash'ten SONRAYA ertelenir.** `MainWindow` oluşturulurken `_navigate(0)` Dashboard verisini **yükler**, ama süresi dolan/dolacak teklif bildirimleri gösterilmez — o an ekranda yalnız splash vardır. Ayarlar sayfasındaki güvenli depo okuma hatası da yalnız güvenli metin olarak saklanır; modalı burada açılmaz. Splash fade'i **gerçekten tamamlanınca** (`finished`) `window.acilis_bildirimlerini_planla()` çağrılır; bu, pencereye ait tek atımlık zamanlayıcıyla bildirimleri **bir sonraki event-loop turuna** bırakır. Pencere görünür değilse veya kapanış hazırlığı başladıysa modal **açılmaz**; her açılış bildirimi en fazla **bir kez** gösterilir. Sabit gecikme kullanılmaz.
 
 ## Thread / worker düzeni
 

@@ -22,8 +22,8 @@ covers:
   - main.py
   - ui/startup_splash.py
   - tests/conftest.py
-last_verified_commit: 50756b1
-last_verified_date: 2026-08-23
+last_verified_commit: 2fbb931
+last_verified_date: 2026-08-27
 volatile: false
 ---
 
@@ -62,7 +62,7 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 
 ## Gizlilik ve hata bildirimi
 
-17. **SMTP parolası yalnız Windows Credential Manager'da tutulur**; config'e düz metin yazılmaz, loglanmaz. Okuma hatası **sessizce yutulmaz**, `CredentialStoreError` fırlatılır ve okuma hatası kaydı silmeye dönüşmez. → `tests/test_credential_store.py`, `tests/test_smtp_credential_ui.py`, `tests/test_smtp_security.py`
+17. **SMTP parolası yalnız Windows Credential Manager'da tutulur**; config'e düz metin yazılmaz, loglanmaz. Okuma hatası **sessizce yutulmaz**, `CredentialStoreError` fırlatılır ve okuma hatası kaydı silmeye dönüşmez. Açılış okuma hatasının güvenli metni ayarlar sayfasında saklanır; "Güvenli Depo" modalı splash fade tamamlanıp ana pencere görünür olduktan sonra, pencereye ait zamanlayıcı zincirinde ve en fazla bir kez gösterilir. → `tests/test_credential_store.py`, `tests/test_smtp_credential_ui.py`, `tests/test_smtp_security.py`, `tests/test_expired_offer_prompt.py`
 18. **Hiçbir kullanıcı mesajında veya güvenli logda** ham istisna metni, `str(exception)`, traceback, SQL, yerel dosya yolu ya da müşteri/firma/teklif adı bulunmaz. Mesaj sabit metinlerden seçilir; log yalnız işlem adı, istisna sınıf adı, güvenli kayıt id'si ve `dosya:satır` çerçevelerini içerir (`exc_info` kullanılmaz). Diyalog kapanmaz, kullanıcı düzeltip yeniden dener. → `tests/test_save_error_handling.py`, `tests/test_operation_error_dialog.py`, `tests/test_dashboard_safe_errors.py`, `tests/test_create_offer_stage_errors.py`, `tests/test_create_offer_customer_save_errors.py`, `tests/test_reports_safe_errors.py`, `tests/test_settings_safe_errors.py`, `tests/test_backup_safe_errors.py`, `tests/test_import_safe_errors.py`
 18-1. **Aynı istisna EN FAZLA BİR KEZ güvenli loglanır.** Loglama sorumluluğu tek katmandadır: diyalog altyapısını (`hata_goster` / `kismi_hata_goster`) çağıran yol ayrıca `op_hata.logla` çağırmaz, alt katman loglayıp yeniden fırlattıysa üst katman tekrarlamaz, tüketici (ör. `main_window` yedek sinyalleri) hata metnini yeniden loglamaz. Güvenli `kayit_id` yalnız sayısal satır/grup sırası olabilir. → `tests/test_backup_safe_errors.py`, `tests/test_import_safe_errors.py`, `tests/test_settings_safe_errors.py`
 18b. **Kısmi başarı önceki başarılı aşamayı İNKÂR ETMEZ.** Çok aşamalı akışlarda (kaydet → PDF → arşiv → sonraki eylemler; toplu silme/PDF; DB yazımı → ekran yenileme; yedek dosyası → yedek metadata'sı; kategori yazımı → ürün transaction'ı; müşteri → ürün → teklif aşamaları) sonraki bir aşamanın hatası, tamamlanmış aşamayı "yapılamadı" gibi anlatamaz. Toplu işlemlerde yalnız güvenli sayılar gösterilir; "hiçbiri" türü genelleme yapılmaz. Aşama durumu çağırana taşınacaksa yalnız sayı/boolean taşınır (`stage_state`), kullanıcı verisi taşınmaz; dönüş değeri gerçek DB değişikliğini gösterir. Uzun işlem penceresi (progress) hata, iptal ve başarı yollarının HEPSİNDE kapanır. → `tests/test_create_offer_stage_errors.py`, `tests/test_dashboard_safe_errors.py`, `tests/test_settings_safe_errors.py`, `tests/test_backup_safe_errors.py`, `tests/test_import_safe_errors.py`

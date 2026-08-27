@@ -7,8 +7,8 @@ covers:
   - core/app_paths.py
   - ui/dialogs/backup_manager.py
   - main.py
-last_verified_commit: 446fc78
-last_verified_date: 2026-08-23
+last_verified_commit: 2fbb931
+last_verified_date: 2026-08-27
 volatile: false
 ---
 
@@ -120,7 +120,9 @@ D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater 
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
-**A sınıfı — güncel kaynak (2026-08-27):** `1225 passed, 6 skipped, 345 subtests` (`270e2223c90b6c889f757f1e53c523dd5bb74c12` temiz build kapısı). R7 açılış bildirimi işlevsel değişiklikleri `17cd101d95430bcdd5a258ea2b779696b77db482` ile tamamlandı; iki durumlu Güvenli Depo test ekranı ve dış PATH/tırnaklı Python komutu regresyonları eklendi. Preview kataloğu 44 yüzey/188 durumdur; smoke ve geometri bulgusu 0, gerçek credential erişimi 0.
+**A sınıfı — güncel kaynak (2026-08-27):** `1224 passed, 7 skipped, 346 subtests` (`2fbb93109944873e9887918d1f6ce9424a882024` v4.4 kaynak hazırlığı). `compileall` temizdir. R7 açılış bildirimi, iki durumlu Güvenli Depo test ekranı ve dış PATH/tırnaklı Python komutu regresyonları korunur. Yedi skip, v4.4 artifact ve buna ait B/C kanıtı bulunmayan ara duruma aittir.
+
+**v4.4 A→B/C boşluğu:** Sürüm kaynakları v4.4 olarak eşitlendi; eldeki public artifact, frozen B ve installer C kanıtı v4.3 içindir. Yeni temiz v4.4 build alınıp hedefli frozen smoke ve installer zinciri tamamlanmadan v4.4 için B/C veya release adaylığı iddia edilmez.
 
 **R7 hedefli B sonucu:** `270e222` temiz girdisinden kontrollü PATH ile üretilen exact `67EC8958…CE20F4E` EXE iki izole turda doğrulandı. Null-keyring: ana pencere, uyarı 0, WM_CLOSE, kapanış yedeği, DB close, exit 0. Fail-keyring: gerçek 1300×800 ana pencere 3,193 sn'de, Güvenli Depo 3,700 sn'de; splash sonrası tek modal, ana pencere native disabled, varsayılan Tamam otomatik klavye olayıyla kabul edildi; WM_CLOSE, kapanış yedeği, DB close, exit 0. İki turda da süreç sızıntısı ve `Traceback`/`QThread: Destroyed`/`0xC0000409` 0. Gerçek profil envanteri `32 / 2.341.254 B`, yedek envanteri `15 / 11.056.957 B` olarak korundu. Bu hedefli B kanıtı installer C veya yayın kanıtı değildir.
 
