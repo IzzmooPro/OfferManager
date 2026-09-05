@@ -34,6 +34,7 @@ volatile: false
 |---|---|
 | Ortam izolasyonu (K/O ön koşulu) | `tests/test_env_isolation.py`, `tests/conftest.py` |
 | Teklif numarası, atomiklik, teklif servisi | `tests/test_offer_service.py`, `tests/test_regressions.py` |
+| 2026-09 genel inceleme: güvenli PDF yolu, miktar/toplam/geçerlilik sınırları, döviz raporu, spreadsheet metin koruması | `tests/test_general_review_regressions.py` |
 | Arşiv PDF adı | `tests/test_offer_archive_naming.py` |
 | Kâr/maliyet gizliliği | `tests/test_profit.py`, `tests/test_export_service.py` |
 | Ürün kodu normalizasyonu (O6, O13-ürün) | `tests/test_product_code_uniqueness.py` |
@@ -51,6 +52,7 @@ volatile: false
 | E-posta diyalogu yaşam döngüsü | `tests/test_email_dialog_lifecycle.py` |
 | Güncelleme diyalogu yaşam döngüsü | `tests/test_update_dialog_lifecycle.py` |
 | Updater güven zinciri (asset seçimi, URL/host, SHA-256, size) | `tests/test_updater_asset_verification.py` |
+| Güncellemede normal kapanış, DB kapanışı ve installer sırası | `tests/test_update_graceful_shutdown.py` |
 | Şablon / kategori / müşteri / ürün servisleri | adı eşleşen `tests/test_*_service.py` |
 | Süresi geçen teklif uyarısı | `tests/test_expired_offer_prompt.py` |
 | Açılış bildirimi / splash sonrası modal sırası | `tests/test_expired_offer_prompt.py` |

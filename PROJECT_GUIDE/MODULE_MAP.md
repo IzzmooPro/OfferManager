@@ -5,6 +5,7 @@ covers:
   - core/constants.py
   - core/config.py
   - core/credential_store.py
+  - core/offer_files.py
   - core/profit.py
   - services/offer_service.py
   - services/product_service.py
@@ -44,6 +45,7 @@ volatile: false
 | `core/app_paths.py` | Asset kökü (frozen'da `sys._MEIPASS`) ve kullanıcı veri/yedek yolları |
 | `core/config.py` | `company.cfg` okuma/yazma (firma bilgileri, PDF metinleri, SMTP ayarları) |
 | `core/credential_store.py` | SMTP parolası → Windows Credential Manager; hata yutmaz, `CredentialStoreError` fırlatır |
+| `core/offer_files.py` | Teklif numarasını Windows dosya adı bileşeni olarak doğrular ve PDF hedefinin seçilen kök altında kaldığını denetler |
 | `core/restart.py` | Yeniden başlatma isteği, `--restarted-from` bayrağı, ardıl süreç |
 | `core/profit.py`, `core/formatting.py`, `core/date_utils.py` | Kâr hesabı, biçimleme, tarih yardımcıları |
 
@@ -53,11 +55,11 @@ volatile: false
 |---|---|
 | `database/schema.sql` | Tablo tanımları (products, customers, offers, offer_items, product_categories, templates) |
 | `database/db_manager.py` | Bağlantı, `transaction()`, geriye uyumlu ve tekrar çalıştırılabilir migration'lar, index'ler |
-| `services/offer_service.py` | Teklif numarası üretimi, teklif + kalem kaydı (atomik), listeleme, durum |
+| `services/offer_service.py` | Teklif numarası üretimi, teklif + kalem kaydı (atomik), satır/toplam tutarlılığı, listeleme, durum; arşiv PDF temizliğinde güvenli kök içi yol kullanır |
 | `services/product_service.py` | Ürün CRUD, kod normalizasyonu (`normalize_code`), `get_by_code`, toplu `get_by_codes` |
 | `services/customer_service.py`, `category_service.py`, `template_service.py` | İlgili CRUD |
-| `services/export_service.py` | Excel/CSV dışa aktarma (içe aktarma şablonuyla uyumlu) |
-| `services/document_service.py`, `report_service.py` | Belge üretim yardımcıları ve raporlar |
+| `services/export_service.py` | Excel/CSV dışa aktarma (içe aktarma şablonuyla uyumlu); kullanıcı metnini spreadsheet formülü olarak yazmaz |
+| `services/document_service.py`, `report_service.py` | Belge üretim yardımcıları ve raporlar; ürün cirosu para birimi bazında ayrılır |
 | `models/*.py` | `Offer`, `OfferItem`, `Product`, `Customer`, `Category`, `Template` veri sınıfları |
 
 ## UI
@@ -79,7 +81,7 @@ volatile: false
 | `core/feedback_report.py` | Hata/öneri raporunun SAF veri modeli ve metin üreticisi: `RaporVerisi`, `TeknikOzet`, `rapor_olustur`, `metin_uret`, `konu_uret`, `guvenli_konum`. Qt import etmez, diske/ağa dokunmaz, log yazmaz, istisnayı yeniden kaydetmez |
 | `ui/dialogs/feedback_dialog.py` | Tek ortak bildirim penceresi (iki giriş: Yardım menüsü ve "Hata Raporla"). Tek form: görünen otomatik alanlar + tek "Ne oldu?" kutusu; `mailto_baglantisi` Qt URL/query ile kurulur; eylemler E-postayı Aç / Panoya Kopyala / Vazgeç |
 | `ui/utils/theme_manager.py` | Açık/koyu tema, QSS üretimi |
-| `ui/utils/updater.py` | Sürüm kontrolü, indirme, kurulum başlatma |
+| `ui/utils/updater.py` | Sürüm kontrolü ve doğrulanmış indirme; installer isteğini normal kapanış tamamlanıp DB kapatıldıktan sonra başlatılmak üzere kuyruğa alır |
 | `ui/widgets/*` | Ortak widget'lar (kart, tablo, kâr paneli, hover delegate) |
 
 ## UI önizleme laboratuvarı

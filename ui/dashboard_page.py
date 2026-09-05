@@ -16,6 +16,7 @@ from PySide6.QtGui import QColor, QShortcut, QKeySequence, QTextDocument
 from services.product_service  import ProductService
 from services.customer_service import CustomerService
 from services.offer_service    import OfferService
+from core.offer_files import offer_pdf_path
 from ui.widgets._animated_card import AnimatedCard
 
 logger = logging.getLogger("dashboard")
@@ -1049,8 +1050,8 @@ class DashboardPage(QWidget):
         from pdf.pdf_generator import generate_pdf
         preview_dir = Path(tempfile.gettempdir()) / "TeklifOnizleme"
         preview_dir.mkdir(exist_ok=True)
-        out_path = str(preview_dir / f"{offer_data.offer_no or 'Teklif'}.pdf")
         try:
+            out_path = str(offer_pdf_path(preview_dir, offer_data.offer_no or "Teklif"))
             generate_pdf(offer_data, out_path)
         except Exception as exc:                           # noqa: BLE001
             hata_diyalogu.hata_goster(self, "Hata", exc, "PDF",
@@ -1084,8 +1085,8 @@ class DashboardPage(QWidget):
         from pdf.pdf_generator import generate_pdf
         preview_dir = Path(tempfile.gettempdir()) / "TeklifOnizleme"
         preview_dir.mkdir(exist_ok=True)
-        out_path = str(preview_dir / f"{offer_data.offer_no or 'Teklif'}.pdf")
         try:
+            out_path = str(offer_pdf_path(preview_dir, offer_data.offer_no or "Teklif"))
             generate_pdf(offer_data, out_path)
         except Exception as exc:                           # noqa: BLE001
             hata_diyalogu.hata_goster(self, "Hata", exc, "PDF",
@@ -1115,9 +1116,15 @@ class DashboardPage(QWidget):
                 hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif",
                                           "yukle", kayit_id=offers[0].id)
                 return
+            try:
+                default_pdf_path = str(offer_pdf_path(desktop, offer_data.offer_no))
+            except ValueError as exc:
+                hata_diyalogu.hata_goster(self, "Hata", exc, "Teklif PDF", "dosya adi",
+                                          kayit_id=offers[0].id)
+                return
             out_path, _ = QFileDialog.getSaveFileName(
                 self, f"PDF Kaydet — {offer_data.offer_no}",
-                str(desktop / f"{offer_data.offer_no}.pdf"),
+                default_pdf_path,
                 "PDF Dosyaları (*.pdf)",
             )
             if not out_path:
@@ -1135,7 +1142,7 @@ class DashboardPage(QWidget):
             for o in offers:
                 try:
                     offer_data = self.svc_o.get_by_id(o.id)
-                    tasks.append((offer_data, str(Path(folder) / f"{offer_data.offer_no}.pdf"), {
+                    tasks.append((offer_data, str(offer_pdf_path(folder, offer_data.offer_no)), {
                         "offer_no":       offer_data.offer_no or "",
                         "customer_email": offer_data.customer_email or "",
                     }))

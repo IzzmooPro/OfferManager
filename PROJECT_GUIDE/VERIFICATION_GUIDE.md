@@ -120,7 +120,7 @@ D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater 
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
-**A sınıfı — güncel kaynak (2026-08-27):** exact `35f23ac2762ef46c183f60baee539b9033310f1e` temiz build kapısında `1225 passed, 6 skipped, 346 subtests`. Altıncı skip, build başında `release_candidate_ready=false` olan fail-closed manifest aday kontrolüdür. Installer upgrade temizleme düzeltmesi ve kanonik release belgeleri bu artifact'ın exact kaynağındadır.
+**A sınıfı — güncel kaynak (2026-09-05):** `e60ad2b7c034188ab9324f9253d77c7fb34ee365` ebeveyn tabanındaki v4.5 çalışma ağacı `1244 passed, 4 skipped, 360 subtests` verdi. Bu sonuç kaynak düzeyidir; eldeki v4.4 artifact v4.5 değişikliklerini içermez. Yeni temiz build, frozen kapanış smoke'u ve installer veri koruma zinciri bekliyor.
 
 **v4.4 A→B/C durumu — GEÇTİ:** Exact `ACABD2DE…53FF8` v4.4 EXE için değişiklik-etkili B geçti. Null-keyring: modal 0, ikinci örnek exit 0 ve ilk süreç yaşadı. Fail-keyring: tek Güvenli Depo modalı, ana pencere native disabled, modal enabled. İki tur WM_CLOSE, tek kapanış yedeği, DB close, exit 0; iki DB `integrity_check=ok`, FK 0; forbidden marker/süreç sızıntısı 0. Kapsam B-1/B-2/B-3/B-5'tir; B-4/B-6/B-7/B-8/B-9 tekrarlanmadı ve tarihsel kanıtları exact v4.4'e devredilmedi.
 

@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QProgressBar, QMessageBox
+    QProgressBar, QMessageBox, QApplication
 )
 from PySide6.QtCore import QThread, QTimer, Signal, Qt
 
@@ -80,12 +80,38 @@ _DIGEST_RE = re.compile(r"^sha256:([0-9a-fA-F]{64})$")
 VERIFY_FAILED_MESSAGE = (
     "Güncelleme dosyası doğrulanamadı. Otomatik kurulum başlatılmadı.")
 DOWNLOAD_FAILED_MESSAGE = "Güncelleme indirilemedi."
+INSTALL_START_FAILED_MESSAGE = (
+    "Güncelleme kurulumu başlatılamadı. Uygulamayı yeniden açıp tekrar deneyin.")
 ASSET_VERIFY_FAILED_MESSAGE = (
     "Güncelleme bilgisi doğrulanamadı. Otomatik güncelleme başlatılmadı.")
 CHECK_FAILED_MESSAGE = "Güncelleme kontrol edilemedi."
 
 #: Doğrulanmış güncelleme asset'i. `size` ve `sha256` indirmede zorunludur.
 UpdateAsset = namedtuple("UpdateAsset", "name url sha256 size")
+_pending_installer_path = None
+
+
+def queue_installer_for_post_exit(installer_path: str) -> None:
+    """Doğrulanmış installer'ı DB kapandıktan sonra başlatılmak üzere sakla."""
+    global _pending_installer_path
+    _pending_installer_path = installer_path
+
+
+def launch_pending_installer():
+    """Bekleyen installer'ı başlat; yoksa None, başarıda True döndür."""
+    global _pending_installer_path
+    installer_path = _pending_installer_path
+    _pending_installer_path = None
+    if not installer_path:
+        return None
+    try:
+        os.startfile(installer_path)
+    except Exception as exc:
+        logger.warning("DB kapanışı sonrası installer başlatılamadı: %s",
+                       type(exc).__name__)
+        return False
+    logger.info("Kurulum DB kapanışından sonra başlatıldı.")
+    return True
 
 
 class VerificationError(Exception):
@@ -371,6 +397,8 @@ class UpdateDialog(QDialog):
         # yani sonuç callback'i ertelenmiş kapanıştan ÖNCE çalışır. Bu bayrak
         # olmadan, kullanıcı X/Daha sonra/Esc demesine rağmen kurulum başlar.
         self._close_requested = False
+        self._pending_installer = None
+        self._closing_main_window = None
 
         self.setWindowTitle("Güncelleme Mevcut")
         # Sabit boyut YOK — progress + durum satırı görününce metin ezilip
@@ -475,13 +503,7 @@ class UpdateDialog(QDialog):
 
     def _apply_update(self, installer_path: str):
         """
-        İndirilen Inno Setup kurulumunu çalıştırır ve programı kapatır.
-
-        Kurulum, .iss'teki CloseApplications=yes (Restart Manager) sayesinde
-        çalışan uygulamayı kendisi nazikçe kapatıp mevcut kurulumun üzerine
-        yazar ve yeniden başlatır. (AppMutex bilerek kaldırıldı — çalışan
-        uygulama için manuel "kapatın" uyarısı çıkarıyordu.) EXE'yi elle
-        "taşımaya" gerek yoktur; installer yönetici iznini kendisi ister.
+        Normal kapanış tamamlanınca indirilen Inno Setup'ı çalıştırır.
         """
         if not getattr(sys, "frozen", False):
             # Kaynak (Python) modda — tarayıcıya yönlendir
@@ -490,20 +512,61 @@ class UpdateDialog(QDialog):
             self._finish()
             return
 
-        # Kurulumu başlat. os.startfile → ShellExecute "open"; Inno kurulumunun
-        # yönetici manifestini görüp UAC yükseltmesini tetikler. (subprocess/
-        # CreateProcess manifestli kurulumu YÜKSELTEMEZ ve başlatamaz.)
-        # Program kapanınca installer üzerine kurar ve /Run ile yeniden açar.
-        os.startfile(installer_path)
+        # Installer ana pencerenin normal closeEvent akışını ATLAYAMAZ:
+        # kaydedilmemiş form onayı, kapanış yedeği ve worker bekleme önce
+        # tamamlanır. Kullanıcı kapanmayı iptal ederse installer hiç açılmaz.
+        main_window = self.parentWidget()
+        while main_window is not None and main_window.parentWidget() is not None:
+            main_window = main_window.parentWidget()
+        if main_window is None:
+            raise RuntimeError("Ana uygulama penceresi bulunamadı")
 
-        logger.info("Kurulum başlatıldı (%s), program kapatılıyor.", installer_path)
-        # Süreci KESİN sonlandır. QApplication.quit() bazen arka plandaki
-        # indirici/kontrolcü QThread yüzünden süreci asılı bırakıyor (dosya
-        # kilitleri serbest kalmıyor → installer uygulamayı kapatamıyordu).
-        # os._exit kilitleri anında bırakır. (Veriler her işlemde kaydedilir,
-        # installer veriye dokunmaz → güvenli.) Installer ayrı süreç, ölmez.
-        self.accept()
-        os._exit(0)
+        self._pending_installer = installer_path
+        self._closing_main_window = main_window
+        self._status.setText("Uygulama güvenli şekilde kapatılıyor…")
+        QApplication.setQuitOnLastWindowClosed(False)
+        self.hide()
+        main_window.close()
+        self._launch_installer_after_close()
+
+    def _launch_installer_after_close(self):
+        """Ana pencere kapandıktan sonra doğrulanmış installer'ı başlat."""
+        installer_path = self._pending_installer
+        main_window = self._closing_main_window
+        if not installer_path or main_window is None:
+            return
+        try:
+            main_is_visible = main_window.isVisible()
+            shutdown_started = bool(getattr(main_window, "_shutdown_prepared", False))
+        except RuntimeError:
+            main_is_visible = False
+            shutdown_started = True
+
+        if main_is_visible:
+            if shutdown_started:
+                QTimer.singleShot(50, self._launch_installer_after_close)
+                return
+            # closeEvent, kaydedilmemiş veri onayında kullanıcı tarafından
+            # iptal edildi. İndirilen dosyayı çalıştırma veya saklama.
+            self._pending_installer = None
+            self._closing_main_window = None
+            QApplication.setQuitOnLastWindowClosed(True)
+            self._discard_downloaded_installer(installer_path)
+            self._progress.setVisible(False)
+            self._status.setVisible(True)
+            self._status.setText("Güncelleme iptal edildi.")
+            self._btn_update.setEnabled(True)
+            self._btn_later.setEnabled(True)
+            self.show()
+            return
+
+        self._pending_installer = None
+        self._closing_main_window = None
+        # Gerçek ShellExecute burada yapılmaz. main.py olay döngüsü döndükten
+        # ve DB bağlantısını kapattıktan sonra bu kuyruğu tüketir.
+        queue_installer_for_post_exit(installer_path)
+        QApplication.setQuitOnLastWindowClosed(True)
+        QApplication.quit()
 
     def closeEvent(self, event):
         """İndirme sürerken gelen kapatma isteğini ERTELER.

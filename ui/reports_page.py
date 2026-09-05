@@ -140,12 +140,12 @@ class ReportsPage(QWidget):
         self._setup_columns(headers)
         self._table.setRowCount(len(data))
 
-        total_revenue = 0
+        currency_totals = {cur: 0 for cur in currencies}
         for r, row in enumerate(data):
             self._table.setItem(r, 0, QTableWidgetItem(row["month"]))
             for ci, cur in enumerate(currencies):
                 val = row.get(cur, 0)
-                total_revenue += val
+                currency_totals[cur] += val
                 sym = SYM_MAP.get(cur, cur)
                 text = fmt_money(val, sym) if val > 0 else "-"
                 item = QTableWidgetItem(text)
@@ -153,11 +153,15 @@ class ReportsPage(QWidget):
                     Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self._table.setItem(r, ci + 1, item)
 
-        if total_revenue > 0:
+        if any(currency_totals.values()):
+            totals = " | ".join(
+                fmt_money(currency_totals[cur], SYM_MAP.get(cur, cur))
+                for cur in currencies if currency_totals[cur]
+            )
             self._summary_label.setText(
                 f"Son 12 ayın aylık ciro raporu  |  "
                 f"{len(currencies)} para birimi  |  "
-                f"Toplam: {fmt_number(total_revenue)}")
+                f"Para birimi bazında: {totals}")
         else:
             self._summary_label.setText("Son 12 ayda teklif bulunmuyor.")
 
@@ -188,23 +192,26 @@ class ReportsPage(QWidget):
 
     def _report_product_ranking(self):
         data = self._svc.product_ranking(20)
-        headers = ["Ürün Kodu", "Ürün Adı", "Teklif", "Miktar", "Tutar"]
+        headers = ["Ürün Kodu", "Ürün Adı", "Para Birimi", "Teklif", "Miktar", "Tutar"]
         self._setup_columns(headers)
         self._table.setRowCount(len(data))
 
         for r, row in enumerate(data):
             self._table.setItem(r, 0, QTableWidgetItem(row.get("product_code", "")))
             self._table.setItem(r, 1, QTableWidgetItem(row.get("product_name", "")))
+            currency = row.get("currency", "")
+            self._table.setItem(r, 2, QTableWidgetItem(currency))
             cnt = QTableWidgetItem(str(row["offer_count"]))
             cnt.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._table.setItem(r, 2, cnt)
+            self._table.setItem(r, 3, cnt)
             qty = QTableWidgetItem(fmt_number(row['total_qty'], 0))
             qty.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._table.setItem(r, 3, qty)
-            rev = QTableWidgetItem(fmt_number(row['total_revenue']))
+            self._table.setItem(r, 4, qty)
+            rev = QTableWidgetItem(fmt_money(
+                row['total_revenue'], SYM_MAP.get(currency, currency)))
             rev.setTextAlignment(
                 Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            self._table.setItem(r, 4, rev)
+            self._table.setItem(r, 5, rev)
 
         self._summary_label.setText(f"En çok teklif edilen {len(data)} ürün (iptal hariç)")
 

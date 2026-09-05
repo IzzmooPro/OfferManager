@@ -1,6 +1,7 @@
 """Teklif servis katmanı."""
-import datetime, logging, re
+import datetime, logging, math, re
 from core.app_paths import PDF_DIR
+from core.offer_files import offer_pdf_path, validate_offer_number
 from types import SimpleNamespace
 from typing import List, Optional
 from database.db_manager import get_db
@@ -46,10 +47,13 @@ def remaining_days(offer) -> Optional[int]:
         offer_date = datetime.date.fromisoformat(getattr(offer, "date", "") or "")
     except (ValueError, TypeError):
         return None
-    days = int(match.group(1))
-    if "ay" in validity.lower():
-        days *= 30
-    expiry = offer_date + datetime.timedelta(days=days)
+    try:
+        days = int(match.group(1))
+        if "ay" in validity.lower():
+            days *= 30
+        expiry = offer_date + datetime.timedelta(days=days)
+    except OverflowError:
+        return None
     return (expiry - datetime.date.today()).days
 
 
@@ -81,7 +85,7 @@ class OfferService:
         else:
             max_row = db.fetchone("SELECT MAX(id) as max_id FROM offers")
             next_num = (max_row["max_id"] or 0) + 1 if max_row else 1
-        return f"{prefix}-{next_num:06d}"
+        return validate_offer_number(f"{prefix}-{next_num:06d}")
 
     def generate_and_commit_offer_no(self, conn) -> str:
         """Yeni numarayı üret ve sayacı GÜNCELLE. (Sadece veritabanına kayıt sırasında çağrılır)."""
@@ -119,6 +123,7 @@ class OfferService:
                 "Teklif numarası önekini değiştirin veya teklif numarası "
                 "sayacını kontrol ettirin.")
 
+        offer_no = validate_offer_number(offer_no)
         if has_counter:
             conn.execute("UPDATE offer_counter SET last_number=? WHERE year=0", (next_num,))
         else:
@@ -198,12 +203,27 @@ class OfferService:
             raise ValueError("Teklif için müşteri seçilmeli veya firma adı girilmelidir.")
         if not offer.items:
             raise ValueError("Teklif en az bir ürün içermelidir.")
+        numeric_values = [
+            offer.total_amount, offer.discount_value, offer.discount_amount,
+            *(value for item in offer.items
+              for value in (item.quantity, item.unit_price, item.total_price)),
+        ]
+        try:
+            if any(not math.isfinite(float(value)) for value in numeric_values):
+                raise ValueError("Teklif tutarları sonlu sayı olmalıdır.")
+        except (TypeError, ValueError):
+            raise ValueError("Teklif tutarları geçerli sayı olmalıdır.") from None
         if any(item.quantity <= 0 for item in offer.items):
             raise ValueError("Ürün miktarı sıfırdan büyük olmalıdır.")
         if any(item.unit_price < 0 or item.total_price < 0 for item in offer.items):
             raise ValueError("Ürün fiyatı negatif olamaz.")
 
-        subtotal = sum(item.total_price for item in offer.items)
+        for item in offer.items:
+            line_total = float(item.quantity) * float(item.unit_price)
+            if not math.isclose(float(item.total_price), line_total,
+                                rel_tol=0.0, abs_tol=0.01):
+                raise ValueError("Teklif kalem tutarı miktar ve birim fiyatla uyuşmuyor.")
+        subtotal = sum(float(item.total_price) for item in offer.items)
         discount_type = (offer.discount_type or "amount").strip().lower()
         discount_value = float(offer.discount_value or 0)
         if discount_type == "amount" and discount_value == 0:
@@ -245,7 +265,7 @@ class OfferService:
                 conn.execute("DELETE FROM offer_items WHERE offer_id=?", (offer_id,))
             else:
                 if keep_offer_no and (offer.offer_no or "").strip():
-                    offer.offer_no = offer.offer_no.strip()
+                    offer.offer_no = validate_offer_number(offer.offer_no)
                     # Dosyadan gelen numara sayacın önündeyse sayacı ileri taşı;
                     # aksi hâlde sonraki yeni teklif aynı numarayı üretip
                     # UNIQUE kısıtına takılıyordu.
@@ -295,13 +315,13 @@ class OfferService:
         # PDF dosyasını sil (offer_no gerekli — önce al)
         row = db.fetchone("SELECT offer_no FROM offers WHERE id=?", (offer_id,))
         if row:
-            pdf_path = PDF_DIR / f"{row['offer_no']}.pdf"
             try:
+                pdf_path = offer_pdf_path(PDF_DIR, row["offer_no"])
                 if pdf_path.exists():
                     pdf_path.unlink()
                     logger.info("PDF silindi: %s", pdf_path.name)
-            except Exception as e:
-                logger.warning("PDF silinemedi: %s", e)
+            except Exception as exc:
+                logger.warning("PDF arşivi temizlenemedi: %s", type(exc).__name__)
         with db.transaction() as conn:
             conn.execute("DELETE FROM offer_items WHERE offer_id=?", (offer_id,))
             conn.execute("DELETE FROM offers WHERE id=?", (offer_id,))

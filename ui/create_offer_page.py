@@ -22,6 +22,7 @@ from PySide6.QtCore import Qt, Signal, QDate, QEvent, QTimer
 from services.customer_service import CustomerService
 from services.product_service import ProductService, normalize_code
 from services.offer_service import OfferService
+from core.offer_files import offer_pdf_path
 from models.customer import Customer
 from models.offer import calculate_discount
 
@@ -1717,7 +1718,12 @@ class CreateOfferPage(QWidget):
                 old.unlink()
             except OSError:
                 pass
-        temp_path = str(preview_dir / f"{data.offer_no or 'Teklif'}.pdf")
+        try:
+            temp_path = str(offer_pdf_path(preview_dir, data.offer_no or "Teklif"))
+        except ValueError:
+            QMessageBox.warning(self, "Geçersiz Teklif Numarası",
+                                "Teklif numarası PDF dosya adı için geçersiz.")
+            return
 
         # İki aşama AYRI: üretim hatası ile pencere hatası aynı şey değildir.
         try:
@@ -1761,7 +1767,12 @@ class CreateOfferPage(QWidget):
         # DEĞİŞTİRİLMEZ — kayıt başarısız olursa hiçbir şey kaymasın.
         onerilen_no = (self._offer_no if self._current_offer_id
                        else self.offer_svc.preview_offer_no())
-        default_file = str(desktop / f"{onerilen_no}.pdf")
+        try:
+            default_file = str(offer_pdf_path(desktop, onerilen_no))
+        except ValueError:
+            QMessageBox.warning(self, "Geçersiz Teklif Numarası",
+                                "Teklif numarası PDF dosya adı için geçersiz.")
+            return
         
         out_path, _ = QFileDialog.getSaveFileName(
             self, "PDF Kaydet", default_file, "PDF Dosyası (*.pdf)")
@@ -1812,7 +1823,7 @@ class CreateOfferPage(QWidget):
         try:
             from core.app_paths import PDF_DIR
             PDF_DIR.mkdir(parents=True, exist_ok=True)
-            backup = str(PDF_DIR / f"{self._offer_no}.pdf")
+            backup = str(offer_pdf_path(PDF_DIR, self._offer_no))
             if out_path != backup:
                 import shutil as _shutil
                 _shutil.copy2(out_path, backup)

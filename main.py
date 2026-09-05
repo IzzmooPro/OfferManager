@@ -617,6 +617,14 @@ def main():
     # Uygulama kapanınca DB bağlantısını düzgün kapat
     _veritabanini_kapat()
 
+    # Güncelleme installer'ı ancak normal pencere kapanışı, worker bekleme,
+    # kapanış yedeği ve DB kapanışı tamamlandıktan sonra başlatılır.
+    from ui.utils.updater import (
+        INSTALL_START_FAILED_MESSAGE, launch_pending_installer)
+    installer_started = launch_pending_installer()
+    if installer_started is False:
+        _show_startup_error(INSTALL_START_FAILED_MESSAGE)
+
     # Yeniden başlatma istendiyse ardıl süreç ANCAK burada başlatılır:
     # MainWindow.closeEvent worker'ları bekledi (K6) ve DB kapandı.
     if restart.restart_requested():

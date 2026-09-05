@@ -11,6 +11,13 @@ logger = logging.getLogger("export_service")
 HEADERS = ["Teklif No", "Firma", "Tarih", "Para Birimi", "Toplam Tutar",
            "Durum", "Vade", "Ödeme", "İlgili Kişi"]
 
+
+def _spreadsheet_value(value):
+    """Kullanıcı metninin Excel/CSV'de formül olarak yorumlanmasını önle."""
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
 def _value(record, key: str, default=""):
     if isinstance(record, dict):
         value = record.get(key, default)
@@ -23,15 +30,15 @@ def _row(o) -> list:
     currency = _value(o, "currency", "")
     sym = SYM_MAP.get(currency, "")
     return [
-        _value(o, "offer_no", ""),
-        _value(o, "company_name", ""),
+        _spreadsheet_value(_value(o, "offer_no", "")),
+        _spreadsheet_value(_value(o, "company_name", "")),
         to_display_date(_value(o, "date", "")),
         currency,
         fmt_money(_value(o, 'total_amount', 0), sym),
-        _value(o, "status", ""),
-        _value(o, "validity", ""),
-        _value(o, "payment_term", ""),
-        _value(o, "contact_person", ""),
+        _spreadsheet_value(_value(o, "status", "")),
+        _spreadsheet_value(_value(o, "validity", "")),
+        _spreadsheet_value(_value(o, "payment_term", "")),
+        _spreadsheet_value(_value(o, "contact_person", "")),
     ]
 
 
@@ -82,7 +89,7 @@ def export_excel(offers: List[object], path: str) -> str:
     for r_idx, o in enumerate(offers, 2):
         fill = alt_fill if r_idx % 2 == 0 else PatternFill("solid", fgColor="FFFFFF")
         for c_idx, val in enumerate(_row(o), 1):
-            cell = ws.cell(row=r_idx, column=c_idx, value=val)
+            cell = ws.cell(row=r_idx, column=c_idx, value=_spreadsheet_value(val))
             cell.fill   = fill
             cell.border = border
             cell.alignment = Alignment(vertical="center")
@@ -150,7 +157,7 @@ def _write_table_sheet(ws, headers: list, rows: list) -> None:
     for r_idx, row in enumerate(rows, 2):
         fill = alt_fill if r_idx % 2 == 0 else PatternFill("solid", fgColor="FFFFFF")
         for c_idx, val in enumerate(row, 1):
-            cell = ws.cell(row=r_idx, column=c_idx, value=val)
+            cell = ws.cell(row=r_idx, column=c_idx, value=_spreadsheet_value(val))
             cell.fill = fill
             cell.border = border
             cell.alignment = Alignment(vertical="center")

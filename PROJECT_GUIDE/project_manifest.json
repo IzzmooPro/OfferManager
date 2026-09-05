@@ -37,19 +37,20 @@
     "clean_clone_buildable": false
   },
   "snapshot": {
-    "captured_at": "2026-08-27",
+    "captured_at": "2026-09-05",
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "35f23ac2762ef46c183f60baee539b9033310f1e",
-    "source_commit_note": "Guncel v4.4 build HEAD'i. 0d9b6c2 installer upgrade temizleme duzeltmesini, 35f23ac ise bu duzeltmenin kanonik release kanitlarini icerir.",
+    "source_commit": "e60ad2b7c034188ab9324f9253d77c7fb34ee365",
+    "source_commit_note": "v4.5 kaynak hazirliginin ebeveyn tabani e60ad2b'dir; v4.5 degisiklikleri bu taban uzerine tek commit olarak hazirlanmistir. Elde bulunan v4.4 artifact bu kaynak degisikliklerini icermez.",
     "built_from_commit": "35f23ac2762ef46c183f60baee539b9033310f1e",
-    "built_from_commit_note": "Exact yerel v4.4 EXE ve installer temiz 35f23ac HEAD'inden uretildi; build aninda HEAD elle kaydedildi, artifact SHA256/boyut/surum alanlari, hedefli frozen B ve tam installer C ayni artifact setine baglandi.",
-    "version": "v4.4",
+    "built_from_commit_note": "Exact yerel v4.4 EXE ve installer temiz 35f23ac HEAD'inden uretildi; v4.5 kaynak ve guncelleme kapanis duzeltmelerini icermez ve yeni hedef icin eskidir.",
+    "version": "v4.5",
     "artifact_built_for_version": "v4.4",
-    "artifact_verification_status": "verified",
-    "release_candidate_ready": true,
-    "release_readiness_note": "Exact 35f23ac v4.4 temiz build, degisiklik-etkili frozen B ve tam installer C gecti; artifact verified ve provenance icin yalniz izinli kanit dosyalari degisti. Tag, GitHub Release ve canli updater D1/D2 henuz yapilmadi.",
+    "artifact_verification_status": "stale_for_target_version",
+    "artifact_stale_reason": "Hedef v4.5; eldeki exact artifact v4.4 ve yeni teklif dogrulama, raporlama, export ve DB kapanisi sonrasi updater degisikliklerini icermez.",
+    "release_candidate_ready": false,
+    "release_readiness_note": "v4.5 kaynak ve testleri hazir; yeni temiz build, frozen kapanis smoke'u, v4.4 -> v4.5 installer veri koruma zinciri ve canli updater D1/D2 henuz yapilmadi.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -60,20 +61,20 @@
     },
     "guide_integrated_test_result": {
       "command": "python -m pytest tests -q",
-      "scope": "PROJECT_GUIDE, sürüm tutarlılık, R10 güvenli hata ve R11 geri bildirim testleri dahil son tam suite",
-      "passed": 1225,
-      "subtests_passed": 346,
-      "date": "2026-08-27",
-      "skipped": 6,
-      "note": "Exact 35f23ac temiz build kapisi; build basinda release_candidate_ready=false oldugu icin manifestin fail-closed aday testi atlandi: 1225 passed, 6 skipped, 346 subtests."
+      "scope": "v4.5 kaynak hazirligi; PROJECT_GUIDE ve surum tutarlilik testleri dahil son tam suite",
+      "passed": 1244,
+      "subtests_passed": 360,
+      "date": "2026-09-05",
+      "skipped": 4,
+      "note": "e60ad2b ebeveyn tabanindaki v4.5 calisma agaci: 1244 passed, 4 skipped, 360 subtests. Yeni build/frozen/installer kaniti degildir."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
-      "passed": 1225,
-      "subtests_passed": 346,
-      "date": "2026-08-27",
-      "note": "Exact 35f23ac temiz build kapisi; source_test_result 648/29 baseline'i tarihsel olarak korunur.",
-      "skipped": 6
+      "passed": 1244,
+      "subtests_passed": 360,
+      "date": "2026-09-05",
+      "note": "v4.5 kaynak calisma agaci; source_test_result 648/29 baseline'i tarihsel olarak korunur. Build/frozen/installer bekliyor.",
+      "skipped": 4
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
@@ -447,7 +448,7 @@
       "credential_manager_access": "get/set/delete = 0 (kurulu smoke'lar null/fail keyring ile izole edildi; gercek Credential Manager kullanilmadi)",
       "manual_user_intervention": "UC UAC onayi kullanici tarafindan guvenli masaustunde elle verildi (upgrade, uninstall, temiz reinstall); UAC otomatiklestirilmedi."
     },
-    "release": {
+    "previous_v44_release": {
       "target_version": "v4.4",
       "tag_created": true,
       "github_release_created": true,
@@ -509,6 +510,35 @@
           ],
           "user_data_evidence": "Ana DB rollback ile byte-esit. Normal gercek-profil runtime farki yalniz log/backup_meta ve bir yeni kapanis yedegi; yedek sayisi 16 -> 17.",
           "manual_user_intervention": "UAC ve yukseltilmis v4.4 installer sihirbazi kullanici tarafindan tamamlandi; UAC otomatiklestirilmedi."
+        }
+      }
+    },
+    "release": {
+      "target_version": "v4.5",
+      "tag_created": false,
+      "github_release_created": false,
+      "updater_end_to_end_verified": false,
+      "existing_remote_tag": null,
+      "existing_remote_tag_note": "v4.5 tag ve GitHub Release henuz olusturulmadi.",
+      "upstream_sync_must_be_verified_live": true,
+      "status": "source_ready_build_pending",
+      "note": "v4.5 kaynak duzeyi hazir; temiz build, frozen B, installer C ve canli updater D1/D2 tamamlanmadan yayinlanamaz.",
+      "tag_commit": null,
+      "tag_commit_note": "Build ve dogrulama tamamlanmadan tag hedefi yoktur.",
+      "release_url": null,
+      "published_at": null,
+      "draft": false,
+      "prerelease": false,
+      "latest": false,
+      "asset_readback": null,
+      "live_updater_verification": {
+        "D1_source_trust_chain": {
+          "result": "BEKLIYOR",
+          "installer_executed": false
+        },
+        "D2_real_delivery_e2e": {
+          "result": "BEKLIYOR",
+          "scope": "Public v4.4 istemciden v4.5 canli teslimat; yayin sonrasi zorunlu."
         }
       }
     },
@@ -704,8 +734,8 @@
         }
       }
     },
-    "version_prepare_commit": "2fbb93109944873e9887918d1f6ce9424a882024",
-    "version_prepare_commit_note": "v4.4 surum alanlari ve kaynak hazirligi bu commit'te sabitlendi; build girdisi metadata commit'i sonrasinda ayrica olculur.",
+    "version_prepare_commit": "e60ad2b7c034188ab9324f9253d77c7fb34ee365",
+    "version_prepare_commit_note": "v4.5 hazirliginin ebeveyn tabani e60ad2b'dir; kaynak, test, surum ve ara manifest durumu kullanici onayli tek commit kapsaminda hazirlanmistir. Exact build girdisi build oncesi canli HEAD ile olculur.",
     "published_releases": {
       "v4.3": {
         "target_version": "v4.3",

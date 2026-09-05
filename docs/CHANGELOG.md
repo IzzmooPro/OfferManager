@@ -2,6 +2,24 @@
 
 ---
 
+## [v4.5] — 2026-09-05
+
+Bu sürüm teklif verisi doğruluğunu, dosya güvenliğini ve güncelleme sırasında
+veri korumasını güçlendirir.
+
+### Veri ve çıktı güvenliği
+- Teklif numarası PDF dosya yolu olarak kullanılmadan önce doğrulanır; arşiv
+  kökü dışına çıkabilecek veya Windows cihaz adı olan değerler reddedilir.
+- Kalem tutarları miktar ve birim fiyatla karşılaştırılır; geçersiz ve sonlu
+  olmayan sayılar kaydedilmez.
+- Excel/CSV çıktılarındaki kullanıcı metinleri formül olarak çalıştırılmaz.
+- İçe aktarmada açık sıfır, negatif veya bozuk miktar sessizce 1'e çevrilmez.
+
+### Raporlama ve güncelleme
+- Farklı para birimleri dönüştürülmeden tek tutarda birleştirilmez.
+- Güncelleme sırasında kaydedilmemiş veri onayı, kapanış yedeği ve çalışan
+  işler tamamlanır; installer veritabanı kapandıktan sonra başlatılır.
+
 ## [v4.4] — 2026-08-27
 
 Bu sürüm, açılış sırasındaki güvenli depo uyarısını ve yerel build

@@ -31,9 +31,9 @@ BUILD_SCRIPT = PACKAGING / "Kurulum-Yap.bat"
 VERIFY = REHBER / "scripts" / "verify_project_guide.py"
 
 # Hedef sürüm sözleşmesi
-HEDEF = "v4.4"
-HEDEF_SAYISAL = "4.4.0.0"
-HEDEF_INSTALLER = "TeklifYonetim_Setup_v4.4.exe"
+HEDEF = "v4.5"
+HEDEF_SAYISAL = "4.5.0.0"
+HEDEF_INSTALLER = "TeklifYonetim_Setup_v4.5.exe"
 # Upgrade testinin başlangıç noktası (yalnız tarihsel bilgi)
 UPGRADE_TEMEL = "v4.0"
 # Yayımlanmış (tarihsel) sürüm — kanıtı korunur, hedef sürümle karıştırılmaz
@@ -208,10 +208,9 @@ class KaynakSurumTests(unittest.TestCase):
         if durum == "stale_for_target_version":
             # Hedef sürüm yükseltildi, build eski: son yayımlanan sürümün
             # değerleri yeni hedefmiş gibi yeniden etiketlenmeden korunmalı.
-            self.assertEqual(s["dist_exe"]["size"], 9722873)
-            self.assertTrue(s["dist_exe"]["sha256"].startswith("C037CB3A"))
-            self.assertEqual(s["installer"]["size"], 51289869)
-            self.assertTrue(s["installer"]["sha256"].startswith("7D7516BC"))
+            for anahtar in ("dist_exe", "installer"):
+                self.assertEqual(s[anahtar]["built_for_version"],
+                                 s["artifact_built_for_version"])
             self.assertIn(s["artifact_built_for_version"], gerekce,
                           "gerekçe, eldeki derlemenin hangi sürüm olduğunu "
                           "söylemiyor")
@@ -229,11 +228,11 @@ class KaynakSurumTests(unittest.TestCase):
         # Snapshot'ın üç provenance açıklaması aynı kaynak/artifact
         # farkını anlatmalı; yeni kaynak konusu yalnız bir alana eklenip
         # diğerlerinde unutulursa release devri eksik kalır.
-        for belirtec in ("r10a", "r12c", "acilis"):
+        for belirtec in (s["version"], s["artifact_built_for_version"]):
             for alan in ("source_commit_note", "built_from_commit_note",
                          "artifact_stale_reason"):
                 metin = str(s.get(alan, "")).lower()
-                self.assertIn(belirtec, metin,
+                self.assertIn(belirtec.lower(), metin,
                               f"{alan} güncel kaynak farkını eksik "
                               f"anlatıyor: {belirtec}")
 

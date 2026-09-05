@@ -39,8 +39,11 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 
 ## Teklif ve çıktı
 
-4. **Teklif numarası ve ilişkili kayıtlar atomiktir**; kısmi hatada rollback olur, numara üretimi yarışa dayanıklıdır. → `tests/test_offer_service.py`
-5. **Arşiv PDF adı DB'deki teklif numarasıyla aynıdır** (`<teklif_no>.pdf`) ve teklif silinince arşiv PDF'i de kalkar. → `tests/test_offer_archive_naming.py`
+4. **Teklif numarası ve ilişkili kayıtlar atomiktir**; kısmi hatada rollback olur, numara üretimi yarışa dayanıklıdır. Yeni veya içe aktarılan numara Windows dosya adı bileşeni olarak geçerli olmalı; geçersiz numara teklif/sayaçta kısmi kayıt bırakamaz. → `tests/test_offer_service.py`, `tests/test_general_review_regressions.py`
+5. **Arşiv PDF adı DB'deki teklif numarasıyla aynıdır** (`<teklif_no>.pdf`) ve teklif silinince arşiv PDF'i de kalkar. PDF yolu arşiv kökünün dışına çıkamaz; eski geçersiz numaralı kayıt, dışarıdaki bir dosyayı silmeye dönüşmez. → `tests/test_offer_archive_naming.py`, `tests/test_general_review_regressions.py`
+5b. **Teklif kalemi ve toplamları sonlu, tutarlı değerlerdir.** Her kalemde `quantity * unit_price ≈ total_price` (en fazla 0,01 fark) olmalı; teklif genel toplamı iskonto sonrası kalem toplamıyla eşleşmelidir. Geçersiz değer hata verir ve yazma başlamaz. → `tests/test_offer_service.py`, `tests/test_general_review_regressions.py`
+5c. **Para birimleri dönüştürülmeden toplanmaz.** Ürün cirosu ürün + para birimi bazında raporlanır; aylık rapor özeti ayrı para birimi tutarlarını gösterir. → `tests/test_general_review_regressions.py`
+6b. **Dışa aktarılan kullanıcı metni Excel/CSV'de formül değildir.** `=`, `+`, `-`, `@` ile başlayan metin literal değer olarak yazılır; sayısal alanlar sayısal kalır. → `tests/test_export_service.py`, `tests/test_general_review_regressions.py`
 6. **Maliyet/kâr bilgisi PDF, Excel, CSV veya e-postaya sızmaz.** → `tests/test_profit.py`, `tests/test_export_service.py`
 7. **Teklif numarası sayacı geriye alınmaz.** Silinen tekliften doğan numara boşluğu normaldir.
 7b. **Süresi dolan teklif onayı onaysız yazmaz ve splash üzerinde açılmaz.** Veri, ana ekran açılırken **yüklenmeye devam eder**; açılış modalı splash fade **tamamlanmadan** gösterilmez ve gösterim **en fazla bir kez** olur. Pencere gizliyse veya kapanıyorsa hiç gösterilmez. "Şimdilik Dokunma" / Esc / X **hiçbir veritabanı yazması yapmaz**; kullanıcı "İptal Olarak İşaretle" derse yalnız gerçekten süresi dolmuş ve hâlâ *Beklemede* olan teklifler güncellenir ve tablo yenilenir. → `tests/test_expired_offer_prompt.py`
@@ -52,6 +55,7 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 10. **XLSX sayfa seçimi:** gizli sayfa listelenmez/okunmaz; tek aday otomatik seçilir; birden fazlaysa sorulur; yalnız seçilen sayfa aktarılır. → `tests/test_xlsx_sheet_selection.py`
 11. **Sayfa sorusu modal ilerleme penceresinden ÖNCE sorulur.** İlerleme penceresi açıkken ikinci bir modal soru açılırsa Windows onu devre dışı bırakır ve akış süresiz kilitlenir. İptalde DB yazımı, hata kutusu ve yarım aktarım olmaz. → `tests/test_import_sheet_dialog_modality.py`
 12. **Ürün seçicide sonuç sınırı ve arama debounce'u korunur**; toplu teklif yüklemede ürünler tek sorguyla çözülür. → `tests/test_product_select_dialog.py`, `tests/test_product_batch_lookup.py`
+12b. **Teklif içe aktarmada miktar belirsizliği sessizce ürün üretmez.** Boş miktar varsayılan 1 olabilir; açık sıfır, negatif veya bozuk miktar hata verir ve aynı teklifin başka kalemleri olsa da teklifin tamamı yazılmaz. → `tests/test_general_review_regressions.py`
 
 ## Thread, kapanış, restart
 
@@ -59,6 +63,7 @@ Her madde: **kural → nerede → koruyan test**. Bulguların geçmişi [AUDIT_H
 14. **Kapanış sırası ve yedek tekilleştirmesi:** otomatik yedek zamanlayıcısı susturulur; çalışan yedek varsa bitmeden aynı DB için kapanış yedeği başlatılmaz; kapanış yedeği tam bir kez tamamlanır; kalan worker'lar beklenir; ardından DB kapatılır ve çıkış kodu 0 olur. Ertelenen `closeEvent` turlarında onaylar veya yedek tekrarlanmaz. → `tests/test_backup_worker_lifecycle.py`, `tests/test_shutdown_workers.py`
 15. **Restart kapanışında yeni kapanış yedeği alınmaz**; normal Qt/DB kapanışı ve sınırlı mutex beklemesi uygulanır. Ardıl `--restarted-from <pid>` ile açılır, komut satırında EXE yolu bir kez geçer, `os.execl` kullanılmaz. → `tests/test_restart_flow.py`
 16. **Tek örnek kilidinde kısmi edinim bırakılmaz**; mutex alınıp paylaşımlı bellek alınamazsa handle kapatılır. → `tests/test_restart_flow.py`
+16b. **Otomatik güncelleme normal kapanış korumalarını atlamaz.** Installer, ana pencerenin kaydedilmemiş veri onayı, kapanış yedeği ve worker bekleme akışı tamamlandıktan sonra başlar; kullanıcı kapanışı iptal ederse installer çalışmaz. → `tests/test_update_graceful_shutdown.py`
 
 ## Gizlilik ve hata bildirimi
 

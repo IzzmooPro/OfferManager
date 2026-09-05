@@ -59,14 +59,14 @@ class ReportService:
         """En çok teklif edilen ürünler."""
         db = get_db()
         rows = db.fetchall("""
-            SELECT oi.product_code, oi.product_name,
+            SELECT oi.product_code, oi.product_name, o.currency,
                    COUNT(DISTINCT oi.offer_id) as offer_count,
                    SUM(oi.quantity) as total_qty,
                    SUM(oi.total_price) as total_revenue
             FROM offer_items oi
             JOIN offers o ON oi.offer_id = o.id
             WHERE COALESCE(o.status,'Beklemede') != 'İptal'
-            GROUP BY oi.product_code, oi.product_name
+            GROUP BY oi.product_code, oi.product_name, o.currency
             ORDER BY offer_count DESC
             LIMIT ?
         """, (limit,))

@@ -426,7 +426,8 @@ def _map_row(row: dict, col_map: dict) -> dict:
         norm_key = _norm(raw_key)
         field = col_map.get(norm_key)
         if field:
-            result[field] = value.strip() if isinstance(value, str) else (value or "")
+            result[field] = value.strip() if isinstance(value, str) else (
+                value if value is not None else "")
     return result
 
 
@@ -931,14 +932,20 @@ def _validate_offer_rows(raw_rows: list) -> tuple[list, list, list]:
     """Satırları teklife gruplar. (yeni_teklifler, mükerrer_nolar, hatalar)"""
     from database.db_manager import get_db
     from core.constants import STATUS_ORDER
+    from core.offer_files import validate_offer_number
     db = get_db()
 
-    groups, order, invalid = {}, [], []
+    groups, order, invalid, invalid_offer_numbers = {}, [], [], set()
     for idx, raw in enumerate(raw_rows, 2):   # 1. satır başlık
         r = _map_row(raw, OFFER_MAP)
         no = str(r.get("offer_no", "")).strip()
         if not no:
             invalid.append(f"Satır {idx}: Teklif No eksik")
+            continue
+        try:
+            no = validate_offer_number(no)
+        except ValueError:
+            invalid.append(f"Satır {idx}: Teklif No geçersiz")
             continue
         g = groups.get(no)
         if g is None:
@@ -971,7 +978,16 @@ def _validate_offer_rows(raw_rows: list) -> tuple[list, list, list]:
         if not (pname or pcode):
             invalid.append(f"Satır {idx}: Ürün bilgisi eksik ({no})")
             continue
-        qty = _parse_number(r.get("quantity"), 0) or 1
+        quantity_value = r.get("quantity", "")
+        if quantity_value is None or (isinstance(quantity_value, str)
+                                      and not quantity_value.strip()):
+            qty = 1
+        else:
+            qty = _parse_number(quantity_value, None)
+            if qty is None or qty <= 0:
+                invalid.append(f"Satır {idx}: Miktar sıfırdan büyük sayı olmalıdır")
+                invalid_offer_numbers.add(no)
+                continue
         price = _parse_number(r.get("unit_price"), 0)
         g["items"].append({
             "product_code": pcode,
@@ -987,6 +1003,8 @@ def _validate_offer_rows(raw_rows: list) -> tuple[list, list, list]:
     for no in order:
         if db.fetchone("SELECT id FROM offers WHERE offer_no = ?", (no,)):
             dups.append(no)
+        elif no in invalid_offer_numbers:
+            continue
         elif not groups[no]["items"]:
             invalid.append(f"{no}: hiç geçerli ürün kalemi yok")
         else:
