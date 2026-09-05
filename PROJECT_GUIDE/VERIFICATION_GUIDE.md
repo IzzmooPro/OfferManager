@@ -7,8 +7,8 @@ covers:
   - core/app_paths.py
   - ui/dialogs/backup_manager.py
   - main.py
-last_verified_commit: 35f23ac
-last_verified_date: 2026-08-27
+last_verified_commit: efcfdcb
+last_verified_date: 2026-09-05
 volatile: false
 ---
 
@@ -120,7 +120,7 @@ D2'de indirilen dosyanın hash/boyutu **bağımsız ölçülür**; eski updater 
 
 Bu üç sınıfın en son sonuçları, hangi sürüm için doğrulandığı (`verified_for_version`) ve tarihleri: [CURRENT_STATUS.md](CURRENT_STATUS.md) ve [project_manifest.json](project_manifest.json). Kalan boşluklar: [KNOWN_RISKS.md](KNOWN_RISKS.md).
 
-**A sınıfı — güncel kaynak (2026-09-05):** `e60ad2b7c034188ab9324f9253d77c7fb34ee365` ebeveyn tabanındaki v4.5 çalışma ağacı `1244 passed, 4 skipped, 360 subtests` verdi. Bu sonuç kaynak düzeyidir; eldeki v4.4 artifact v4.5 değişikliklerini içermez. Yeni temiz build, frozen kapanış smoke'u ve installer veri koruma zinciri bekliyor.
+**A sınıfı — güncel kaynak + hedefli B + tam C (2026-09-05):** Exact `efcfdcb214c169da96e2a92af289f90cbb04e3d3` girdisinde `packaging/Kurulum-Yap.bat --no-pause` exit `0`; build kapısı `1244 passed, 4 skipped, 360 subtests`. EXE `9.725.826 B / 7AF84CCAE215…0BC86B / 4.5.0.0 / v4.5`, dist `256 dosya / 168.681.030 B`; installer `50.878.627 B / 469BAA31EF0B…EEB35A / 4.5.0.0`. Hedefli B, iki izole null/fail-keyring turunda B-1/B-2/B-3/B-5 için geçti; B-4/B-6/B-7/B-8/B-9 tekrarlanmadı. Tam C'de v4.4 → v4.5 upgrade, iki profilli kurulu smoke, uninstall, temiz reinstall ve ikinci iki profilli smoke geçti. Upgrade/reinstall ağaçları dist ile `256/256`, fark `0/0/0`; uninstall program/registry/üç yönetilen kısayolu kaldırdı; reinstall registry `v4.5`, kısayollar ve exact EXE'yi geri getirdi. Gerçek veri `31/31`, fark `0/0/0`; ana DB `312C189C…9D0CE`, bütünlük temiz. Tag, GitHub Release ve D1/D2 kanıtı değildir.
 
 **v4.4 A→B/C durumu — GEÇTİ:** Exact `ACABD2DE…53FF8` v4.4 EXE için değişiklik-etkili B geçti. Null-keyring: modal 0, ikinci örnek exit 0 ve ilk süreç yaşadı. Fail-keyring: tek Güvenli Depo modalı, ana pencere native disabled, modal enabled. İki tur WM_CLOSE, tek kapanış yedeği, DB close, exit 0; iki DB `integrity_check=ok`, FK 0; forbidden marker/süreç sızıntısı 0. Kapsam B-1/B-2/B-3/B-5'tir; B-4/B-6/B-7/B-8/B-9 tekrarlanmadı ve tarihsel kanıtları exact v4.4'e devredilmedi.
 

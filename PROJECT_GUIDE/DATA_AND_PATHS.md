@@ -3,14 +3,15 @@ purpose: Veri yolları, şema/migration düzeni, import/export ve yedek/geri yü
 read_when: Veri, yol, migration, yedek, import/export işleri.
 covers:
   - core/app_paths.py
+  - core/offer_files.py
   - database/schema.sql
   - database/db_manager.py
   - ui/utils/excel_import.py
   - services/export_service.py
   - ui/dialogs/backup_manager.py
   - tests/conftest.py
-last_verified_commit: 50756b1
-last_verified_date: 2026-08-23
+last_verified_commit: efcfdcb
+last_verified_date: 2026-09-05
 volatile: false
 ---
 
@@ -67,10 +68,11 @@ Akış: dosya seç → **(XLSX ve birden fazla uygun sayfa varsa) sayfa seç** �
 - "Tümünü İçe Aktar (tek dosya)" ayrı yoldur: `Müşteriler`/`Ürünler`/`Teklifler` adlı sayfaları tanır, sayfa sorusu sormaz. Bu yol gizli sayfaları da okur ([KNOWN_RISKS.md](KNOWN_RISKS.md) **R8 açık**).
 - **Dosya tanıtıcısı yaşam döngüsü:** okunan çalışma kitabı hem başarı hem hata yolunda `finally` içinde kapatılır — aksi hâlde Windows'ta kaynak dosya kilitli kalırdı. Kapatma hatası ayrı aşamadır; başarılı okumayı geçersiz kılmaz ve asıl okuma hatasını maskelemez.
 - **Kategori yazımı ürün transaction'ından ÖNCE ve ondan bağımsız yapılır.** Transaction geri dönse bile oluşturulmuş kategoriler veritabanında kalır; bu bilgi çağırana yalnız **sayısal** aşama durumu olarak taşınır (kategori adı taşınmaz) ve dönüş değeri gerçek veritabanı değişikliğini yansıtır.
+- **Teklif içe aktarma miktarı:** boş değer varsayılan `1` olabilir; açık `0`, negatif veya bozuk değer hata üretir ve aynı teklifin tamamını dışarıda bırakır. Teklif numarası Windows dosya adı olarak doğrulanır; geçersiz numara hiçbir teklif kaydı oluşturmaz.
 
 ## Dışa aktarma
 
-`services/export_service.py` içe aktarma şablonuyla uyumlu başlıklar üretir; veri yoksa yalnız başlık satırı yazılır (boş şablon işlevi). **Maliyet/kâr sütunu dışa aktarılmaz.**
+`services/export_service.py` içe aktarma şablonuyla uyumlu başlıklar üretir; veri yoksa yalnız başlık satırı yazılır (boş şablon işlevi). **Maliyet/kâr sütunu dışa aktarılmaz.** Excel/CSV hücresine yazılan kullanıcı metni, baştaki boşluklar atıldığında `=`, `+`, `-` veya `@` ile başlıyorsa başına tek tırnak eklenerek formül çalıştırması engellenir; sayısal değerler sayısal kalır.
 
 ## Yedek ve geri yükleme
 

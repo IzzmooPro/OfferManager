@@ -7,8 +7,8 @@ covers:
   - packaging/version_info.txt
   - packaging/Kurulum-Yap.bat
   - ui/utils/updater.py
-last_verified_commit: 0d9b6c2
-last_verified_date: 2026-08-27
+last_verified_commit: efcfdcb
+last_verified_date: 2026-09-05
 volatile: false
 ---
 
@@ -56,11 +56,12 @@ Upstream durumu hiçbir belgede sabit tutulmaz; **her release öncesi canlı öl
 - [ ] `python PROJECT_GUIDE/scripts/verify_project_guide.py --release` → **exit 0**; provenance açısından da temiz. **Bu geçmeden tag ve release YAPILMAZ.**
 - [ ] Local-only `packaging/` ve `assets/` girdileri **ayrıca** hash/envanter/build incelemesiyle doğrulandı — provenance kapısı bunların geçmişini kanıtlamaz ([CHANGE_PROTOCOL.md](CHANGE_PROTOCOL.md))
 
-> **2026-08-27 v4.4 süreç durumu:** Exact `0d9b6c2` artifact seti temiz build, değişiklik-etkili B ve tam installer C zincirini geçti; ilk 40-artık-DLL kırmızı denemesi tarihsel kayıtta korunur. Ancak bu belge ile `BUILD_AND_PACKAGING.md`, `0d9b6c2` değişikliklerine göre build sonrasında yeniden doğrulandığı için mevcut artifact'ın provenance kapısı hâlâ exit `1` verir. Bu iki süreç belgesi kanıt commit'ine alınmadan ve o yeni exact commit'ten temiz build üretilmeden `release_candidate_ready` true yapılmaz; tag/Release oluşturulmaz.
+> **2026-09-05 v4.5 süreç durumu:** Exact `efcfdcb` artifact seti temiz build, hedefli B ve tam installer C zincirini geçti; kullanıcı verisi v4.4 → v4.5 upgrade, uninstall ve temiz reinstall boyunca korundu. Bu turda kaynak-kapsam belgeleri build sonrasında güncellendiği ve dört untracked dosya bulunduğu için mevcut artifact release provenance kapısında kullanılamaz; belge commit'i ve o exact commit'ten yeni temiz build/doğrulama gerekir. Tag/Release oluşturulmadı.
 
 ## 4. Paketli doğrulama (kanıt sınıfı B)
 
 - [ ] İzole frozen smoke geçti ([VERIFICATION_GUIDE.md](VERIFICATION_GUIDE.md))
+- [ ] Güncelleme kapanışı kaynak regresyonunda doğrulandı: kullanıcı normal kapanışı iptal ederse installer başlamaz; kabul edilirse kapanış yedeği/worker bekleme ve DB close tamamlandıktan sonra başlar
 
 ## 5. Installer doğrulaması (kanıt sınıfı C)
 

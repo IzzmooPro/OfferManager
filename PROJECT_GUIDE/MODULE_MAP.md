@@ -27,8 +27,8 @@ covers:
   - ui/startup_splash.py
   - ui_preview
   - pdf/pdf_generator.py
-last_verified_commit: 2fbb931
-last_verified_date: 2026-08-27
+last_verified_commit: efcfdcb
+last_verified_date: 2026-09-05
 volatile: false
 ---
 

@@ -3,21 +3,26 @@ purpose: Projenin son doğrulanmış durumu — tarihli yakalama. Tarihçe için
 read_when: Genel yönelim, build/release öncesi, uzun aradan sonra.
 covers:
   - core/constants.py
-last_verified_commit: e60ad2b
+last_verified_commit: efcfdcb
 last_verified_date: 2026-09-05
 volatile: true
 ---
 
 # Son doğrulanmış durum
 
-> **Yakalama tarihi: 2026-09-05 · hedef sürüm: `v4.5` — KAYNAK HAZIR, BUILD/FROZEN/INSTALLER/YAYIN BEKLİYOR.**
+> **Yakalama tarihi: 2026-09-05 · hedef sürüm: `v4.5` — TEMİZ BUILD + HEDEFLİ FROZEN B + TAM INSTALLER C GEÇTİ; YAYIN BEKLİYOR.**
 > Public/latest sürüm hâlâ **v4.4**'tür. v4.4 artifact ve yayın kanıtları tarihsel olarak geçerlidir; v4.5 için kullanılamaz.
 > Bu belge canlı durum iddiasında bulunmaz. **Canlı git durumu snapshot'tan okunmaz; `git status`, `git rev-parse HEAD` ve upstream karşılaştırmasıyla yeniden ölçülür.** Makine-okunur karşılığı: [project_manifest.json](project_manifest.json).
 
 ## Sürüm ve kaynak
 
-- Hedef sürüm: **v4.5** — `core/constants.py`, Inno `.iss`, `version_info.txt` ve hedef installer adı `TeklifYonetim_Setup_v4.5.exe` olarak eşitlendi. Elde yalnız doğrulanmış v4.4 artifact'ı vardır; `release_candidate_ready=false`.
-- **v4.5 kaynak durumu:** teklif/PDF yolu, para birimi raporları, import miktarı, spreadsheet formül koruması, kalem tutarı/geçerlilik doğrulaması ve güncellemede normal kapanış → DB kapanışı → installer sırası kaynak testleriyle kapatıldı. Tam kaynak paketi **1244 passed, 4 skipped, 360 subtests**; build ve paketli kanıt değildir.
+- Hedef sürüm: **v4.5** — `core/constants.py`, Inno `.iss`, `version_info.txt` ve `TeklifYonetim_Setup_v4.5.exe` eşleşiyor. Exact `efcfdcb214c169da96e2a92af289f90cbb04e3d3` girdisinden temiz build, hedefli frozen B ve tam installer C geçti; tag/Release/D1/D2 yapılmadı.
+- **v4.5 kaynak ve build:** teklif/PDF yolu, para birimi raporları, import miktarı, spreadsheet formül koruması, kalem tutarı/geçerlilik doğrulaması ve güncellemede normal kapanış → DB kapanışı → installer sırası kaynak testleriyle kapatıldı. `packaging/Kurulum-Yap.bat --no-pause` exit `0`; build kapısı **1244 passed, 4 skipped, 360 subtests**; PyInstaller 6.19.0 onedir ve Inno Setup 7.1.0 tamamlandı.
+- **v4.5 artifact:** EXE `9.725.826 B / 7AF84CCAE215…0BC86B / FileVersion 4.5.0.0 / ProductVersion v4.5`; dist ağacı `256 dosya / 168.681.030 B`. Installer `TeklifYonetim_Setup_v4.5.exe / 50.878.627 B / 469BAA31EF0B…EEB35A / 4.5.0.0`.
+- **Hedefli frozen B GEÇTİ:** null ve fail-keyring için iki ayrı izole profil; null turunda modal `0`, ikinci örnek exit `0` ve ilk süreç yaşadı. Fail turunda tek `Güvenli Depo` modalı, ana pencere native disabled ve modal enabled; kabul sonrası ana pencere enabled. İki turda normal `WM_CLOSE`, tek kapanış yedeği, DB close, exit `0`, `integrity_check=ok`, FK `0`, yasaklı crash işareti `0`, süreç sızıntısı `0`. Gerçek profil veri/yedek manifestleri değişmedi. Kapsam B-1/B-2/B-3/B-5'tir; installer çalıştırılmadı.
+- **Tam installer C GEÇTİ:** v4.4 → v4.5 yerinde upgrade, iki profilli kurulu smoke, uninstall, temiz reinstall ve ikinci iki profilli kurulu smoke tamamlandı. Upgrade/reinstall ağaçları dist ile `256/256`, eksik/fazla/değişen `0/0/0`; üç yükseltilmiş işlem exit `0`, restart yok. Uninstall sonrası program klasörü, registry ve üç yönetilen kısayol kalktı; reinstall sonunda registry `v4.5`, üç kısayol ve exact dist EXE geri geldi. Gerçek veri rollback manifestiyle `31/31`, fark `0/0/0`; ana DB `312C189C…9D0CE`, `integrity_check=ok`, FK `0`. İki kurulu smoke toplam `44/44` kontrolle geçti ve gerçek Credential Manager kullanılmadı.
+- **v4.4 build öncesi arşivi:** `<RELEASE_ARCHIVE>/v4.4-pre-v4.5-build-20260905`; dist `256 dosya / 168.723.695 B`, EXE `ACABD2DE…53FF8`, installer `4D074FB0…B5FC1`. Kaynak/arşiv sayısı, toplam bayt ve iki ana hash eşit doğrulandı.
+- **Release kapısı henüz kırmızı:** dokuz stale kaynak-kapsam belgesi güncel kodla yeniden doğrulanıp `efcfdcb` kapsamına taşındı; ancak bu belge değişiklikleri build sonrasında yapıldığı için mevcut artifact provenance kapısında kullanılamaz. Ayrıca `.codex-a6-temp/update_design_preview.py`, `Düzeltmeler.txt`, `Yeni Tasarım v5.Konsept.png` ve `v5 Dönüşüm.txt` untracked kalır. `release_candidate_ready=false`; ayrı kanıt commit'i, temiz çalışma ağacı kararı ve o exact commit'ten yeni build/doğrulama gerekir.
 - **Doğrulama durumu — v4.2 artifact'ı için (TARİHSEL, `227656b`):** temiz build, frozen smoke (**B**), installer (**C**), R12a Yol A+B, yayın ve canlı updater (**D1+D2**) **TAMAMLANDI**. Bu kanıtlar geçerliliğini korur.
 - **v4.4 güncel durum:** `35f23ac` exact HEAD'inden temiz v4.4 EXE ve installer üretildi; `1225 passed, 6 skipped, 346 subtests`, değişiklik-etkili frozen B ve tam installer C geçti. Anotasyonlu `v4.4` tag exact build commit’ini gösteriyor; public/latest Release ve tek asset read-back temiz; canlı D1 ve paketli v4.3 → v4.4 D2 geçti.
 - v4.3 dist EXE: `C037CB3AEF6F…F0ED9AD` (9.722.873 B, FileVersion `4.3.0.0`, ProductVersion `v4.3`) · installer: `TeklifYonetim_Setup_v4.3.exe` `7D7516BC2746…94B8EE` (51.289.869 B). Public v4.2 artifact kimlikleri tarihsel kayıtlarda korunur.
@@ -25,7 +30,7 @@ volatile: true
 - **Doğrulanmış v4.1 artifact arşivi** proje kökünün dışında korunuyor: `<RELEASE_ARCHIVE>/v4.1-published-before-v4.2` (298 dosya, 229.136.053 bayt; dist EXE `872DF3C1…`, installer `DE590641…`). `packaging/Kurulum-Yap.bat` build başında `dist/`, `build/` ve `installer_output/` klasörlerini sildiği için bu kopya **zorunludur**.
 - **Paket içeriği — kabul edilmiş ürün kararı:** `_internal/assets/company.cfg` (firma adı, adres, telefon, e-posta, teklif öneki, PDF varsayılan metinleri) ve `assets/logo.png` pakete **bilinçli olarak** dahildir; ürün belirli bir firma için hazırlanmıştır. Paket içinde **SMTP parolası, credential veya token yoktur**. Kullanıcı bu bilgilerin public GitHub installer'ında bulunmasını **kabul etmiştir (2026-08-02)**. `core/config.py` varsayımları, `assets/company.cfg`, `assets/logo.png` ve `packaging/TeklifYonetim.spec` asset kapsamı **değiştirilmez**. → KNOWN_RISKS R12b (kapalı)
 - Kaynak davranışı baseline sonucu (PROJECT_GUIDE testleri hariç): **648 passed, 29 subtests** (`060baf3`)
-- **Güncel kaynak hazırlığının ebeveyn tabanı: `e60ad2b7c034188ab9324f9253d77c7fb34ee365`.** v4.5 değişiklikleri kullanıcı onaylı tek commit kapsamında hazırlanmıştır; exact build girdisi build öncesi canlı HEAD ile ölçülür. Elde bulunan v4.4 artifact build girdisi `35f23ac2762ef46c183f60baee539b9033310f1e` olup v4.5 değişikliklerini içermez.
+- **Güncel kaynak ve build girdisi: `efcfdcb214c169da96e2a92af289f90cbb04e3d3`.** Build öncesi canlı HEAD bu exact hash ile eşleşti. Birincil v4.5 artifact kaydı aynı commit'e bağlandı; v4.4 kanıtları tarihsel alanlarda ve proje dışı arşivde korunur.
 - Exact `35f23ac` temiz build kapısı: **1225 passed, 6 skipped, 346 subtests**. Altıncı skip, build başında `release_candidate_ready=false` olan fail-closed manifest aday kontrolüdür.
 - **R7 yerel paketli kanıt: GEÇTİ.** EXE `67EC8958…CE20F4E` (9.723.436 B), 256 dosya / 168.723.696 B paket ağacı; fail-keyring turunda gerçek ana pencere 3,193 sn, Güvenli Depo 3,700 sn, tek modal, ana pencere disabled, otomatik Tamam, WM_CLOSE, exit 0, süreç/log sızıntısı 0. Null-keyring turu da uyarı 0 ve normal kapanış exit 0 verdi. Gerçek veri/yedek envanteri değişmedi.
 - Tarihsel bağlam: `c3f711e` turunda ölçülen tam paket **1152 passed, 4 skipped, 343 subtests** idi; güncel sonuç değildir.

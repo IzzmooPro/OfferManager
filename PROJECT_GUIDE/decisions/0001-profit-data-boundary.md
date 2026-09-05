@@ -6,8 +6,8 @@ covers:
   - core/profit.py
   - services/export_service.py
   - pdf/pdf_generator.py
-last_verified_commit: 8054be0
-last_verified_date: 2026-08-23
+last_verified_commit: efcfdcb
+last_verified_date: 2026-09-05
 volatile: false
 ---
 
@@ -22,6 +22,7 @@ Kullanıcı teklif hazırlarken iskonto payını görebilmek için kâr analizi 
 - **Maliyet yalnız ürün kataloğunda tutulur:** `products.cost_price` (`database/schema.sql`). Kâr hesabı `core/profit.py` içinde yapılır ve yalnız uygulama içi panelde gösterilir.
 - **`offer_items` tablosunda maliyet snapshot'ı TUTULMAZ.** Şemada teklif kalemine ait bir maliyet sütunu yoktur; bu bilinçlidir — maliyet teklif kaydına hiç yazılmadığı için oradan sızması fiziksel olarak mümkün değildir.
 - **Maliyet ve kâr; teklif PDF'ine, teklif Excel/CSV dışa aktarmasına ve e-postaya dahil edilmez.**
+- Dışa aktarmadaki spreadsheet formül koruması yalnız mevcut kullanıcı metinlerini literal hücre değerine dönüştürür; maliyet/kâr alanı eklemez ve bu veri sınırını genişletmez.
 - **Ürün kataloğu dışa aktarmasında "Alış Fiyatı" sütunu bulunabilir** — bu dosya kullanıcının kendi kataloğudur, müşteriye gitmez ve içe aktarma ile gidiş-dönüş uyumludur.
 
 ## Sonuçları ve bedeli

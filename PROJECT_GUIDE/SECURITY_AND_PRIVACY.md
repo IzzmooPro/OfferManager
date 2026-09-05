@@ -11,8 +11,9 @@ covers:
   - core/app_paths.py
   - ui/dialogs/email_dialog.py
   - main.py
-last_verified_commit: 50756b1
-last_verified_date: 2026-08-23
+  - services/export_service.py
+last_verified_commit: efcfdcb
+last_verified_date: 2026-09-05
 volatile: false
 ---
 
@@ -37,6 +38,7 @@ volatile: false
 - **"Log Klasörünü Aç" düğmesi** (`ui/utils/operation_error_dialog.py`): yalnız beklenmeyen/teknik hatalarda eklenir. Tıklanmadıkça `os.startfile` **çağrılmaz**; tıklanınca yalnız kanonik `core.app_paths.LOG_DIR` açılır — yol istisnadan veya kullanıcı girdisinden türetilmez ve **mesaj metninde gösterilmez**. Klasör yoksa ya da açma başarısız olursa ikinci pencere açılmaz, istisna sızmaz, yalnız istisna **sınıf adı** warning olarak loglanır (özyineleme yok). → `tests/test_operation_error_dialog.py`
 - Log satırı: işlem adı + istisna sınıf adı + güvenli kayıt id'si + traceback'in yalnız `dosya:satır fonksiyon` çerçeveleri. `exc_info` kullanılmaz. Toplu işlemlerde her istisna **tam bir kez** ayrı ayrı loglanır; ham metinler birleştirilmez. Başarı loglarında tam kullanıcı dosya yolu yazılmaz — yalnız güvenli kayıt id'si.
 - Paketlenmiş windowed derlemede yakalanmamış `Exception` sessizce kaybolmaz: ana giriş hatayı ortak hook'a tam bir kez aktarır; kullanıcıya tek güvenli Türkçe hata penceresi + log dosyası yolu gösterilir ve süreç exit code 1 ile biter. Ham traceback PyInstaller bootloader'a kaçmadığı için ikinci teknik hata penceresi açılmaz; teknik traceback yalnız uygulama logunda tam bir kez bulunur. Aynı hata kısa süre içinde tekrar ederse bastırılır. `SystemExit` ve `KeyboardInterrupt` bu sarmalayıcı tarafından yakalanmaz. → `tests/test_windowed_error_reporting.py`
+- Güncelleme installer'ı DB kapandıktan sonra başlatılamazsa kullanıcıya yalnız sabit güvenli mesaj gösterilir; installer yolu ve ham istisna sızmaz, log yalnız istisna sınıfını taşır. → `tests/test_update_graceful_shutdown.py`
 
 ## Hata/öneri raporu (R11)
 
@@ -50,6 +52,7 @@ volatile: false
 
 - **Maliyet (alış fiyatı) ve kâr bilgisi** PDF, Excel, CSV ve e-posta çıktılarına dahil edilmez; yalnız uygulama içi kâr panelinde görünür.
 - Müşteriye ait alanlar çıktıya yazılırken escape/normalize edilir.
+- Excel/CSV dışa aktarımında `=`, `+`, `-`, `@` ile başlayan kullanıcı metinleri literal hücre değerine çevrilir; spreadsheet formülü olarak çalıştırılmaz.
 
 ## Ağ
 

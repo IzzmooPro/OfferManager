@@ -10,8 +10,8 @@ covers:
   - ui/dialogs/backup_manager.py
   - ui/utils/updater.py
   - ui/startup_splash.py
-last_verified_commit: 2fbb931
-last_verified_date: 2026-08-27
+last_verified_commit: efcfdcb
+last_verified_date: 2026-09-05
 volatile: false
 ---
 
@@ -67,6 +67,8 @@ main.py  →  ui/  →  services/  →  database/db_manager.py  →  SQLite
 ## Güncelleme
 
 `ui/utils/updater.py` GitHub Releases API'sinden son tag'i okur, **yalnız `TeklifYonetim_Setup_<tag>.exe` adına birebir uyan tek asset'i** seçer, indirir ve `os.startfile` ile Inno kurulumunu başlatır (UAC yükseltmesi installer manifestinden gelir). Kaynak modda tarayıcıya yönlendirir. Onefile veya EXE üzerine kopyalama yoluna dönülmez.
+
+**Veri güvenli güncelleme kapanışı.** Paketli modda doğrulanmış installer hemen çalıştırılmaz. `UpdateDialog` ana pencerenin normal `closeEvent` akışını çağırır; kaydedilmemiş işlem onayı, kapanış yedeği ve worker bekleme tamamlanır. Kullanıcı kapanışı iptal ederse indirilen installer silinir ve başlatılmaz. Kapanış kabul edilirse installer yolu kuyruğa alınır; `main.py` olay döngüsü döndükten ve `_veritabanini_kapat()` tamamlandıktan sonra `os.startfile` çağrılır. Başlatma hatası yalnız istisna sınıfıyla loglanır ve sabit güvenli mesaj gösterilir.
 
 **Güven zinciri (fail-closed).** Seçim ve doğrulama Qt'den bağımsız saf yardımcılardadır (`select_update_asset`, `is_release_download_url`, `is_allowed_download_host`); `UpdateChecker` ve `StartupUpdateChecker` aynı yardımcıyı kullanır. İndirme yalnız şu koşulların tamamı sağlanırsa çalıştırılır:
 

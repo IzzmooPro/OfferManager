@@ -41,16 +41,16 @@
     "live_state_notice": "canlı git durumu buradan okunmaz; git status / git rev-parse HEAD / upstream karşılaştırması ile yeniden ölçülür",
     "source_baseline_commit": "060baf3",
     "source_baseline_note": "648 testlik kaynak davranışı ölçümünün alındığı commit",
-    "source_commit": "e60ad2b7c034188ab9324f9253d77c7fb34ee365",
-    "source_commit_note": "v4.5 kaynak hazirliginin ebeveyn tabani e60ad2b'dir; v4.5 degisiklikleri bu taban uzerine tek commit olarak hazirlanmistir. Elde bulunan v4.4 artifact bu kaynak degisikliklerini icermez.",
-    "built_from_commit": "35f23ac2762ef46c183f60baee539b9033310f1e",
-    "built_from_commit_note": "Exact yerel v4.4 EXE ve installer temiz 35f23ac HEAD'inden uretildi; v4.5 kaynak ve guncelleme kapanis duzeltmelerini icermez ve yeni hedef icin eskidir.",
+    "source_commit": "efcfdcb214c169da96e2a92af289f90cbb04e3d3",
+    "source_commit_note": "Guncel v4.5 kaynak commitidir; build oncesi canli HEAD ile exact eslesti.",
+    "built_from_commit": "efcfdcb214c169da96e2a92af289f90cbb04e3d3",
+    "built_from_commit_note": "Exact v4.5 EXE ve installer temiz efcfdcb HEADinden uretildi; hedefli frozen B ayni EXE hashinde gecti.",
     "version": "v4.5",
-    "artifact_built_for_version": "v4.4",
-    "artifact_verification_status": "stale_for_target_version",
-    "artifact_stale_reason": "Hedef v4.5; eldeki exact artifact v4.4 ve yeni teklif dogrulama, raporlama, export ve DB kapanisi sonrasi updater degisikliklerini icermez.",
+    "artifact_built_for_version": "v4.5",
+    "artifact_verification_status": "verified",
+    "artifact_stale_reason": "",
     "release_candidate_ready": false,
-    "release_readiness_note": "v4.5 kaynak ve testleri hazir; yeni temiz build, frozen kapanis smoke'u, v4.4 -> v4.5 installer veri koruma zinciri ve canli updater D1/D2 henuz yapilmadi.",
+    "release_readiness_note": "Exact v4.5 build, hedefli frozen B ve tam installer C gecti. Dokuz stale belge efcfdcb kaynagiyla yeniden dogrulandi ancak build sonrasi belge degisikligi ve dort untracked dosya nedeniyle release provenance fail-closed; yeni kanit commitinden temiz build gerekir.",
     "source_test_result": {
       "command": "python -m pytest tests -q",
       "scope": "kaynak davranışı baseline — PROJECT_GUIDE testleri hariç",
@@ -60,13 +60,13 @@
       "date": "2026-07-28"
     },
     "guide_integrated_test_result": {
-      "command": "python -m pytest tests -q",
-      "scope": "v4.5 kaynak hazirligi; PROJECT_GUIDE ve surum tutarlilik testleri dahil son tam suite",
+      "command": "packaging/Kurulum-Yap.bat --no-pause (adim 2: python -m pytest tests -q)",
+      "scope": "Exact efcfdcb v4.5 temiz build kapisi; PROJECT_GUIDE ve surum tutarlilik testleri dahil tam suite",
       "passed": 1244,
       "subtests_passed": 360,
       "date": "2026-09-05",
       "skipped": 4,
-      "note": "e60ad2b ebeveyn tabanindaki v4.5 calisma agaci: 1244 passed, 4 skipped, 360 subtests. Yeni build/frozen/installer kaniti degildir."
+      "note": "Build sirasinda 1244 passed, 4 skipped, 360 subtests; ardindan temiz PyInstaller ve Inno Setup exit 0. A sinifi ve build kanitidir."
     },
     "test_result": {
       "command": "python -m pytest tests -q",
@@ -78,27 +78,27 @@
     },
     "dist_exe": {
       "path": "dist/TeklifYonetim/TeklifYonetim.exe",
-      "sha256": "ACABD2DE0EC49EAC508B4AFB11CD9F18ECF1646585DB4499735AEF5B8A853FF8",
-      "size": 9723435,
-      "built_for_version": "v4.4",
-      "file_version": "4.4.0.0",
-      "product_version": "v4.4"
+      "sha256": "7AF84CCAE215392A2DB1A577504CA43CFB6D7F04DE152B1434847999170BC86B",
+      "size": 9725826,
+      "built_for_version": "v4.5",
+      "file_version": "4.5.0.0",
+      "product_version": "v4.5"
     },
     "installer": {
-      "path": "installer_output/TeklifYonetim_Setup_v4.4.exe",
-      "sha256": "4D074FB0A8AA5BC9C4B2C992364D161368B808EA1FA8CB228828C348872B5FC1",
-      "size": 50889592,
-      "built_for_version": "v4.4",
-      "version": "4.4.0.0"
+      "path": "installer_output/TeklifYonetim_Setup_v4.5.exe",
+      "sha256": "469BAA31EF0B6FC10BEF9B257BC32EB750A231E0788620D62D9A18846BEEB35A",
+      "size": 50878627,
+      "built_for_version": "v4.5",
+      "version": "4.5.0.0"
     },
     "installed_exe": {
       "path": "<INSTALL_DIR>/TeklifYonetim.exe",
-      "sha256": "ACABD2DE0EC49EAC508B4AFB11CD9F18ECF1646585DB4499735AEF5B8A853FF8",
-      "size": 9723435,
-      "built_for_version": "v4.4",
-      "file_version": "4.4.0.0",
-      "product_version": "v4.4",
-      "note": "Tam C zincirinin temiz yeniden kurulum sonundaki kurulu v4.4 EXE'si; dist EXE ile byte-birebir ayni."
+      "sha256": "7AF84CCAE215392A2DB1A577504CA43CFB6D7F04DE152B1434847999170BC86B",
+      "size": 9725826,
+      "built_for_version": "v4.5",
+      "file_version": "4.5.0.0",
+      "product_version": "v4.5",
+      "note": "Tam C zincirinin temiz yeniden kurulum sonundaki kurulu v4.5 EXEsi; dist EXE ile byte-birebir ayni."
     },
     "upgrade_baseline": {
       "from_version": "v4.0",
@@ -192,70 +192,87 @@
     },
     "current_source_validation_build": {
       "status": "LOCAL_CLEAN_BUILD_TARGETED_B_AND_FULL_INSTALLER_C_VERIFIED",
-      "built_from_commit": "35f23ac2762ef46c183f60baee539b9033310f1e",
-      "functional_source_commit": "2fbb93109944873e9887918d1f6ce9424a882024",
-      "date": "2026-08-27",
-      "build_method": "packaging/Kurulum-Yap.bat --no-pause; tam test kapisi, temiz PyInstaller 6.19.0 onedir ve Inno Setup 7",
+      "built_from_commit": "efcfdcb214c169da96e2a92af289f90cbb04e3d3",
+      "functional_source_commit": "efcfdcb214c169da96e2a92af289f90cbb04e3d3",
+      "date": "2026-09-05",
+      "build_method": "packaging/Kurulum-Yap.bat --no-pause; tam test kapisi, temiz PyInstaller 6.19.0 onedir ve Inno Setup 7.1.0",
       "build_exit_code": 0,
-      "build_gate": "1225 passed, 6 skipped, 346 subtests passed",
+      "build_gate": "1244 passed, 4 skipped, 360 subtests passed",
       "build_script_sha256": "32B55D5D3BF0E2A786069399FBDDFFA26E9E68A0FBA56FBC9FFC6E4163490A1F",
-      "codex_runtime_toc_origins": 0,
-      "forbidden_dist_entries": 0,
       "dist_exe": {
         "path": "dist/TeklifYonetim/TeklifYonetim.exe",
-        "sha256": "ACABD2DE0EC49EAC508B4AFB11CD9F18ECF1646585DB4499735AEF5B8A853FF8",
-        "size": 9723435,
-        "file_version": "4.4.0.0",
-        "product_version": "v4.4",
+        "sha256": "7AF84CCAE215392A2DB1A577504CA43CFB6D7F04DE152B1434847999170BC86B",
+        "size": 9725826,
+        "file_version": "4.5.0.0",
+        "product_version": "v4.5",
         "file_count": 256,
-        "tree_size": 168723695
+        "tree_size": 168681030
       },
       "installer": {
-        "path": "installer_output/TeklifYonetim_Setup_v4.4.exe",
-        "sha256": "4D074FB0A8AA5BC9C4B2C992364D161368B808EA1FA8CB228828C348872B5FC1",
-        "size": 50889592,
-        "version": "4.4.0.0",
+        "path": "installer_output/TeklifYonetim_Setup_v4.5.exe",
+        "sha256": "469BAA31EF0B6FC10BEF9B257BC32EB750A231E0788620D62D9A18846BEEB35A",
+        "size": 50878627,
+        "version": "4.5.0.0",
         "installer_c_result": "GECTI",
-        "installer_c_attempt": "Mevcut v4.4 -> duzeltilmis exact v4.4 yerinde upgrade, kurulu smoke, uninstall, temiz reinstall ve ikinci kurulu smoke gecti; dist/kurulu 256/256, eksik 0, fazla 0, degisen 0"
+        "installer_c_attempt": "v4.4 -> v4.5 yerinde upgrade, iki profilli kurulu smoke, uninstall, temiz reinstall ve ikinci iki profilli kurulu smoke gecti; dist/kurulu 256/256, eksik 0, fazla 0, degisen 0."
       },
       "packaging_input": {
         "spec_sha256": "253D6A6DC0529FBA9E47F9F944EA67F3B159536472CF4BD3F1ACE1390C734B67",
-        "iss_sha256": "72EAADE451C6AAD39AA6296FEAB25F5EBC4D3167B3E39801CADA0DD2C21B8945",
-        "version_info_sha256": "C9EC6A5EC9D9EFAD77B8EA2556635F4DF49C57F99C4C3FE06A057F00AE6B74E9",
+        "iss_sha256": "90456E928A19CA8E58248135B56BFE23445196C72212242DE17CA31BC0660800",
+        "version_info_sha256": "DC2606307D885855302143228146619ACCCAEBECD25BE8A76A8589141E04191A",
         "company_cfg_sha256": "C088E5B7AE87630F0CB8E6A87E18DBB27A516D9FF0A8C4F7E51159E28F291A79",
         "logo_sha256": "0D998CBAC9E3CB309ABE2401A1B9AD4EA9D43F5D8149B4B02F913F4F5190BF2C"
       },
       "frozen_b_result": "GECTI",
       "frozen_b": {
-        "artifact_sha256": "ACABD2DE0EC49EAC508B4AFB11CD9F18ECF1646585DB4499735AEF5B8A853FF8",
-        "method": "Computer Use olmadan PID-bagli Win32 pencere olcumu ve native mesajlar; iki ayri izole profil",
-        "null_keyring": "Guvenli Depo modali 0; ikinci ornek exit 0 ve ilk surec yasadi; WM_CLOSE; tek kapanis yedegi; DB close; exit 0",
-        "fail_keyring": "tek Guvenli Depo modali; ana pencere native disabled, modal enabled; varsayilan Enter sonrasi ana pencere enabled; WM_CLOSE; tek kapanis yedegi; DB close; exit 0",
-        "db_integrity": "iki izole DB integrity_check=ok",
-        "forbidden_log_markers": 0,
-        "process_leaks": 0,
-        "real_profile_unchanged": "ilk B turunda data 30 dosya / 2331898 bayt ve backups 16 dosya / 11794088 bayt; once/sonra manifest SHA256 esit; sonraki salt-okunur DB probunun WAL/SHM dosyalari ayrica kayitli",
-        "covered": ["B-1 baslangic ve izolasyon", "B-2 tek ornek kilidi", "B-3 normal kapanis", "B-5 credential hata yolu"],
-        "not_repeated": ["B-4 temel UI/PDF", "B-6 uzun worker", "B-7 restart", "B-8 hata penceresi", "B-9 modal/progress"]
+        "result": "GECTI",
+        "verified_for_version": "v4.5",
+        "date": "2026-09-05",
+        "artifact_sha256_prefix": "7AF84CCA",
+        "scope": [
+          "exact 7AF84CCA EXE null ve fail-keyring icin iki ayri izole profilde Version: v4.5 ile acildi",
+          "null turunda gorunur beklenmeyen modal 0; ikinci ornek pencere acmadan exit 0 ve ilk surec yasadi",
+          "fail turunda tek Guvenli Depo modali; ana pencere native disabled, modal enabled; kabulden sonra ana pencere enabled",
+          "iki tur normal WM_CLOSE, tek kapanis yedegi, DB close ve exit 0; iki DB integrity_check=ok, foreign_key_check 0",
+          "Traceback, QThread destroyed ve 0xC0000409 isaretleri 0; surec sizintisi 0",
+          "gercek profil data 29->29 ve backup 0->0; dosya SHA256 manifestleri esit"
+        ],
+        "covered": [
+          "B-1 baslangic ve izolasyon",
+          "B-2 tek ornek kilidi",
+          "B-3 normal kapanis",
+          "B-5 credential hata yolu"
+        ],
+        "not_repeated": [
+          "B-4 temel UI/PDF",
+          "B-6 uzun worker",
+          "B-7 restart",
+          "B-8 hata penceresi",
+          "B-9 modal/progress"
+        ],
+        "isolation": "LOCALAPPDATA/APPDATA/USERPROFILE/HOME/HOMEDRIVE/HOMEPATH/TMP/TEMP izole kokler; null/fail keyring; HTTP/HTTPS/ALL proxy 127.0.0.1:9; NO_PROXY bos",
+        "automation_note": "Ilk deneme splash ve ana pencerenin ayni basligini tasimasi nedeniyle gecersiz splash HWNDsine WM_CLOSE gonderdi ve 30 saniye timeout oldu; yalniz o PID sonlandirildi. Kök neden pencere boyutuyla ayrildi, duzeltilmis tur 22/22 gecti.",
+        "scope_limit": "Hedefli B kanitidir. Installer C, tag, GitHub Release veya canli updater kaniti degildir."
       },
+      "installer_c_result": "GECTI",
+      "scope_limit": "Exact v4.5 temiz build, hedefli B-1/B-2/B-3/B-5 ve tam installer C kanitidir. Tag, GitHub Release ve canli updater kaniti degildir.",
       "installed_app_smoke": {
         "result": "GECTI",
-        "artifact_sha256": "ACABD2DE0EC49EAC508B4AFB11CD9F18ECF1646585DB4499735AEF5B8A853FF8",
+        "artifact_sha256": "7AF84CCAE215392A2DB1A577504CA43CFB6D7F04DE152B1434847999170BC86B",
         "runs": "upgrade ve temiz reinstall sonrasinda ikiser null/fail-keyring turu; toplam dort izole kurulu smoke",
-        "evidence": "null turunda modal 0 ve tek ornek kilidi; fail turunda tek Guvenli Depo modali ve ana pencere disabled; tum turlar WM_CLOSE, tek kapanis yedegi, DB close, exit 0, integrity_check=ok, FK 0, forbidden marker ve surec sizintisi 0",
-        "real_profile_unchanged": "data 32 dosya / 2364666 bayt ve backups 16 dosya / 11794088 bayt smoke oncesi/sonrasi ayni; iki ek dosya salt-okunur DB probunun database.db-wal (0 B) ve database.db-shm (32768 B) dosyalaridir"
+        "checks": "44/44",
+        "evidence": "tek ornek, modal native etkinligi, normal WM_CLOSE, tek kapanis yedegi, DB close, exit 0, integrity_check=ok, FK 0, forbidden marker ve surec sizintisi 0",
+        "real_profile_unchanged": "gercek veri 31/31 ve yedek 0/0; dosya SHA256 manifestleri esit"
       },
       "installer_validation": {
         "result": "GECTI",
-        "scope": "mevcut v4.4 eski installer kurulumu -> duzeltilmis exact v4.4 yerinde upgrade -> kurulu smoke -> uninstall -> temiz reinstall -> ikinci kurulu smoke",
-        "rollback": "<USER_DOCUMENTS>/OMS-v44-C-Rollback-20260827-0d9b6c2-20260827-104943; snapshot aninda kurulum 258/258, veri 32/32, yedek 16/16, hash farki 0/0/0; registry ve dort kisayol kopyasi; kopya DB integrity_check=ok, FK 0",
-        "tree_parity": "upgrade ve temiz reinstall sonrasinda dist 256 / kurulu uninstaller haric 256; missing 0, extra 0, changed 0; stale api-ms-win-*.dll ve ucrtbase.dll 0",
-        "user_data": "ana database.db SHA256 312C189CC66B0CCC3B5F3E3326C4D90D10CEB5E78855708BBD449D4553C9D0CE rollback snapshotiyla ayni; veri/yedek hashleri tum zincirde korundu; integrity_check=ok, FK 0",
-        "lifecycle": "upgrade, uninstall ve temiz reinstall exit 0; restart yok; kaldirmada kurulum klasoru/registry/uc yonetilen kisayol kalkti, ozel AIO kisayolu korundu; reinstall sonunda registry v4.4 ve dort kisayol hedefi dogru",
-        "logs": "upgrade 981832619F09F772AEFF60834FFB1567FB117D5AACC4DCD33E83F5777257DE37; uninstall 04A3E2A2B9263FA43FD507B0C82BA4410E094364BC0C369C5D4AC1BE8D84B87E; reinstall 7E05D2BC0CAA44AA7821FDE68E0F998D37FC0CDF7D60FB74B343B113ABCDF8EA",
-        "manual_user_intervention": "Upgrade, uninstall ve temiz reinstall icin uc UAC onayi kullanici tarafindan elle verildi; UAC otomatiklestirilmedi"
-      },
-      "scope_limit": "Exact yerel v4.4 artifact seti icin temiz build, degisiklik-etkili B ve tam C kanitidir. B-4/B-6/B-7/B-8/B-9 tekrarlanmadi ve tarihsel kanitlari bu EXE'ye devredilmedi. Tag, GitHub Release ve canli updater kaniti degildir."
+        "scope": "mevcut v4.4 -> v4.5 yerinde upgrade -> iki profilli kurulu smoke -> uninstall -> temiz reinstall -> ikinci iki profilli kurulu smoke",
+        "rollback": "<USER_DOCUMENTS>/OfferManagementSystem/rollback/v44-before-v45-20260905-125042; kurulum 258 dosya, veri 31 dosya, registry export; kaynak/kopya hashleri esit",
+        "tree_parity": "upgrade ve temiz reinstall sonrasinda dist 256 / kurulu uninstaller haric 256; missing 0, extra 0, changed 0",
+        "user_data": "31/31 missing/extra/changed 0/0/0; database.db SHA256 312C189C...9D0CE, integrity_check=ok, FK 0",
+        "lifecycle": "upgrade, uninstall, temiz reinstall exit 0; restart yok; uninstall program/registry/uc kisayolu kaldirdi; reinstall registry v4.5 ve uc kisayolu geri getirdi",
+        "logs": "upgrade EE7129472F5A1FDCA3421B1F3F31E07456EC362E6CD113524F1BFDA5F8109785; uninstall 7D560AA4E87D8F440921DA88809B9D3C379E579D307DFC34C98CEF3243F9F87C; reinstall A8674F0F67107A2C6857D872369122FC21F1BF89678FB680D9887A8AA3908322"
+      }
     },
     "r7_local_candidate": {
       "status": "LOCAL_BUILD_AND_TARGETED_B_VERIFIED_NOT_PUBLISHED",
@@ -299,103 +316,37 @@
     },
     "frozen_smoke": {
       "result": "GECTI",
-      "verified_for_version": "v4.4",
-      "date": "2026-08-27",
-      "artifact_sha256_prefix": "ACABD2DE",
-      "v44_scope": [
-        "exact ACABD2DE EXE iki zorunlu izole profilde Version: v4.4 ile acildi; iki DB integrity_check=ok",
-        "null keyring turunda Guvenli Depo modali 0; ikinci ornek pencere acmadan exit 0 ve ilk surec yasadi",
-        "fail keyring turunda tek Guvenli Depo modali; ana pencere native disabled, modal enabled; varsayilan Enter sonrasi ana pencere yeniden enabled",
-        "iki tur WM_CLOSE, tek kapanis yedegi, DB close ve exit 0; forbidden log marker ve surec sizintisi 0",
-        "gercek profil ilk B turunda data 30/2331898 ve backups 16/11794088 once/sonra manifest SHA256 esit; salt-okunur DB probunun sonraki WAL/SHM dosyalari ayrica kayitli"
+      "verified_for_version": "v4.5",
+      "date": "2026-09-05",
+      "artifact_sha256_prefix": "7AF84CCA",
+      "scope": [
+        "exact 7AF84CCA EXE null ve fail-keyring icin iki ayri izole profilde Version: v4.5 ile acildi",
+        "null turunda gorunur beklenmeyen modal 0; ikinci ornek pencere acmadan exit 0 ve ilk surec yasadi",
+        "fail turunda tek Guvenli Depo modali; ana pencere native disabled, modal enabled; kabulden sonra ana pencere enabled",
+        "iki tur normal WM_CLOSE, tek kapanis yedegi, DB close ve exit 0; iki DB integrity_check=ok, foreign_key_check 0",
+        "Traceback, QThread destroyed ve 0xC0000409 isaretleri 0; surec sizintisi 0",
+        "gercek profil data 29->29 ve backup 0->0; dosya SHA256 manifestleri esit"
       ],
-      "v44_not_repeated": [
-        "B-4 temel UI/PDF, B-6 uzun worker, B-7 restart, B-8 hata penceresi ve B-9 modal/progress bu degisiklik-etkili turda tekrarlanmadi; tarihsel kanitlar exact v4.4'e devredilmedi"
+      "covered": [
+        "B-1 baslangic ve izolasyon",
+        "B-2 tek ornek kilidi",
+        "B-3 normal kapanis",
+        "B-5 credential hata yolu"
       ],
-      "historical_v43_scope": [
-        "exact C037CB3A dist EXE null keyring ve loopback proxy ile gorunen v4.3 arayuzunu acti; log Version: v4.3, DB integrity_check=ok/fk=0",
-        "dist ve byte-esit kurulu EXE upgrade/temiz reinstall sonrasinda toplam uc smoke'ta Alt+F4, kapanis yedegi, DB close ve exit 0 ile normal kapandi",
-        "gercek veri ana dosyalari ve yedekler degismedi; tam B-1..B-9 matrisi yeniden kosulmadi",
-        "R6 exact dist EXE'de izole sentetik yedekten paketli UI ile gercek restore -> tek --restarted-from ardili -> normal kapanis zinciriyle kapandi"
+      "not_repeated": [
+        "B-4 temel UI/PDF",
+        "B-6 uzun worker",
+        "B-7 restart",
+        "B-8 hata penceresi",
+        "B-9 modal/progress"
       ],
-      "r6_restore_restart": {
-        "result": "GECTI",
-        "date": "2026-08-23",
-        "artifact_sha256": "C037CB3AEF6FCD45D965311BC2AE66A52AF74B7197CBACE50915CC521F0ED9AD",
-        "evidence": [
-          "canli izole DB baslangicta yalniz R6_PRE_RESTORE_CURRENT, secilen sentetik yedek yalniz R6_BACKUP_TARGET iceriyordu; restore sonrasi hedef kayit geldi ve eski kayit yok oldu",
-          "restore sonrasi ve final kapanis sonrasi integrity_check=ok, foreign_key_check satiri 0",
-          "ilk PID 28084 restart kapanisinda kapanma yedegini atladi, DB'yi kapatti ve exit 0 verdi; ardin PID 47344 komut satirinda tam bir --restarted-from 28084 ile otomatik acildi",
-          "ardil normal kapanista tek kapanis yedegi, DB close ve exit 0; iki PID de bitti ve TeklifYonetim surec sayisi 0",
-          "gercek profil dosya envanteri 46 -> 46; eklenen 0, silinen 0, degisen 0"
-        ],
-        "isolation": "LOCALAPPDATA/APPDATA/USERPROFILE/HOME/HOMEDRIVE/HOMEPATH/TMP/TEMP izole kok; fail.Keyring; HTTP/HTTPS/ALL proxy 127.0.0.1:9; NO_PROXY bos; sentetik DB ve yedek",
-        "scope_limit": "Gercek kullanici yedegi ve Credential Manager kullanilmadi; tam B-1..B-9 matrisi yeniden kosulmadi. Bu kayit R6 restore -> restart zincirine ozgudur."
-      },
-      "historical_v42_scope": [
-        "izole profilde açılış: ana pencere açıldı, kenar çubuğu sürümü v4.2, log 'Version: v4.2'",
-        "veri/log/yedek klasörleri yalnız izole kökte oluştu; gerçek profile yazım yok",
-        "null keyring: HİÇ modal açılmadı, ana pencere enabled",
-        "fail keyring: 'Güvenli Depo' modalı gerçekten açıldı ve ana pencereyi disabled yaptı (ayrı ölçüm)",
-        "tek örnek kilidi: ikinci süreç pencere açmadan exit 0, ilki yaşadı",
-        "Yardım → 'Sorun veya Öneri Bildir' penceresi AÇILDI (başlık doğrulandı), ana pencere modal arkasında disabled, Vazgeç ile kapandı",
-        "normal kapanış (WM_CLOSE) exit 0, tek izole kapanış yedeği",
-        "logda 0xC0000409 / QThread destroyed / Traceback YOK",
-        "indirme, tarayıcı, e-posta istemcisi ve TeklifUpdate klasörü oluşmadı"
-      ],
-      "historical_v42_not_covered": [
-        "bildirim penceresi İÇİNDE Panoya Kopyala tıklaması ve pano içeriğinin doğrulanması — QPlainTextEdit Tab'ı yuttuğu ve Qt açılır menüsü UIA Invoke'unu blokladığı için frozen modda otomatikleştirilemedi (kaynak testleriyle örtülüdür; frozen kanıt YERİNE GEÇMEZ)",
-        "teknik hata kutusu → 'Hata Raporla' düğmesi ve tek-form pencere — frozen modda tetiklenemedi (aynı sınır)",
-        "B-4 temel UI akışı (müşteri/ürün/teklif/PDF), B-6 uzun worker ile kapanış, B-7 restart, B-9 modal/progress (O16) — bu turda TEKRARLANMADI: ilgili kod v4.1'den beri değişmedi"
-      ],
-      "isolation": "izole LOCALAPPDATA/APPDATA/USERPROFILE/HOME/HOMEDRIVE/HOMEPATH/TMP/TEMP + loopback proxy (127.0.0.1:9); gerçek kullanıcı verisi ve Credential Manager kullanılmadı",
-      "historical_v42_r12a_feedback_paths": {
-        "date": "2026-08-02",
-        "method": "üretim artifact'ine HOOK EKLENMEDİ; uygulama yalnız dışarıdan sürüldü (UI Automation ile OKUMA + gerçek fare tıklaması + gerçek klavye). İzole profil, loopback proxy; tarayıcı/e-posta/SMTP/ağ açılmadı.",
-        "path_A_help_menu": {
-          "result": "GECTI",
-          "evidence": [
-            "Yardım menüsü ve 'Sorun veya Öneri Bildir...' ögesi gerçek fare ile tıklandı",
-            "tek-form pencere açıldı; görünen alanlar: 'Rapor No:' + 8 haneli no, 'Tarih:', 'Sürüm:' = 'v4.2 (paketli)', 'Sistem:' = 'Windows 10.0.26200 (AMD64)', 'Ne oldu?', gizlilik notu",
-            "teknik alanlar (İşlem/Hata Türü/Konum) bu yolda GÖRÜNMEDİ — doğru",
-            "açıklama boşken 'E-postayı Aç' ve 'Panoya Kopyala' DEVRE DIŞI, 'Vazgeç' etkin; benzersiz açıklama yazıldıktan sonra ikisi de etkinleşti",
-            "'Panoya Kopyala' GERÇEKTEN tıklandı; Windows panosu sentinel'den gerçek rapora değişti",
-            "panodaki rapor tam olarak penceredeki alanlar + kullanıcı açıklamasıdır; benzersiz dize (7F3C1A9E) panoda bulundu",
-            "panoda yasaklı içerik YOK: ham istisna, 'Traceback', SQL, sqlite3, mutlak yol, izole kök yolu",
-            "durum satırı 'Rapor panoya kopyalandı.' — 'gönderildi' DEMİYOR",
-            "'Vazgeç' ile pencere kapandı; uygulama normal kapanış exit 0",
-            "log: 0xC0000409 / QThread destroyed / Traceback YOK; TeklifUpdate klasörü oluşmadı"
-          ]
-        },
-        "path_B_error_box": {
-          "result": "GECTI",
-          "date": "2026-08-02",
-          "environment": "KURULU v4.2 (C:\\Program Files\\Teklif Yönetim), izole geçici profil + izole DB + null keyring + loopback proxy",
-          "navigation": "tamamı dış otomasyon: Ürünler -> '+ Yeni Ürün' -> kategori ikon düğmesi (UIA rect + gerçek fare tıklaması). Kullanıcı tıklaması YOK.",
-          "trigger": "YALNIZ izole geçici DB dosyaları salt-okunur yapıldı (attrib +R) → sonraki yazma 'attempt to write a readonly database' = OperationalError. Metin 'locked'/'busy' içermediği için TEKNİK hata sayılır. Gerçek kullanıcı DB'sine YAZILMADI. Not: tetikleyici açılışta uygulanamaz (db_manager._migrate açılışta yazar) ve ALTER TABLE dış bağlantıdan 'database is locked' verir — ikisi de ölçüldü.",
-          "evidence": [
-            "gerçek hata kutusu açıldı (başlık 'Hata'); düğmeler: Tamam + 'Log Klasörünü Aç' + 'Hata Raporla'",
-            "kutu metni güvenli: 'Veritabanı işlemi tamamlanamadı...' — yasaklı içerik YOK",
-            "'Hata Raporla' GERÇEK fare ile tıklandı; tek-form pencere açıldı",
-            "görünen güvenli teknik alanlar: 'İşlem: Kategori ekle', 'Hata Türü: OperationalError', 'Konum: db_manager.py:188 execute <- category_service.py:29 add <- category_dialog.py:78 _add'",
-            "Konum yalnız DOSYA ADI:satır fonksiyon — mutlak yol YOK",
-            "penceredeki yasaklı içerik: YOK ('no such table', SQL, sqlite3, traceback, mutlak yol, izole kök, kayıt id'si)",
-            "açıklama boşken 'E-postayı Aç'/'Panoya Kopyala' DEVRE DIŞI; benzersiz açıklama sonrası etkin",
-            "'Panoya Kopyala' GERÇEK fare ile tıklandı; Windows panosu sentinel'den gerçek rapora değişti",
-            "panoda: görünen alanlar + kullanıcı açıklaması (D5E81C34) + 'Teknik özet' (İşlem/Hata türü/Konum); yasaklı içerik YOK",
-            "durum satırı 'Rapor panoya kopyalandı.' — 'gönderildi' DEMİYOR",
-            "güvenli log tek satır: 'Kategori ekle başarısız — hata=OperationalError id=- konum=[...]' (kayıt id'si yok)",
-            "normal kapanış exit 0; 0xC0000409 / QThread destroyed / Traceback YOK",
-            "gerçek tarayıcı/e-posta/SMTP/ağ açılmadı"
-          ],
-          "capture_note": "UIA kapsama ölçümü geometrik olduğu için arkadaki ürün formunun metinleri de yakalandı ('Alış Fiyatı:' vb.); bunlar RAPORA GİRMEZ — panonun tam içeriği ölçüldü ve temizdir."
-        },
-        "overall": "GECTI — R12a'nın iki yolu da paketli sürümde doğrulandı"
-      }
+      "isolation": "LOCALAPPDATA/APPDATA/USERPROFILE/HOME/HOMEDRIVE/HOMEPATH/TMP/TEMP izole kokler; null/fail keyring; HTTP/HTTPS/ALL proxy 127.0.0.1:9; NO_PROXY bos",
+      "automation_note": "Ilk deneme splash ve ana pencerenin ayni basligini tasimasi nedeniyle gecersiz splash HWNDsine WM_CLOSE gonderdi ve 30 saniye timeout oldu; yalniz o PID sonlandirildi. Kök neden pencere boyutuyla ayrildi, duzeltilmis tur 22/22 gecti.",
+      "scope_limit": "Hedefli B kanitidir. Installer C, tag, GitHub Release veya canli updater kaniti degildir."
     },
     "installer_test": {
       "result": "GECTI",
-      "verified_for_version": "v4.4",
+      "verified_for_version": "v4.5",
       "pending_for_version": "",
       "v44_failed_attempt": {
         "date": "2026-08-27",
@@ -409,7 +360,7 @@
         "stopped_before": "kurulu smoke, uninstall ve temiz reinstall",
         "remediation": "tracked ISS InstallDelete dar api-ms-win jokeri ve exact ucrtbase ile duzeltildi; kirmizi->yesil regresyon testi gecti; 0d9b6c2 temiz build, B ve tam C ile kapandi"
       },
-      "date": "2026-08-27",
+      "date": "2026-09-05",
       "v44_scope": [
         "exact 4D074FB0 installer ile mevcut v4.4 -> exact 35f23ac v4.4 yerinde upgrade exit 0; restart yok; kurulu EXE exact ACABD2DE dist ile byte-esit",
         "upgrade ve temiz reinstall agaclari dist ile birebir: 256/256, missing 0, extra 0, changed 0; once kalan 39 api-ms-win DLL ve ucrtbase.dll artik 0",
@@ -442,11 +393,21 @@
         "integrity probunun olusturdugu database.db-wal/-shm installer degisikligi sayilmadi; ana database.db degismedi"
       ],
       "skipped_scenarios": [],
-      "skipped_justification": "Yok; v4.4 icin tam C zinciri tamamlandi.",
+      "skipped_justification": "Yok; v4.5 icin yerinde upgrade, kurulu smoke, uninstall, temiz reinstall ve ikinci kurulu smoke tamamlandi.",
       "user_data_preserved": true,
-      "user_data_evidence": "Exact 35f23ac v4.4 rollback snapshotinda gercek veri 32/32 ve yedek 16/16 hash farki 0/0/0; upgrade, uninstall, temiz reinstall ve iki kurulu smoke boyunca degismedi. Ana database.db SHA256 312C189C...9D0CE korundu; PRAGMA integrity_check=ok ve foreign_key_check temiz.",
-      "credential_manager_access": "get/set/delete = 0 (kurulu smoke'lar null/fail keyring ile izole edildi; gercek Credential Manager kullanilmadi)",
-      "manual_user_intervention": "UC UAC onayi kullanici tarafindan guvenli masaustunde elle verildi (upgrade, uninstall, temiz reinstall); UAC otomatiklestirilmedi."
+      "user_data_evidence": "v4.4 rollback snapshotindaki gercek veri 31/31 dosya; upgrade, iki kurulu smoke, uninstall, temiz reinstall ve iki final kurulu smoke boyunca missing/extra/changed 0/0/0. Ana database.db SHA256 312C189CC66B0CCC3B5F3E3326C4D90D10CEB5E78855708BBD449D4553C9D0CE korundu; integrity_check=ok ve foreign_key_check 0.",
+      "credential_manager_access": "Gercek Credential Manager kullanilmadi; kurulu smoke turlari null/fail keyring ile izole edildi.",
+      "manual_user_intervention": "Upgrade, uninstall ve temiz reinstall Start-Process -Verb RunAs ile baslatildi; UAC guvenli masaustu otomasyona tabi tutulmadi.",
+      "v45_scope": [
+        "exact 469BAA31 installer ile kurulu v4.4 -> v4.5 yerinde upgrade exit 0; restart yok; kurulu EXE exact 7AF84CCA dist ile byte-esit",
+        "upgrade ve temiz reinstall agaclari dist ile 256/256; missing 0, extra 0, changed 0",
+        "upgrade sonrasi ve temiz reinstall sonrasi null/fail-keyring izole kurulu smoke toplam 44/44 kontrolle gecti; tum turlar normal WM_CLOSE, tek kapanis yedegi, DB close ve exit 0",
+        "uninstall exit 0; kurulum klasoru, uninstall registry kaydi ve uc installer kisayolu kalkti",
+        "temiz reinstall exit 0; registry v4.5, kurulum yolu, uninstaller ve uc yonetilen kisayol dogru",
+        "rollback snapshoti kurulum 258 dosya, veri 31 dosya ve registry export icerir; kaynak/kopya hashleri esit",
+        "gercek veri tum zincirde 31/31, missing/extra/changed 0/0/0; ana database.db SHA256 312C189C...9D0CE, integrity_check=ok, foreign_key_check 0",
+        "upgrade/uninstall/reinstall log SHA256: EE712947...09785 / 7D560AA4...9F87C / A8674F0F...08322"
+      ]
     },
     "previous_v44_release": {
       "target_version": "v4.4",
@@ -521,8 +482,8 @@
       "existing_remote_tag": null,
       "existing_remote_tag_note": "v4.5 tag ve GitHub Release henuz olusturulmadi.",
       "upstream_sync_must_be_verified_live": true,
-      "status": "source_ready_build_pending",
-      "note": "v4.5 kaynak duzeyi hazir; temiz build, frozen B, installer C ve canli updater D1/D2 tamamlanmadan yayinlanamaz.",
+      "status": "local_build_b_c_verified_release_pending",
+      "note": "Exact efcfdcb v4.5 temiz build, hedefli frozen B ve tam installer C tamamlandi. Dokuz stale belge yeniden dogrulandi; build sonrasi belge degisikligi ve dort untracked dosya nedeniyle yeni kanit commiti + temiz build gerekir. Tag/Release ve D1/D2 bekliyor.",
       "tag_commit": null,
       "tag_commit_note": "Build ve dogrulama tamamlanmadan tag hedefi yoktur.",
       "release_url": null,
@@ -734,8 +695,8 @@
         }
       }
     },
-    "version_prepare_commit": "e60ad2b7c034188ab9324f9253d77c7fb34ee365",
-    "version_prepare_commit_note": "v4.5 hazirliginin ebeveyn tabani e60ad2b'dir; kaynak, test, surum ve ara manifest durumu kullanici onayli tek commit kapsaminda hazirlanmistir. Exact build girdisi build oncesi canli HEAD ile olculur.",
+    "version_prepare_commit": "efcfdcb214c169da96e2a92af289f90cbb04e3d3",
+    "version_prepare_commit_note": "Kullanici onayli v4.5 kaynak, test ve surum hazirligi tek efcfdcb commitinde tamamlandi; temiz build bu exact committen alindi.",
     "published_releases": {
       "v4.3": {
         "target_version": "v4.3",
@@ -884,6 +845,33 @@
       "date": "2026-08-02",
       "note": "BUILD ANINDAKİ gerçek kapı sonucu. Sonraki metadata commit'i artifact durumunu installer_pending yaptığı için iki kontrol daha atlanır ve güncel ağaçta sonuç 941/4/267 olur. İki sayı da doğrudur, farklı commit'lere aittir."
     },
-    "previous_v44_prebuild_stale_reason": "Hedef v4.4 olarak yukseltildiginde eldeki yayimlanmis artifact seti v4.3 ve 446fc78 kaynakliydi. Bu ara durum exact v4.4 build ve frozen B ile kapandi; installer C bekliyor."
+    "previous_v44_prebuild_stale_reason": "Hedef v4.4 olarak yukseltildiginde eldeki yayimlanmis artifact seti v4.3 ve 446fc78 kaynakliydi. Bu ara durum exact v4.4 build ve frozen B ile kapandi; installer C bekliyor.",
+    "v44_artifact_archive": {
+      "path": "<RELEASE_ARCHIVE>/v4.4-pre-v4.5-build-20260905",
+      "files": 256,
+      "bytes": 168723695,
+      "dist_exe_sha256": "ACABD2DE0EC49EAC508B4AFB11CD9F18ECF1646585DB4499735AEF5B8A853FF8",
+      "installer_size": 50889592,
+      "installer_sha256": "4D074FB0A8AA5BC9C4B2C992364D161368B808EA1FA8CB228828C348872B5FC1",
+      "verification": "Kaynak ve arsiv dist dosya sayisi/toplam bayti ile EXE ve installer SHA256 degerleri esit.",
+      "note": "v4.5 temiz buildi onceki proje-koku ciktilarini sildigi icin build oncesi proje disina kopyalandi."
+    },
+    "documentation_refresh": {
+      "date": "2026-09-05",
+      "verified_source_commit": "efcfdcb214c169da96e2a92af289f90cbb04e3d3",
+      "documents": [
+        "ARCHITECTURE.md",
+        "BUILD_AND_PACKAGING.md",
+        "CRITICAL_INVARIANTS.md",
+        "DATA_AND_PATHS.md",
+        "decisions/0001-profit-data-boundary.md",
+        "MODULE_MAP.md",
+        "RELEASE_CHECKLIST.md",
+        "SECURITY_AND_PRIVACY.md",
+        "VERIFICATION_GUIDE.md"
+      ],
+      "status": "WORKTREE_READY_COMMIT_PENDING",
+      "note": "Kapsanan v4.5 kaynak farklari yeniden incelendi. Bu belgeler mevcut buildden sonra degistigi icin kanit commitinden yeni build gerekir."
+    }
   }
 }
